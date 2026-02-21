@@ -188,6 +188,20 @@ window.DB = {
     if (error) console.error('deleteAccount:', error);
   },
 
+  // ---- SETTINGS ----
+  async getSettings() {
+    const { data, error } = await _sb.from('settings').select('*');
+    if (error) { console.error('getSettings:', error); return {}; }
+    const out = {};
+    data.forEach(r => out[r.key] = r.value);
+    return out;
+  },
+
+  async saveSetting(key, value) {
+    const { error } = await _sb.from('settings').upsert({ key, value });
+    if (error) { console.error('saveSetting:', error); throw error; }
+  },
+
   // ---- SEED DEFAULT DATA (runs once on first load) ----
   async seedDefaultData() {
     const courts = await this.getCourts();

@@ -527,7 +527,7 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 
         <!-- Time slots -->
         <div class="fg">
-          <label class="fl">⏰ Available Time Slots <span style="color:var(--muted);text-transform:none;font-weight:400;font-size:.74rem">(6 AM – 10 PM · select consecutive hours)</span></label>
+          <label class="fl">⏰ Available Time Slots <span id="slotHoursNote" style="color:var(--muted);text-transform:none;font-weight:400;font-size:.74rem">(6 AM – 10 PM · select consecutive hours)</span></label>
           <div class="slot-msg" id="slotMsg" style="display:block">Select a date above to see real-time availability.</div>
           <div id="slotsGrid"></div>
         </div>
@@ -683,6 +683,8 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
    ============================================= */
 let court = null;
 let selSlots = [];
+let openHour  = 6;   // defaults — overwritten by loadOperatingHours()
+let closeHour = 22;
 
 /* =============================================
    HELPERS
@@ -723,6 +725,18 @@ function initDark() {
 }
 
 /* =============================================
+   OPERATING HOURS
+   ============================================= */
+async function loadOperatingHours() {
+  const settings = await DB.getSettings();
+  openHour  = parseInt(settings.open_hour  || '6');
+  closeHour = parseInt(settings.close_hour || '22');
+  // Update the label in the booking form
+  const note = $('slotHoursNote');
+  if (note) note.textContent = `(${fmtT(openHour)} – ${fmtT(closeHour)} · select consecutive hours)`;
+}
+
+/* =============================================
    COURTS
    ============================================= */
 async function renderCourts() {
@@ -732,7 +746,7 @@ async function renderCourts() {
 
   $('courtsGrid').innerHTML = courts.map(c => {
     const blk = c.blocked;
-    const allSlots = Array.from({length: 16}, (_, i) => i + 6);
+    const allSlots = Array.from({length: closeHour - openHour}, (_, i) => i + openHour);
     const bookedHours = new Set(
       bookings.filter(b => b.courtId === c.id && b.date === today && b.status !== 'cancelled')
               .flatMap(b => b.slots)
@@ -856,7 +870,7 @@ async function renderSlots() {
   let availCount = 0;
   let slotHtml = '';
 
-  for (let h = 6; h <= 21; h++) {
+  for (let h = openHour; h < closeHour; h++) {
     const isPast    = todayFlag && h < curHour;
     const isNow     = todayFlag && h === curHour;
     const isBooked  = booked.has(h);
@@ -1047,7 +1061,8 @@ function closeModal() {
    ============================================= */
 function startRealtime() {
   _supabase.channel('bookings-rt')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async () => {
+      await loadOperatingHours();
       renderCourts();
       if (court && $('bDate').value) renderSlots();
     })
@@ -1120,6 +1135,7 @@ function animateStat(el, final) {
 document.addEventListener('DOMContentLoaded', async () => {
   initDark();
   await DB.seedDefaultData();
+  await loadOperatingHours();
   await renderCourts();
   startRealtime();
   $('bDate').min = todayStr();

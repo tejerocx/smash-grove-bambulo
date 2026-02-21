@@ -284,6 +284,25 @@ tr:hover td{background:rgba(0,200,83,.025);}
         <h2>🏟️ COURT MANAGEMENT</h2>
         <button class="btn btn-p" onclick="openCourtModal()">+ Add Court</button>
       </div>
+
+      <!-- OPERATING HOURS PANEL -->
+      <div class="panel" style="margin-bottom:20px;border:1px solid var(--border);">
+        <h4>⏰ Operating Hours</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">Set the daily open and close time for all courts. Changes apply immediately to the booking page.</p>
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <label class="fl">Open Time</label>
+            <select class="fi" id="ohOpen" style="width:auto;min-width:130px"></select>
+          </div>
+          <div>
+            <label class="fl">Close Time</label>
+            <select class="fi" id="ohClose" style="width:auto;min-width:130px"></select>
+          </div>
+          <button class="btn btn-p btn-sm" onclick="saveHours()" style="margin-bottom:1px">💾 Save Hours</button>
+        </div>
+        <div id="ohSummary" style="margin-top:12px;padding:10px 14px;background:var(--input);border:1px solid var(--border);border-radius:8px;font-size:.84rem;color:var(--muted);display:none"></div>
+      </div>
+
       <div class="tbl-wrap">
         <div class="tbl-scroll">
           <table>
@@ -509,6 +528,7 @@ async function exportCSV(){
    COURTS
    ============================================== */
 async function renderCourts(){
+  await renderHours();
   const courts=await DB.getCourts();
   $('courtBody').innerHTML=courts.map(c=>`<tr>
     <td>
@@ -599,6 +619,58 @@ async function delCourt(id){
   await DB.deleteCourt(id);
   await renderCourts();
   toast('Court deleted.','inf');
+}
+
+/* ==============================================
+   OPERATING HOURS
+   ============================================== */
+function fmtH(h) {
+  return `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+async function renderHours() {
+  const settings = await DB.getSettings();
+  const openHr  = parseInt(settings.open_hour  || '6');
+  const closeHr = parseInt(settings.close_hour || '22');
+
+  const openSel  = $('ohOpen');
+  const closeSel = $('ohClose');
+  openSel.innerHTML  = '';
+  closeSel.innerHTML = '';
+
+  for (let h = 5; h <= 23; h++) {
+    const label = fmtH(h);
+    openSel.innerHTML  += `<option value="${h}" ${h === openHr  ? 'selected' : ''}>${label}</option>`;
+    closeSel.innerHTML += `<option value="${h}" ${h === closeHr ? 'selected' : ''}>${label}</option>`;
+  }
+
+  updateHoursSummary(openHr, closeHr);
+}
+
+function updateHoursSummary(openHr, closeHr) {
+  const el = $('ohSummary');
+  const totalHrs = closeHr - openHr;
+  if (totalHrs > 0) {
+    el.style.display = 'block';
+    el.innerHTML = `⏰ Courts open <strong style="color:var(--green)">${fmtH(openHr)} – ${fmtH(closeHr)}</strong> &nbsp;·&nbsp; <strong style="color:var(--green)">${totalHrs}</strong> hour${totalHrs !== 1 ? 's' : ''}/day &nbsp;·&nbsp; ${totalHrs} bookable slots per court`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+async function saveHours() {
+  const openHr  = parseInt($('ohOpen').value);
+  const closeHr = parseInt($('ohClose').value);
+  if (closeHr <= openHr) { toast('Close time must be later than open time.', 'err'); return; }
+  if (closeHr - openHr < 1) { toast('Must have at least 1 hour of operation.', 'err'); return; }
+  try {
+    await DB.saveSetting('open_hour',  String(openHr));
+    await DB.saveSetting('close_hour', String(closeHr));
+    updateHoursSummary(openHr, closeHr);
+    toast(`Hours saved: ${fmtH(openHr)} – ${fmtH(closeHr)}`);
+  } catch(e) {
+    toast('Failed to save hours.', 'err');
+  }
 }
 
 /* ==============================================
