@@ -985,7 +985,7 @@ async function onCardDate(courtId, date) {
   if (bar) bar.style.display = 'none';
 
   grid.innerHTML = availHours.length > 0
-    ? availHours.map(h => `<div class="cc-slot-btn" data-h="${h}" onclick="toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}</div>`).join('')
+    ? availHours.map(h => `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}</div>`).join('')
     : `<span class="cc-slots-empty" style="grid-column:span 2">⛔ No slots available on this date</span>`;
 }
 
@@ -1049,19 +1049,20 @@ async function renderCourts() {
           <div class="cc-slots-lbl">⚡ Available slots — tap to book</div>
           <input type="date" class="cc-date-pick" id="cDate_${c.id}"
             value="${today}" min="${today}"
-            onchange="onCardDate('${c.id}', this.value)" />
+            onclick="event.stopPropagation()"
+            onchange="event.stopPropagation(); onCardDate('${c.id}', this.value)" />
         </div>
         <div class="cc-slots-grid" id="cSlots_${c.id}">
           ${blk
             ? `<span class="cc-slots-empty">🔧 Under maintenance</span>`
             : availHours.length > 0
-              ? availHours.map(h => `<div class="cc-slot-btn" data-h="${h}" onclick="toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}</div>`).join('')
+              ? availHours.map(h => `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}</div>`).join('')
               : `<span class="cc-slots-empty">⛔ No slots left today</span>`
           }
         </div>
         <div class="cc-book-bar" id="cBar_${c.id}" data-rate="${c.rate}" style="display:none">
           <span class="cc-book-sum" id="cBarSum_${c.id}"></span>
-          <button class="btn btn-p btn-sm" onclick="proceedToBook('${c.id}')">Book Now →</button>
+          <button class="btn btn-p btn-sm" onclick="event.stopPropagation(); proceedToBook('${c.id}')">Book Now →</button>
         </div>
       </div>
     </div>`;
@@ -1088,10 +1089,6 @@ async function selectCourt(id) {
   const d = $('courtDisp');
   d.textContent = `${court.name} — ${fmt(court.rate)}/hr`;
   d.classList.add('on');
-
-  const sec = $('bookSec');
-  sec.classList.add('visible');
-  setTimeout(() => sec.scrollIntoView({behavior:'smooth', block:'start'}), 80);
 
   await renderSlots();
   updatePrice();
