@@ -470,7 +470,11 @@ async function renderBookings(){
       <td><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--muted)">${b.email}</div></td>
       <td>${b.courtName}</td>
       <td>${fmtD(b.date)}<div style="font-size:.75rem;color:var(--muted)">${b.startTime}–${b.endTime}</div></td>
-      <td>${fmt(b.total)}</td>
+      <td>
+        <div>${fmt(b.total)}</div>
+        <div style="font-size:.73rem;color:var(--yellow);margin-top:2px">⚡ ${fmt(b.downpayment||b.total/2)} down</div>
+        ${b.gcashRef?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px">Ref: <code style="color:var(--green)">${b.gcashRef}</code></div>`:''}
+      </td>
       <td><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod.toUpperCase()}</span></td>
       <td>${statusBdg(b.status)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">

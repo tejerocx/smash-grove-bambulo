@@ -402,6 +402,33 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .bk-sum-lbl { color: var(--muted); }
 .bk-sum-val { font-weight: 600; color: var(--text); text-align: right; }
 
+/* DOWNPAYMENT */
+.down-row {
+  border-top: 1px dashed rgba(200,160,96,.35);
+  margin-top: 8px; padding-top: 10px;
+  color: var(--yellow); font-weight: 700; font-size: 1rem;
+}
+.down-note {
+  background: rgba(200,160,96,.08);
+  border: 1px solid rgba(200,160,96,.3);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  font-size: .82rem;
+  color: var(--yellow);
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.cash-note {
+  background: rgba(200,160,96,.06);
+  border: 1px solid rgba(200,160,96,.25);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  font-size: .84rem;
+  color: var(--yellow);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
 /* RESPONSIVE */
 @media(max-width:700px){ .frow{grid-template-columns:1fr;} .ft-g{grid-template-columns:1fr;gap:24px;} .ft-bot{flex-direction:column;text-align:center;} .pay-opts{grid-template-columns:1fr;} }
 @media(max-width:480px){ .nav{padding:0 14px;} .bp-body{padding:18px;} .sec{padding:32px 14px;} }
@@ -653,6 +680,10 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
           <div class="pr"><span>Duration</span><span id="pHrs">0 hrs</span></div>
           <div class="pr"><span>Hourly Rate</span><span id="pRate">₱0/hr</span></div>
           <div class="pr tot"><span>TOTAL</span><span id="pTot">₱0.00</span></div>
+          <div class="pr down-row"><span>⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
+        </div>
+        <div class="down-note">
+          ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash or pay cash at the front desk before your session.
         </div>
 
         <div class="divider"></div>
@@ -675,15 +706,17 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 
         <!-- Payment -->
         <div class="fg">
-          <label class="fl">💳 Payment Method</label>
+          <label class="fl">💳 Downpayment Method</label>
           <div class="pay-opts">
             <div class="pay-opt" data-m="gcash" onclick="pickPay('gcash')">
               <div class="pay-ic">📲</div>
               <div class="pay-lb">GCash</div>
+              <div style="font-size:.68rem;color:var(--muted);margin-top:3px">Send now & enter ref #</div>
             </div>
             <div class="pay-opt" data-m="cash" onclick="pickPay('cash')">
               <div class="pay-ic">💵</div>
               <div class="pay-lb">Cash</div>
+              <div style="font-size:.68rem;color:var(--muted);margin-top:3px">Pay at front desk</div>
             </div>
           </div>
           <input type="hidden" id="bPay" />
@@ -691,14 +724,26 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 
         <!-- GCash section -->
         <div class="gcash" id="gcashBox">
-          <p style="color:var(--muted);font-size:.83rem">Send payment to:</p>
+          <p style="color:var(--muted);font-size:.83rem">Send <strong id="gcDownAmt" style="color:var(--green)">50%</strong> downpayment to:</p>
           <div class="gc-num">0917 123 4567</div>
           <div class="gc-name">Smash Grove Bambulo Pickleyard</div>
           <div class="qr">
             <div class="qr-p"></div>
             <span class="qr-l">SCAN<br>GCash QR<br>[MOCK]</span>
           </div>
-          <div class="gc-note">📸 Screenshot your receipt. Bring it on your booking day.</div>
+          <div class="gc-note">📸 Screenshot your receipt — save it and bring it on your booking day.</div>
+        </div>
+
+        <!-- GCash Reference Number -->
+        <div class="fg" id="gcashRefWrap" style="display:none">
+          <label class="fl" for="bGcashRef">🔖 GCash Reference / Transaction No.</label>
+          <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890" maxlength="30" />
+          <div style="font-size:.74rem;color:var(--muted);margin-top:5px">Found in your GCash transaction history after sending.</div>
+        </div>
+
+        <!-- Cash downpayment note -->
+        <div class="cash-note" id="cashNote" style="display:none">
+          💵 Please pay <strong id="cashDownAmt" style="color:var(--green)">50%</strong> downpayment at the front desk before your scheduled session to confirm your slot.
         </div>
 
         <button type="submit" class="btn btn-p btn-full btn-lg" style="margin-top:24px">
@@ -780,9 +825,15 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
       <div class="i-row"><span class="lb">⏰ Time</span><span class="vl" id="iTime">—</span></div>
       <div class="i-row"><span class="lb">⌛ Duration</span><span class="vl" id="iDur">—</span></div>
       <div class="i-row"><span class="lb">💳 Payment</span><span class="vl" id="iPay">—</span></div>
+      <div id="iGcashRefRow" class="i-row" style="display:none"><span class="lb">🔖 GCash Ref #</span><span class="vl" id="iGcashRef">—</span></div>
       <div class="i-tot">
         <div style="font-size:.74rem;color:var(--muted);margin-bottom:4px">TOTAL AMOUNT DUE</div>
         <div class="i-amt" id="iTot">₱0.00</div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(74,154,74,.3)">
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:2px">50% DOWNPAYMENT</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--yellow)" id="iDown">₱0.00</div>
+          <div style="font-size:.7rem;color:var(--muted)" id="iDownNote">—</div>
+        </div>
       </div>
       <div class="e-note" id="iEmailNote">📧 Confirmation email simulated.</div>
     </div>
@@ -1227,9 +1278,14 @@ async function toggleSlot(h) {
    ============================================= */
 function updatePrice() {
   const hrs = selSlots.length, rate = court ? court.rate : 0;
-  $('pHrs').textContent = `${hrs} hr${hrs !== 1 ? 's' : ''}`;
+  const total = hrs * rate;
+  const down  = total / 2;
+  $('pHrs').textContent  = `${hrs} hr${hrs !== 1 ? 's' : ''}`;
   $('pRate').textContent = fmt(rate) + '/hr';
-  $('pTot').textContent = fmt(hrs * rate);
+  $('pTot').textContent  = fmt(total);
+  $('pDown').textContent = fmt(down);
+  if ($('gcDownAmt'))   $('gcDownAmt').textContent   = fmt(down);
+  if ($('cashDownAmt')) $('cashDownAmt').textContent = fmt(down);
 }
 
 /* =============================================
@@ -1239,6 +1295,10 @@ function pickPay(m) {
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.toggle('on', el.dataset.m === m));
   $('bPay').value = m;
   $('gcashBox').classList.toggle('show', m === 'gcash');
+  $('gcashRefWrap').style.display = m === 'gcash' ? '' : 'none';
+  $('cashNote').style.display     = m === 'cash'  ? '' : 'none';
+  if (m === 'gcash') $('bGcashRef').setAttribute('required','');
+  else               $('bGcashRef').removeAttribute('required');
 }
 
 /* =============================================
@@ -1246,6 +1306,8 @@ function pickPay(m) {
    ============================================= */
 async function submitBooking(e) {
   e.preventDefault();
+  const payMethod = $('bPay').value;
+  const gcashRef  = $('bGcashRef').value.trim();
   const checks = [
     [!court, 'Please select a court.'],
     [!$('bDate').value, 'Please select a date.'],
@@ -1253,8 +1315,9 @@ async function submitBooking(e) {
     [!$('bName').value.trim(), 'Please enter your full name.'],
     [!$('bPhone').value.trim(), 'Please enter your contact number.'],
     [!$('bEmail').value.trim(), 'Please enter your email.'],
-    [!$('bPay').value, 'Please select a payment method.'],
+    [!payMethod, 'Please select a payment method.'],
     [!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('bEmail').value), 'Please enter a valid email address.'],
+    [payMethod === 'gcash' && !gcashRef, 'Please enter your GCash reference number.'],
   ];
   for (const [fail, msg] of checks) { if (fail) { toast(msg, 'err'); return; } }
 
@@ -1275,7 +1338,9 @@ async function submitBooking(e) {
     duration: hrs,
     rate: court.rate,
     total: hrs * court.rate,
-    paymentMethod: $('bPay').value,
+    paymentMethod: payMethod,
+    gcashRef: gcashRef || null,
+    downpayment: (hrs * court.rate) / 2,
     status: 'pending',
     createdAt: new Date().toISOString(),
   };
@@ -1306,6 +1371,9 @@ function resetForm() {
   m.style.display = '';
   m.textContent = 'Select a date above to see real-time availability.';
   $('gcashBox').classList.remove('show');
+  $('gcashRefWrap').style.display = 'none';
+  $('cashNote').style.display = 'none';
+  $('bGcashRef').value = '';
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('on'));
   $('bookSec').classList.remove('visible');
   updatePrice();
@@ -1327,7 +1395,16 @@ function showInvoice(b) {
   $('iPay').textContent = b.paymentMethod === 'gcash' ? 'GCash' : 'Cash';
   $('iStatus').textContent = 'Pending';
   $('iStatus').className = 'bdg bdg-p';
-  $('iTot').textContent = fmt(b.total);
+  $('iTot').textContent  = fmt(b.total);
+  $('iDown').textContent = fmt(b.downpayment);
+  if (b.gcashRef) {
+    $('iGcashRefRow').style.display = '';
+    $('iGcashRef').textContent = b.gcashRef;
+    $('iDownNote').textContent = 'GCash downpayment sent ✓ — show receipt at front desk.';
+  } else {
+    $('iGcashRefRow').style.display = 'none';
+    $('iDownNote').textContent = 'Pay downpayment at front desk before your session.';
+  }
   $('iEmailNote').textContent = `📧 Confirmation email simulated to: ${b.email}`;
   $('invModal').classList.add('show');
 }
