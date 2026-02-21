@@ -625,6 +625,8 @@ async function delCourt(id){
    OPERATING HOURS
    ============================================== */
 function fmtH(h) {
+  if (h === 0)  return '12:00 AM (Midnight)';
+  if (h === 24) return '12:00 AM (Next Day / Midnight)';
   return `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
 }
 
@@ -638,10 +640,13 @@ async function renderHours() {
   openSel.innerHTML  = '';
   closeSel.innerHTML = '';
 
-  for (let h = 5; h <= 23; h++) {
-    const label = fmtH(h);
-    openSel.innerHTML  += `<option value="${h}" ${h === openHr  ? 'selected' : ''}>${label}</option>`;
-    closeSel.innerHTML += `<option value="${h}" ${h === closeHr ? 'selected' : ''}>${label}</option>`;
+  // Open: 12:00 AM (0) → 11:00 PM (23)
+  for (let h = 0; h <= 23; h++) {
+    openSel.innerHTML += `<option value="${h}" ${h === openHr ? 'selected' : ''}>${fmtH(h)}</option>`;
+  }
+  // Close: 1:00 AM (1) → 12:00 AM next day (24) — allows full 24-hr operation
+  for (let h = 1; h <= 24; h++) {
+    closeSel.innerHTML += `<option value="${h}" ${h === closeHr ? 'selected' : ''}>${fmtH(h)}</option>`;
   }
 
   updateHoursSummary(openHr, closeHr);

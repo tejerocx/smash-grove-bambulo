@@ -691,7 +691,7 @@ let closeHour = 22;
    ============================================= */
 const $ = id => document.getElementById(id);
 const fmt = n => '₱' + Number(n).toLocaleString('en-PH', {minimumFractionDigits:2});
-const fmtT = h => `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
+const fmtT = h => h === 24 ? '12:00 AM' : `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
 const fmtD = s => {
   if (!s) return '—';
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
