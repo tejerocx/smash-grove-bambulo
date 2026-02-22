@@ -304,6 +304,17 @@ tr:hover td{background:rgba(0,200,83,.025);}
         <div id="ohSummary" style="margin-top:12px;padding:10px 14px;background:var(--input);border:1px solid var(--border);border-radius:8px;font-size:.84rem;color:var(--muted);display:none"></div>
       </div>
 
+      <!-- PRICING TIERS PANEL (developer only) -->
+      <div class="panel dev-only" style="margin-bottom:20px;border:1px solid var(--border);">
+        <h4>💰 Pricing Tiers <span style="font-size:.72rem;color:var(--muted);font-family:'Outfit',sans-serif;font-weight:400;margin-left:8px">Developer Only</span></h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">Set time-based hourly rates for all courts. Each tier defines a rate for a specific time range. Changes apply immediately to the booking page.</p>
+        <div id="tiersBody"></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-g btn-sm" onclick="addTierRow()">+ Add Tier</button>
+          <button class="btn btn-p btn-sm" onclick="savePricingTiers()">💾 Save Tiers</button>
+        </div>
+      </div>
+
       <div class="tbl-wrap">
         <div class="tbl-scroll">
           <table>
@@ -534,6 +545,7 @@ async function exportCSV(){
    ============================================== */
 async function renderCourts(){
   await renderHours();
+  await loadPricingTiers();
   const courts=await DB.getCourts();
   $('courtBody').innerHTML=courts.map(c=>`<tr>
     <td>
@@ -680,6 +692,88 @@ async function saveHours() {
     toast(`Hours saved: ${fmtH(openHr)} – ${fmtH(closeHr)}`);
   } catch(e) {
     toast('Failed to save hours.', 'err');
+  }
+}
+
+/* ==============================================
+   PRICING TIERS
+   ============================================== */
+let adminTiers = [];
+
+async function loadPricingTiers() {
+  const settings = await DB.getSettings();
+  if (settings.pricing_tiers) {
+    try { adminTiers = JSON.parse(settings.pricing_tiers); } catch(e) {}
+  }
+  if (!adminTiers.length) {
+    adminTiers = [
+      { from: 6,  to: 16, rate: 150 },
+      { from: 16, to: 24, rate: 250 },
+      { from: 0,  to: 4,  rate: 300 },
+    ];
+  }
+  renderTiersUI();
+}
+
+function tierFmtH(h) {
+  if (h === 0 || h === 24) return '12:00 AM';
+  return `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+function renderTiersUI() {
+  const c = $('tiersBody');
+  if (!c) return;
+  if (!adminTiers.length) {
+    c.innerHTML = '<p style="color:var(--muted);font-size:.84rem;padding:8px 0">No tiers yet. Click "+ Add Tier".</p>';
+    return;
+  }
+  const hOpts = n => Array.from({length:25},(_,i)=>`<option value="${i}"${i===n?' selected':''}>${tierFmtH(i)}</option>`).join('');
+  c.innerHTML = adminTiers.map((t,i) => `
+    <div class="tier-row" data-idx="${i}" style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;padding:12px 14px;background:var(--input);border:1px solid var(--border);border-radius:9px">
+      <div>
+        <label class="fl">From</label>
+        <select class="fi tier-from" style="width:auto;min-width:115px">${hOpts(t.from)}</select>
+      </div>
+      <div>
+        <label class="fl">To</label>
+        <select class="fi tier-to" style="width:auto;min-width:115px">${hOpts(t.to)}</select>
+      </div>
+      <div>
+        <label class="fl">₱ Rate / hour</label>
+        <input type="number" class="fi tier-rate" style="width:110px" value="${t.rate}" min="0" step="10" />
+      </div>
+      <button class="btn btn-d btn-sm" onclick="removeTier(${i})" style="margin-bottom:1px">🗑️ Remove</button>
+    </div>`).join('');
+}
+
+function addTierRow() {
+  adminTiers.push({ from: 6, to: 22, rate: 150 });
+  renderTiersUI();
+}
+
+function removeTier(idx) {
+  adminTiers.splice(idx, 1);
+  renderTiersUI();
+}
+
+async function savePricingTiers() {
+  const rows = document.querySelectorAll('.tier-row');
+  const tiers = [];
+  let valid = true;
+  rows.forEach(row => {
+    const from = parseInt(row.querySelector('.tier-from').value);
+    const to   = parseInt(row.querySelector('.tier-to').value);
+    const rate = parseFloat(row.querySelector('.tier-rate').value);
+    if (isNaN(from) || isNaN(to) || isNaN(rate) || rate < 0 || from === to) { valid = false; return; }
+    tiers.push({ from, to, rate });
+  });
+  if (!valid) { toast('Check your tier values — From and To cannot be the same.', 'err'); return; }
+  try {
+    await DB.saveSetting('pricing_tiers', JSON.stringify(tiers));
+    adminTiers = tiers;
+    toast(`✓ ${tiers.length} pricing tier${tiers.length!==1?'s':''} saved!`);
+  } catch(e) {
+    toast('Failed to save pricing tiers.', 'err');
   }
 }
 

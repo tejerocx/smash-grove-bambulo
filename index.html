@@ -402,6 +402,14 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   text-transform: uppercase;
   margin-top: 3px;
 }
+.cc-slot-rate {
+  display: block;
+  font-size: .62rem;
+  font-weight: 600;
+  color: rgba(74,154,74,.75);
+  margin-top: 2px;
+}
+.cc-slot-btn.selected .cc-slot-rate { color: rgba(0,0,0,.55); }
 .cc-slots-empty {
   grid-column: span 2;
   font-size: .78rem; color: var(--muted); font-style: italic;
@@ -877,6 +885,11 @@ let selSlots = [];
 let openHour  = 6;
 let closeHour = 22;
 let cardSel   = { courtId: null, date: null, slots: [], rate: 0 };
+let pricingTiers = [
+  { from: 6,  to: 16, rate: 150 },
+  { from: 16, to: 24, rate: 250 },
+  { from: 0,  to: 4,  rate: 300 },
+];
 
 /* =============================================
    HELPERS
@@ -923,9 +936,21 @@ async function loadOperatingHours() {
   const settings = await DB.getSettings();
   openHour  = parseInt(settings.open_hour  || '6');
   closeHour = parseInt(settings.close_hour || '22');
-  // Update the label in the booking form
+  if (settings.pricing_tiers) {
+    try { pricingTiers = JSON.parse(settings.pricing_tiers); } catch(e) {}
+  }
   const note = $('slotHoursNote');
   if (note) note.textContent = `(${fmtT(openHour)} – ${fmtT(closeHour)} · select consecutive hours)`;
+}
+
+function getRateForHour(h) {
+  for (const t of pricingTiers) {
+    const inRange = t.from < t.to
+      ? (h >= t.from && h < t.to)
+      : (h >= t.from || h < t.to);
+    if (inRange) return t.rate;
+  }
+  return pricingTiers.length > 0 ? Math.min(...pricingTiers.map(t => t.rate)) : 0;
 }
 
 const fmtTs = h => h === 24 ? '12A' : `${h % 12 || 12}${h < 12 ? 'A' : 'P'}`;
@@ -968,9 +993,6 @@ function updateCardUI(courtId) {
   const sum  = $('cBarSum_' + courtId);
   if (!grid || !bar) return;
 
-  const rate = parseFloat(bar.dataset.rate) || 0;
-  cardSel.rate = rate;
-
   // Update button selected states
   grid.querySelectorAll('.cc-slot-btn').forEach(btn => {
     const h = parseInt(btn.dataset.h);
@@ -979,10 +1001,11 @@ function updateCardUI(courtId) {
 
   // Show/hide Book Now bar
   if (cardSel.courtId === courtId && cardSel.slots.length > 0) {
-    const mn  = Math.min(...cardSel.slots);
-    const mx  = Math.max(...cardSel.slots);
-    const hrs = cardSel.slots.length;
-    sum.textContent = `${fmtT(mn)} – ${fmtT(mx+1)} · ${hrs} hr${hrs>1?'s':''} · ${fmt(hrs * rate)}`;
+    const mn    = Math.min(...cardSel.slots);
+    const mx    = Math.max(...cardSel.slots);
+    const hrs   = cardSel.slots.length;
+    const total = cardSel.slots.reduce((s, h) => s + getRateForHour(h), 0);
+    sum.textContent = `${fmtT(mn)} – ${fmtT(mx+1)} · ${hrs} hr${hrs>1?'s':''} · ${fmt(total)}`;
     bar.style.display = 'flex';
   } else {
     bar.style.display = 'none';
@@ -1006,7 +1029,8 @@ async function proceedToBook(courtId) {
   $('bsCourtName').textContent = court ? court.name : courtId;
   $('bsDate').textContent      = fmtD(cardSel.date);
   $('bsTime').textContent      = `${fmtT(mn)} – ${fmtT(mx + 1)}`;
-  $('bsDuration').textContent  = `${hrs} hr${hrs > 1 ? 's' : ''} · ${fmt(hrs * cardSel.rate)}`;
+  const bookTotal = selSlots.reduce((s, h) => s + getRateForHour(h), 0);
+  $('bsDuration').textContent  = `${hrs} hr${hrs > 1 ? 's' : ''} · ${fmt(bookTotal)}`;
 
   updatePrice();
 
@@ -1064,7 +1088,7 @@ async function onCardDate(courtId, date) {
     const isBooked_ = bookedHrs.has(h);
     if (isPast_)   return `<div class="cc-slot-btn past-slot">${fmtT(h)}<span class="cc-slot-tag">DONE</span></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken">${fmtT(h)}<span class="cc-slot-tag">TAKEN</span></div>`;
-    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}</div>`;
+    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}<span class="cc-slot-rate">₱${getRateForHour(h)}</span></div>`;
   }).join('');
 }
 
@@ -1119,7 +1143,7 @@ async function renderCourts() {
         <div class="cd">${c.desc}</div>
         ${availBadge}
         <div class="cf" style="margin-top:10px">
-          <div><div class="cr">${fmt(c.rate)}</div><div class="cr-s">per hour</div></div>
+          <div><div class="cr">${(() => { const r = pricingTiers.map(t=>t.rate); return r.length ? (Math.min(...r)===Math.max(...r) ? fmt(Math.min(...r)) : `${fmt(Math.min(...r))}–${fmt(Math.max(...r))}`) : fmt(c.rate); })()}</div><div class="cr-s">${pricingTiers.length > 1 ? 'per hour (tiered)' : 'per hour'}</div></div>
           <div class="feats">${c.feats.map(f=>`<span class="feat">${f}</span>`).join('')}</div>
         </div>
       </div>
@@ -1139,7 +1163,7 @@ async function renderCourts() {
                 const isBooked_ = bookedHours.has(h);
                 if (isPast_)   return `<div class="cc-slot-btn past-slot">${fmtT(h)}<span class="cc-slot-tag">DONE</span></div>`;
                 if (isBooked_) return `<div class="cc-slot-btn taken">${fmtT(h)}<span class="cc-slot-tag">TAKEN</span></div>`;
-                return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}</div>`;
+                return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}<span class="cc-slot-rate">₱${getRateForHour(h)}</span></div>`;
               }).join('')
           }
         </div>
@@ -1309,11 +1333,15 @@ async function toggleSlot(h) {
    PRICE
    ============================================= */
 function updatePrice() {
-  const hrs = selSlots.length, rate = court ? court.rate : 0;
-  const total = hrs * rate;
+  const hrs   = selSlots.length;
+  const total = selSlots.reduce((s, h) => s + getRateForHour(h), 0);
   const down  = total / 2;
+  const rates = pricingTiers.map(t => t.rate);
+  const rateLabel = rates.length > 0
+    ? `${fmt(Math.min(...rates))} – ${fmt(Math.max(...rates))}/hr`
+    : (court ? fmt(court.rate) + '/hr' : '—');
   $('pHrs').textContent  = `${hrs} hr${hrs !== 1 ? 's' : ''}`;
-  $('pRate').textContent = fmt(rate) + '/hr';
+  $('pRate').textContent = rateLabel;
   $('pTot').textContent  = fmt(total);
   $('pDown').textContent = fmt(down);
   if ($('gcDownAmt'))   $('gcDownAmt').textContent   = fmt(down);
@@ -1369,10 +1397,10 @@ async function submitBooking(e) {
     endTime: fmtT(endH),
     duration: hrs,
     rate: court.rate,
-    total: hrs * court.rate,
+    total: selSlots.reduce((s, h) => s + getRateForHour(h), 0),
     paymentMethod: payMethod,
     gcashRef: gcashRef || null,
-    downpayment: (hrs * court.rate) / 2,
+    downpayment: selSlots.reduce((s, h) => s + getRateForHour(h), 0) / 2,
     status: 'pending',
     createdAt: new Date().toISOString(),
   };
