@@ -42,6 +42,17 @@ body.light .nav { background:rgba(242,237,229,.95); }
 .logo-tx .logo-name { display:block; font-size:1.35rem; letter-spacing:2px; }
 .logo-tx .logo-sub { display:block; font-size:.78rem; color:var(--green); letter-spacing:1.5px; }
 .nav-r { display:flex; align-items:center; gap:14px; }
+.nav-headline {
+  font-family:'Bebas Neue',sans-serif; font-size:1.15rem; letter-spacing:2px;
+  display:flex; flex-direction:column; align-items:center; line-height:1.1;
+  flex:1; text-align:center; pointer-events:none;
+}
+.nav-headline .hl { color:var(--green); }
+.nav-tagline {
+  font-family:'Outfit',sans-serif; font-size:.6rem; color:var(--muted);
+  letter-spacing:3px; text-transform:uppercase; font-weight:600;
+}
+@media(max-width:620px) { .nav-headline { display:none; } }
 /* switch */
 .sw-wrap { display:flex; align-items:center; gap:7px; font-size:.85rem; color:var(--muted); }
 .sw { position:relative; width:42px; height:23px; }
@@ -673,6 +684,10 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
       <span class="logo-sub">Bambulo Pickleyard</span>
     </span>
   </div>
+  <div class="nav-headline">
+    BOOK YOUR COURT <span class="hl">NOW!!!</span>
+    <span class="nav-tagline">ITS 002 TIME</span>
+  </div>
   <div class="nav-r">
     <div class="sw-wrap">
       <span>☀️</span>
@@ -682,25 +697,11 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   </div>
 </nav>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="h-glow"></div>
-  <div class="h-grid"></div>
-  <img class="hero-logo" src="f6b5eb3c-a6b6-49ce-981e-d9b127b67ba3.jpg" alt="Smash Grove Bambulo Pickleyard" />
-  <h1>BOOK YOUR COURT <span class="hl">NOW!!!</span><br>ITS 002 TIME</h1>
-  <div class="hero-sub">Smash Grove - Bambulo Pickleyard</div>
-  <a href="#courts" class="btn btn-p btn-lg">Browse Courts</a>
-  <div class="h-stats">
-    <!--<div class="st"><div class="st-n" id="sCourts">2</div><div class="st-l">Courts</div></div>
-    <div class="st"><div class="st-n" id="sBook">0</div><div class="st-l">Bookings</div></div> -->
-  </div>
-</section>
-
 <!-- COURTS -->
-<div class="sec" id="courts">
+<div class="sec" id="courts" style="padding-top:24px">
   <div class="sec-hd">
     <h2>🏟️ SELECT A COURT</h2>
-    <p>Click any court card to reveal the booking form and check availability.</p>
+    <p>Tap a time slot to select, choose consecutive hours, then press <strong>Book Now</strong>.</p>
   </div>
   <div class="courts" id="courtsGrid"></div>
 </div>
