@@ -107,38 +107,142 @@ body.light .nav { background:rgba(242,237,229,.95); }
 .sec-hd h2 { font-size:1.9rem; margin-bottom:4px; }
 .sec-hd p { color:var(--muted); font-size:.88rem; }
 
-/* COURTS */
-.courts { display:flex; flex-wrap:wrap; justify-content:center; gap:22px; }
+/* COURTS — LANDSCAPE LAYOUT */
+.courts { display:flex; flex-direction:column; align-items:stretch; gap:18px; }
 .cc {
-  width:300px; max-width:100%;
+  width:100%; max-width:100%;
   background:var(--card); border:2px solid var(--border);
-  border-radius:var(--r); overflow:hidden; cursor:pointer;
-  transition:transform .2s,border-color .2s,box-shadow .2s;
+  border-radius:var(--r); overflow:hidden;
+  display:flex; flex-direction:row;
+  transition:border-color .25s, box-shadow .25s;
+  cursor:default;
 }
-.cc:hover { transform:translateY(-4px); border-color:var(--green); box-shadow:0 8px 28px var(--glow); }
+.cc:hover { border-color:var(--green); box-shadow:0 6px 28px var(--glow); }
 .cc.sel { border-color:var(--green); box-shadow:0 0 0 3px rgba(74,154,74,.22); }
-.cc.blk { opacity:.55; cursor:not-allowed; }
-.ct {
-  height:160px;
+.cc.blk { opacity:.6; cursor:not-allowed; }
+
+/* LEFT: Photo panel */
+.cc-photo {
+  width:240px; flex-shrink:0; position:relative;
   background:linear-gradient(135deg,#0c1c0c,#091409);
-  display:flex; align-items:center; justify-content:center; position:relative;
+  overflow:hidden; min-height:200px;
+}
+.cc-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+.cc-photo-avail {
+  position:absolute; top:10px; left:10px;
+  font-size:.7rem; font-weight:800; padding:4px 11px; border-radius:20px;
+  display:flex; align-items:center; gap:5px; letter-spacing:.3px;
+}
+.cc-photo-avail.av  { background:var(--green); color:#000; }
+.cc-photo-avail.full{ background:var(--red); color:#fff; }
+.cc-photo-avail.mnt { background:rgba(140,140,140,.85); color:#fff; }
+.cc-photo-bar {
+  position:absolute; bottom:0; left:0; right:0;
+  background:linear-gradient(transparent,rgba(0,0,0,.82));
+  padding:26px 12px 12px;
+}
+.cc-photo-name { font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:1.5px; color:#fff; display:block; }
+.cc-photo-rate { font-size:.75rem; color:rgba(255,255,255,.7); margin-top:1px; }
+.cc-photo-feats { display:flex; flex-wrap:wrap; gap:3px; margin-top:5px; }
+.cc-photo-feat { font-size:.56rem; padding:2px 5px; background:rgba(255,255,255,.12); border-radius:3px; color:rgba(255,255,255,.75); }
+
+/* RIGHT: Times panel */
+.cc-times {
+  flex:1; padding:16px 18px 16px;
+  display:flex; flex-direction:column; gap:10px;
   overflow:hidden;
 }
-.cb {
-  position:absolute; top:10px; right:10px;
-  font-size:.64rem; font-weight:800; padding:3px 9px; border-radius:20px;
-  text-transform:uppercase; letter-spacing:.5px;
+.cc-times-head {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  flex-wrap:wrap; gap:8px;
 }
-.cb-av { background:var(--green); color:#000; }
-.cb-mt { background:var(--red); color:#fff; }
-.cb-body { padding:14px 16px; }
-.cn { font-family:'Bebas Neue',sans-serif; font-size:1.22rem; margin-bottom:3px; }
-.cd { font-size:.79rem; color:var(--muted); margin-bottom:12px; }
-.cf { display:flex; justify-content:space-between; align-items:flex-end; }
-.cr { font-family:'Bebas Neue',sans-serif; font-size:1.38rem; color:var(--green); }
-.cr-s { font-size:.7rem; color:var(--muted); }
-.feats { display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end; }
-.feat { font-size:.63rem; padding:2px 6px; background:var(--input); border:1px solid var(--border); border-radius:4px; color:var(--muted); }
+.cc-times-title {
+  font-family:'Bebas Neue',sans-serif; font-size:1.15rem;
+  letter-spacing:1px; display:flex; align-items:center; gap:6px;
+}
+.cc-times-sub { font-size:.74rem; color:var(--muted); margin-top:1px; }
+
+/* SLOT GRID — 5 columns */
+.cc-slots-grid {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+}
+@media(max-width:900px){ .cc-slots-grid{ grid-template-columns:repeat(4,1fr); } }
+@media(max-width:700px){
+  .cc { flex-direction:column; }
+  .cc-photo { width:100%; min-height:180px; }
+  .cc-slots-grid{ grid-template-columns:repeat(3,1fr); }
+}
+@media(max-width:480px){ .cc-slots-grid{ grid-template-columns:repeat(2,1fr); } }
+
+/* SLOT BUTTON — landscape style */
+.cc-slot-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; padding:10px 6px; border-radius:10px;
+  font-family:'Outfit',sans-serif; text-align:center;
+  cursor:pointer; user-select:none;
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+              background .18s ease,
+              box-shadow .18s ease,
+              border-color .18s ease;
+  will-change: transform;
+}
+/* Available */
+.cc-slot-btn:not(.taken):not(.past-slot) {
+  background:#6ecb35; border:2px solid #52aa1a; color:#0d2a00;
+}
+.cc-slot-btn:not(.taken):not(.past-slot):hover {
+  background:#82e040; border-color:#5ec020;
+  transform:translateY(-3px) scale(1.04);
+  box-shadow:0 6px 18px rgba(100,200,0,.4);
+}
+.cc-slot-btn.selected {
+  background:#1e7a00; border-color:#155c00; color:#fff;
+  transform:translateY(-3px) scale(1.05);
+  box-shadow:0 8px 22px rgba(30,122,0,.55);
+}
+.cc-slot-btn.selected:hover { background:#175f00; }
+/* Taken */
+.cc-slot-btn.taken {
+  background:#d94040; border:2px solid #b52a2a; color:#fff;
+  cursor:not-allowed;
+}
+.cc-slot-btn.taken:hover { transform:none; box-shadow:none; }
+/* Past */
+.cc-slot-btn.past-slot {
+  background:rgba(255,255,255,.04); border:2px solid var(--border);
+  color:var(--muted); cursor:not-allowed; opacity:.45;
+}
+.cc-slot-btn.past-slot:hover { transform:none; box-shadow:none; }
+
+.csl-time  { font-size:.75rem; font-weight:700; line-height:1.2; }
+.csl-price { font-size:.72rem; font-weight:800; margin-top:1px; }
+.csl-name  { font-size:.62rem; font-weight:600; margin-top:1px; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.csl-tag   { font-size:.56rem; font-weight:900; letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
+.cc-slot-btn.selected .csl-price { color:rgba(255,255,255,.8); }
+
+.cc-slots-empty {
+  grid-column:span 5;
+  font-size:.8rem; color:var(--muted); font-style:italic;
+  text-align:center; padding:18px 0;
+}
+.cc-book-bar {
+  padding:10px 12px; margin-top:2px;
+  background:linear-gradient(135deg,rgba(74,154,74,.12),rgba(74,154,74,.04));
+  border:1px solid rgba(74,154,74,.3); border-radius:9px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.cc-book-sum { font-size:.8rem; font-weight:600; color:var(--green); flex:1; }
+.cc-date-pick {
+  background:var(--input); border:1px solid var(--border);
+  border-radius:7px; color:var(--text); font-family:'Outfit',sans-serif;
+  font-size:.75rem; padding:5px 9px; cursor:pointer; transition:border-color .2s; flex-shrink:0;
+}
+.cc-date-pick:focus { outline:none; border-color:var(--green); }
+
+/* legacy — kept for compatibility */
+.ct,.cb-body,.cn,.cd,.cf,.cr,.cr-s,.feats,.feat,.cb,.cb-av,.cb-mt { display:none; }
 
 /* BOOKING PANEL */
 .bp { background:var(--card); border:1px solid var(--border); border-radius:var(--r); }
@@ -349,103 +453,9 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .avail-slot-mini.bl  { background: rgba(140,140,140,.07); color: var(--muted); opacity: .4; }
 .avail-divider { height: 1px; background: var(--border); margin: 12px 0; }
 
-/* IN-CARD SLOT SECTION */
-.cc-slots {
-  border-top: 1px solid var(--border);
-  padding: 12px 14px 16px;
-  background: rgba(0,0,0,.15);
-}
-.cc-slots-top {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
-}
-.cc-slots-lbl {
-  font-size: .68rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .6px; color: var(--muted);
-}
-.cc-date-pick {
-  background: var(--input); border: 1px solid var(--border);
-  border-radius: 7px; color: var(--text);
-  font-family: 'Outfit', sans-serif; font-size: .75rem;
-  padding: 5px 8px; cursor: pointer;
-  transition: border-color .2s; flex-shrink: 0;
-}
-.cc-date-pick:focus { outline: none; border-color: var(--green); }
-.cc-slots-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
-.cc-slot-btn {
-  padding: 10px 6px;
-  background: var(--input);
-  border: 1.5px solid rgba(74,154,74,.35);
-  border-radius: 9px;
-  color: var(--green);
-  font-family: 'Outfit', sans-serif;
-  font-size: .82rem;
-  font-weight: 700;
-  text-align: center;
-  cursor: pointer;
-  transition: all .15s;
-  user-select: none;
-}
-.cc-slot-btn:hover {
-  background: rgba(74,154,74,.18);
-  border-color: var(--green);
-  box-shadow: 0 3px 12px rgba(74,154,74,.25);
-  transform: translateY(-2px);
-}
-.cc-slot-btn:active { transform: translateY(0); }
-.cc-slot-btn.selected {
-  background: var(--green); border-color: var(--green);
-  color: #000; box-shadow: 0 3px 12px rgba(74,154,74,.35);
-}
-.cc-slot-btn.selected:hover { background: var(--green-dark); transform: translateY(-2px); }
-.cc-slot-btn.taken {
-  background: rgba(224,90,78,.07);
-  border-color: rgba(224,90,78,.4);
-  color: var(--red);
-  cursor: not-allowed;
-  opacity: .8;
-}
-.cc-slot-btn.taken:hover { transform: none; box-shadow: none; background: rgba(224,90,78,.07); }
-.cc-slot-btn.past-slot {
-  background: rgba(0,0,0,.12);
-  border-color: var(--border);
-  color: var(--muted);
-  cursor: not-allowed;
-  opacity: .45;
-}
-.cc-slot-btn.past-slot:hover { transform: none; box-shadow: none; }
-.cc-slot-tag {
-  display: block;
-  font-size: .55rem;
-  font-weight: 800;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  margin-top: 3px;
-}
-.cc-slot-rate {
-  display: block;
-  font-size: .62rem;
-  font-weight: 600;
-  color: rgba(74,154,74,.75);
-  margin-top: 2px;
-}
-.cc-slot-btn.selected .cc-slot-rate { color: rgba(0,0,0,.55); }
-.cc-slots-empty {
-  grid-column: span 2;
-  font-size: .78rem; color: var(--muted); font-style: italic;
-  text-align: center; padding: 8px 0;
-}
-.cc-book-bar {
-  margin-top: 10px; padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(74,154,74,.12), rgba(74,154,74,.04));
-  border: 1px solid rgba(74,154,74,.3); border-radius: 9px;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-}
-.cc-book-sum { font-size: .8rem; font-weight: 600; color: var(--green); flex: 1; }
+/* IN-CARD SLOT SECTION — legacy kept for non-landscape fallback */
+.cc-slots-top { display:none; }
+.cc-slots-lbl { display:none; }
 
 /* BOOKING SUMMARY (read-only in form) */
 .bk-summary {
@@ -1117,7 +1127,7 @@ async function onCardDate(courtId, date) {
   const grid = $('cSlots_' + courtId);
   if (!grid) return;
 
-  grid.innerHTML = `<span class="cc-slots-empty" style="grid-column:span 2">⏳ Loading...</span>`;
+  grid.innerHTML = `<div class="cc-slots-empty">⏳ Loading...</div>`;
 
   const [courts, bookings, blockedDates] = await Promise.all([
     DB.getCourts(), DB.getBookings(), DB.getBlockedDates()
@@ -1134,19 +1144,17 @@ async function onCardDate(courtId, date) {
     return;
   }
 
-  const bookedHrs = new Set(
-    bookings.filter(b => b.courtId === courtId && b.date === date && b.status !== 'cancelled')
-            .flatMap(b => b.slots)
-  );
+  // Build slot → name map for this date
+  const slotNameMap = {};
+  bookings.filter(b => b.courtId === courtId && b.date === date && b.status !== 'cancelled')
+          .forEach(b => b.slots.forEach(h => {
+            slotNameMap[h] = (b.fullName || 'Booked').split(' ')[0];
+          }));
+  const bookedHrs = new Set(Object.keys(slotNameMap).map(Number));
 
   const allSlots = Array.from({length: closeHour - openHour}, (_, i) => i + openHour);
   const isToday_ = date === todayStr();
   const curHour  = nowHour();
-
-  const availHours = allSlots.filter(h => {
-    if (isToday_ && h <= curHour) return false;
-    return !bookedHrs.has(h);
-  });
 
   // Reset card selection when date changes
   if (cardSel.courtId === courtId) cardSel = { courtId: null, date: null, slots: [], rate: 0 };
@@ -1156,9 +1164,10 @@ async function onCardDate(courtId, date) {
   grid.innerHTML = allSlots.map(h => {
     const isPast_   = isToday_ && h <= curHour;
     const isBooked_ = bookedHrs.has(h);
-    if (isPast_)   return `<div class="cc-slot-btn past-slot">${fmtT(h)}<span class="cc-slot-tag">DONE</span></div>`;
-    if (isBooked_) return `<div class="cc-slot-btn taken">${fmtT(h)}<span class="cc-slot-tag">TAKEN</span></div>`;
-    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}<span class="cc-slot-rate">₱${getRateForHour(h)}</span></div>`;
+    const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
+    if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
+    if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
+    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHour(h)}</div></div>`;
   }).join('');
 }
 
@@ -1180,68 +1189,74 @@ async function renderCourts() {
   $('courtsGrid').innerHTML = courts.map(c => {
     const blk = c.blocked;
     const allSlots = Array.from({length: closeHour - openHour}, (_, i) => i + openHour);
-    const bookedHours = new Set(
-      bookings.filter(b => b.courtId === c.id && b.date === today && b.status !== 'cancelled')
-              .flatMap(b => b.slots)
-    );
-    const availHours = blk ? [] : allSlots.filter(h => h > curHour && !bookedHours.has(h));
-    const availToday = availHours.length;
-    const availBadge = blk
-      ? `<span class="avail-badge unavail">🔧 Maintenance</span>`
-      : availToday > 0
-        ? `<span class="avail-badge avail">⏱ ${availToday} slot${availToday !== 1 ? 's' : ''} open today</span>`
-        : `<span class="avail-badge full">⛔ Fully booked today</span>`;
 
-    const courtImg = c.photo
-      ? `<img src="${c.photo}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;display:block;"/>`
-      : `<svg width="110" height="74" viewBox="0 0 110 74" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="106" height="70" rx="3" stroke="rgba(74,154,74,.5)" stroke-width="1.8"/>
-          <line x1="55" y1="2" x2="55" y2="72" stroke="rgba(74,154,74,.4)" stroke-width="1.4"/>
-          <line x1="2" y1="37" x2="108" y2="37" stroke="rgba(74,154,74,.3)" stroke-width="1"/>
-          <rect x="25" y="2" width="60" height="70" stroke="rgba(74,154,74,.2)" stroke-width="1"/>
-          <circle cx="55" cy="37" r="6" stroke="rgba(74,154,74,.35)" stroke-width="1.5"/>
-        </svg>`;
+    // Build slot → booking name map
+    const slotNameMap = {};
+    bookings.filter(b => b.courtId === c.id && b.date === today && b.status !== 'cancelled')
+            .forEach(b => b.slots.forEach(h => {
+              slotNameMap[h] = (b.fullName || 'Booked').split(' ')[0];
+            }));
+    const bookedHours = new Set(Object.keys(slotNameMap).map(Number));
+
+    const availToday = blk ? 0 : allSlots.filter(h => h > curHour && !bookedHours.has(h)).length;
+    const availBadgeCls = blk ? 'mnt' : availToday > 0 ? 'av' : 'full';
+    const availBadgeTxt = blk ? '🔧 Maintenance' : availToday > 0 ? `⚡ ${availToday} available` : '⛔ Fully booked';
+
+    const rateRange = (() => {
+      const r = pricingTiers.map(t => t.rate);
+      return r.length ? (Math.min(...r) === Math.max(...r) ? `₱${Math.min(...r)}/hr` : `₱${Math.min(...r)}–₱${Math.max(...r)}/hr`) : `${fmt(c.rate)}/hr`;
+    })();
+
+    const courtPhotoHtml = c.photo
+      ? `<img src="${c.photo}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0"/>`
+      : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#0c1c0c,#091409);display:flex;align-items:center;justify-content:center;position:absolute;inset:0"><svg width="80" height="54" viewBox="0 0 110 74" fill="none"><rect x="2" y="2" width="106" height="70" rx="3" stroke="rgba(74,154,74,.5)" stroke-width="1.8"/><line x1="55" y1="2" x2="55" y2="72" stroke="rgba(74,154,74,.4)" stroke-width="1.4"/><line x1="2" y1="37" x2="108" y2="37" stroke="rgba(74,154,74,.3)" stroke-width="1"/><circle cx="55" cy="37" r="6" stroke="rgba(74,154,74,.35)" stroke-width="1.5"/></svg></div>`;
+
+    const slotsHtml = blk
+      ? `<div class="cc-slots-empty">🔧 Court is under maintenance</div>`
+      : allSlots.map(h => {
+          const isPast_   = h <= curHour;
+          const isBooked_ = bookedHours.has(h);
+          const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
+          if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
+          if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
+          return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHour(h)}</div></div>`;
+        }).join('');
 
     return `
-    <div class="cc${blk?' blk':''}" data-id="${c.id}" onclick="${blk ? "toast('Court is under maintenance.','err')" : `selectCourt('${c.id}')`}">
-      <div class="ct">
-        ${courtImg}
-        <span class="cb ${blk ? 'cb-mt' : 'cb-av'}">${blk ? 'Maintenance' : 'Available'}</span>
-      </div>
-      <div class="cb-body">
-        <div class="cn">${c.name}</div>
-        <div class="cd">${c.desc}</div>
-        ${availBadge}
-        <div class="cf" style="margin-top:10px">
-          <div><div class="cr">${(() => { const r = pricingTiers.map(t=>t.rate); return r.length ? (Math.min(...r)===Math.max(...r) ? fmt(Math.min(...r)) : `${fmt(Math.min(...r))}–${fmt(Math.max(...r))}`) : fmt(c.rate); })()}</div><div class="cr-s">${pricingTiers.length > 1 ? 'per hour (tiered)' : 'per hour'}</div></div>
-          <div class="feats">${c.feats.map(f=>`<span class="feat">${f}</span>`).join('')}</div>
+    <div class="cc${blk?' blk':''}" data-id="${c.id}" ${blk ? `onclick="toast('Court is under maintenance.','err')"` : ''}>
+
+      <!-- LEFT: Photo -->
+      <div class="cc-photo">
+        ${courtPhotoHtml}
+        <div class="cc-photo-avail ${availBadgeCls}">${availBadgeTxt}</div>
+        <div class="cc-photo-bar">
+          <span class="cc-photo-name">${c.name}</span>
+          <div class="cc-photo-rate">${rateRange} · ${c.desc}</div>
+          <div class="cc-photo-feats">${c.feats.map(f=>`<span class="cc-photo-feat">${f}</span>`).join('')}</div>
         </div>
       </div>
-      <div class="cc-slots">
-        <div class="cc-slots-top">
-          <div class="cc-slots-lbl">⚡ Available slots — tap to book</div>
+
+      <!-- RIGHT: Times -->
+      <div class="cc-times">
+        <div class="cc-times-head">
+          <div>
+            <div class="cc-times-title">🕐 Available times</div>
+            <div class="cc-times-sub">Select consecutive slots then tap Book Now</div>
+          </div>
           <input type="date" class="cc-date-pick" id="cDate_${c.id}"
             value="${today}" min="${today}"
             onclick="event.stopPropagation()"
             onchange="event.stopPropagation(); onCardDate('${c.id}', this.value)" />
         </div>
-        <div class="cc-slots-grid" id="cSlots_${c.id}">
-          ${blk
-            ? `<span class="cc-slots-empty">🔧 Under maintenance</span>`
-            : allSlots.map(h => {
-                const isPast_   = h <= curHour;
-                const isBooked_ = bookedHours.has(h);
-                if (isPast_)   return `<div class="cc-slot-btn past-slot">${fmtT(h)}<span class="cc-slot-tag">DONE</span></div>`;
-                if (isBooked_) return `<div class="cc-slot-btn taken">${fmtT(h)}<span class="cc-slot-tag">TAKEN</span></div>`;
-                return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}<span class="cc-slot-rate">₱${getRateForHour(h)}</span></div>`;
-              }).join('')
-          }
-        </div>
+
+        <div class="cc-slots-grid" id="cSlots_${c.id}">${slotsHtml}</div>
+
         <div class="cc-book-bar" id="cBar_${c.id}" data-rate="${c.rate}" style="display:none">
           <span class="cc-book-sum" id="cBarSum_${c.id}"></span>
           <button class="btn btn-p btn-sm" onclick="event.stopPropagation(); proceedToBook('${c.id}')">Book Now →</button>
         </div>
       </div>
+
     </div>`;
   }).join('');
 
