@@ -378,6 +378,30 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   color: #000; box-shadow: 0 3px 12px rgba(74,154,74,.35);
 }
 .cc-slot-btn.selected:hover { background: var(--green-dark); transform: translateY(-2px); }
+.cc-slot-btn.taken {
+  background: rgba(224,90,78,.07);
+  border-color: rgba(224,90,78,.4);
+  color: var(--red);
+  cursor: not-allowed;
+  opacity: .8;
+}
+.cc-slot-btn.taken:hover { transform: none; box-shadow: none; background: rgba(224,90,78,.07); }
+.cc-slot-btn.past-slot {
+  background: rgba(0,0,0,.12);
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: .45;
+}
+.cc-slot-btn.past-slot:hover { transform: none; box-shadow: none; }
+.cc-slot-tag {
+  display: block;
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
 .cc-slots-empty {
   grid-column: span 2;
   font-size: .78rem; color: var(--muted); font-style: italic;
@@ -1035,9 +1059,13 @@ async function onCardDate(courtId, date) {
   const bar = $('cBar_' + courtId);
   if (bar) bar.style.display = 'none';
 
-  grid.innerHTML = availHours.length > 0
-    ? availHours.map(h => `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}</div>`).join('')
-    : `<span class="cc-slots-empty" style="grid-column:span 2">⛔ No slots available on this date</span>`;
+  grid.innerHTML = allSlots.map(h => {
+    const isPast_   = isToday_ && h <= curHour;
+    const isBooked_ = bookedHrs.has(h);
+    if (isPast_)   return `<div class="cc-slot-btn past-slot">${fmtT(h)}<span class="cc-slot-tag">DONE</span></div>`;
+    if (isBooked_) return `<div class="cc-slot-btn taken">${fmtT(h)}<span class="cc-slot-tag">TAKEN</span></div>`;
+    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})">${fmtT(h)}</div>`;
+  }).join('');
 }
 
 /* proceedToBook loads court data if needed */
@@ -1106,9 +1134,13 @@ async function renderCourts() {
         <div class="cc-slots-grid" id="cSlots_${c.id}">
           ${blk
             ? `<span class="cc-slots-empty">🔧 Under maintenance</span>`
-            : availHours.length > 0
-              ? availHours.map(h => `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}</div>`).join('')
-              : `<span class="cc-slots-empty">⛔ No slots left today</span>`
+            : allSlots.map(h => {
+                const isPast_   = h <= curHour;
+                const isBooked_ = bookedHours.has(h);
+                if (isPast_)   return `<div class="cc-slot-btn past-slot">${fmtT(h)}<span class="cc-slot-tag">DONE</span></div>`;
+                if (isBooked_) return `<div class="cc-slot-btn taken">${fmtT(h)}<span class="cc-slot-tag">TAKEN</span></div>`;
+                return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})">${fmtT(h)}</div>`;
+              }).join('')
           }
         </div>
         <div class="cc-book-bar" id="cBar_${c.id}" data-rate="${c.rate}" style="display:none">
