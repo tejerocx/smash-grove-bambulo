@@ -209,17 +209,29 @@ select.fi option { background:var(--card); }
 .gc-num { font-size:1.4rem; font-weight:800; color:var(--green); letter-spacing:3px; margin:8px 0; }
 .gc-name { font-size:.82rem; color:var(--muted); margin-bottom:14px; }
 .qr-img {
-  width:180px; height:180px; object-fit:cover;
-  border-radius:12px; display:block; margin:10px auto;
-  border:3px solid rgba(74,154,74,.3);
-  box-shadow:0 4px 22px rgba(0,0,0,.35);
+  width:230px; height:230px; object-fit:contain;
+  border-radius:14px; display:block; margin:12px auto;
+  background:#fff; padding:8px;
+  border:3px solid rgba(74,154,74,.35);
+  box-shadow:0 6px 28px rgba(0,0,0,.45);
 }
-.qr-scan-wrap { margin:8px 0; }
+.qr-scan-wrap { margin:10px 0 6px; }
 .qr-scan-hint {
-  font-size:.76rem; color:var(--green); font-weight:600;
-  margin-top:8px; letter-spacing:.3px;
+  font-size:.8rem; color:var(--green); font-weight:700;
+  margin-top:10px; letter-spacing:.3px;
+  background:rgba(74,154,74,.1); border-radius:8px;
+  padding:7px 14px; display:inline-block;
 }
-.gc-note { font-size:.76rem; color:var(--muted); margin-top:10px; line-height:1.6; }
+.gc-note { font-size:.76rem; color:var(--muted); margin-top:12px; line-height:1.7; }
+.qr-steps {
+  display:flex; justify-content:center; align-items:center;
+  gap:6px; font-size:.72rem; color:var(--muted);
+  margin:6px 0 2px; flex-wrap:wrap;
+}
+.qr-step {
+  background:var(--input); border:1px solid var(--border);
+  border-radius:6px; padding:4px 10px;
+}
 
 /* 3-column payment options */
 .pay-opts-3 { grid-template-columns:1fr 1fr 1fr; }
@@ -773,29 +785,53 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 
         <!-- GCash QR section -->
         <div class="gcash" id="gcashBox">
-          <p style="color:var(--muted);font-size:.83rem;margin-bottom:6px">
-            Send <strong id="gcDownAmt" style="color:var(--green)">50%</strong> downpayment via <strong style="color:var(--green)">GCash</strong>
+          <p style="font-size:.84rem;margin-bottom:4px">
+            Send <strong id="gcDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> downpayment via <strong style="color:var(--green)">GCash</strong>
           </p>
           <div class="gc-num">0935 935 5010</div>
           <div class="gc-name">Smash Grove Bambulo Pickleyard</div>
-          <div class="qr-scan-wrap">
-            <img src="gcash-qrcode.jpg" class="qr-img" alt="GCash QR Code" />
-            <div class="qr-scan-hint">📱 Open GCash → Scan QR → Pay</div>
+          <div class="qr-steps">
+            <span class="qr-step">1️⃣ Open GCash</span>
+            <span style="color:var(--muted)">→</span>
+            <span class="qr-step">2️⃣ Scan QR</span>
+            <span style="color:var(--muted)">→</span>
+            <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
           </div>
-          <div class="gc-note">📸 Screenshot your receipt after paying — you'll need it at the front desk.</div>
+          <div class="qr-scan-wrap">
+            <img src="gcash-qrcode.jpg" class="qr-img" alt="GCash QR Code"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <div style="display:none;width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);align-items:center;justify-content:center;flex-direction:column;gap:8px">
+              <span style="font-size:2rem">📲</span>
+              <span style="font-size:.78rem;color:var(--muted)">GCash QR loading...</span>
+            </div>
+            <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
+          </div>
+          <div class="gc-note">After paying, take a screenshot of your receipt — bring it on your booking day for verification.</div>
         </div>
 
         <!-- GoTyme QR section -->
         <div class="gcash" id="gotymeBox">
-          <p style="color:var(--muted);font-size:.83rem;margin-bottom:6px">
-            Send <strong id="gtDownAmt" style="color:var(--green)">50%</strong> downpayment via <strong style="color:var(--green)">GoTyme Bank</strong>
+          <p style="font-size:.84rem;margin-bottom:4px">
+            Send <strong id="gtDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> downpayment via <strong style="color:var(--green)">GoTyme Bank</strong>
           </p>
-          <div class="gc-name" style="font-size:1rem;font-weight:700;margin-bottom:4px">Smash Grove Bambulo Pickleyard</div>
-          <div class="qr-scan-wrap">
-            <img src="gotyme-qrcode.jpg" class="qr-img" alt="GoTyme QR Code" />
-            <div class="qr-scan-hint">📱 Open GoTyme → Scan QR → Pay</div>
+          <div class="gc-name" style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px">Smash Grove Bambulo Pickleyard</div>
+          <div class="qr-steps">
+            <span class="qr-step">1️⃣ Open GoTyme</span>
+            <span style="color:var(--muted)">→</span>
+            <span class="qr-step">2️⃣ Scan QR</span>
+            <span style="color:var(--muted)">→</span>
+            <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
           </div>
-          <div class="gc-note">📸 Screenshot your receipt after paying — you'll need it at the front desk.</div>
+          <div class="qr-scan-wrap">
+            <img src="gotyme-qrcode.jpg" class="qr-img" alt="GoTyme QR Code"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <div style="display:none;width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);align-items:center;justify-content:center;flex-direction:column;gap:8px">
+              <span style="font-size:2rem">🏦</span>
+              <span style="font-size:.78rem;color:var(--muted)">GoTyme QR loading...</span>
+            </div>
+            <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
+          </div>
+          <div class="gc-note">After paying, take a screenshot of your receipt — bring it on your booking day for verification.</div>
         </div>
 
         <!-- Reference number (GCash & GoTyme) -->
