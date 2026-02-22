@@ -486,7 +486,7 @@ async function renderBookings(){
         <div style="font-size:.73rem;color:var(--yellow);margin-top:2px">⚡ ${fmt(b.downpayment||b.total/2)} down</div>
         ${b.gcashRef?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px">Ref: <code style="color:var(--green)">${b.gcashRef}</code></div>`:''}
       </td>
-      <td><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod.toUpperCase()}</span></td>
+      <td><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase()}</span></td>
       <td>${statusBdg(b.status)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updateStatus('${b.ref}',this.value)">

@@ -203,15 +203,27 @@ select.fi option { background:var(--card); }
 .pay-ic { font-size:1.7rem; margin-bottom:6px; }
 .pay-lb { font-weight:700; font-size:.88rem; }
 
-/* GCASH */
+/* GCASH / GOTYME */
 .gcash { display:none; margin-top:16px; background:rgba(74,154,74,.06); border:1px solid rgba(74,154,74,.25); border-radius:var(--r); padding:20px; text-align:center; }
 .gcash.show { display:block; }
 .gc-num { font-size:1.4rem; font-weight:800; color:var(--green); letter-spacing:3px; margin:8px 0; }
 .gc-name { font-size:.82rem; color:var(--muted); margin-bottom:14px; }
-.qr { width:130px; height:130px; background:#fff; border-radius:8px; margin:0 auto 12px; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
-.qr-p { position:absolute; inset:10px; background-image:repeating-linear-gradient(0deg,#222 0,#222 4px,transparent 4px,transparent 12px),repeating-linear-gradient(90deg,#222 0,#222 4px,transparent 4px,transparent 12px); opacity:.22; }
-.qr-l { position:relative; z-index:1; font-size:.6rem; font-weight:800; color:#333; text-align:center; }
-.gc-note { font-size:.76rem; color:var(--muted); }
+.qr-img {
+  width:180px; height:180px; object-fit:cover;
+  border-radius:12px; display:block; margin:10px auto;
+  border:3px solid rgba(74,154,74,.3);
+  box-shadow:0 4px 22px rgba(0,0,0,.35);
+}
+.qr-scan-wrap { margin:8px 0; }
+.qr-scan-hint {
+  font-size:.76rem; color:var(--green); font-weight:600;
+  margin-top:8px; letter-spacing:.3px;
+}
+.gc-note { font-size:.76rem; color:var(--muted); margin-top:10px; line-height:1.6; }
+
+/* 3-column payment options */
+.pay-opts-3 { grid-template-columns:1fr 1fr 1fr; }
+@media(max-width:540px){ .pay-opts-3 { grid-template-columns:1fr; } }
 .divider { height:1px; background:var(--border); margin:24px 0; }
 
 /* HOW IT WORKS */
@@ -739,38 +751,58 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
         <!-- Payment -->
         <div class="fg">
           <label class="fl">💳 Downpayment Method</label>
-          <div class="pay-opts">
+          <div class="pay-opts pay-opts-3">
             <div class="pay-opt" data-m="gcash" onclick="pickPay('gcash')">
               <div class="pay-ic">📲</div>
               <div class="pay-lb">GCash</div>
-              <div style="font-size:.68rem;color:var(--muted);margin-top:3px">Send now & enter ref #</div>
+              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
+            </div>
+            <div class="pay-opt" data-m="gotyme" onclick="pickPay('gotyme')">
+              <div class="pay-ic">🏦</div>
+              <div class="pay-lb">GoTyme</div>
+              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
             </div>
             <div class="pay-opt" data-m="cash" onclick="pickPay('cash')">
               <div class="pay-ic">💵</div>
               <div class="pay-lb">Cash</div>
-              <div style="font-size:.68rem;color:var(--muted);margin-top:3px">Pay at front desk</div>
+              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Pay at front desk</div>
             </div>
           </div>
           <input type="hidden" id="bPay" />
         </div>
 
-        <!-- GCash section -->
+        <!-- GCash QR section -->
         <div class="gcash" id="gcashBox">
-          <p style="color:var(--muted);font-size:.83rem">Send <strong id="gcDownAmt" style="color:var(--green)">50%</strong> downpayment to:</p>
-          <div class="gc-num">0917 123 4567</div>
+          <p style="color:var(--muted);font-size:.83rem;margin-bottom:6px">
+            Send <strong id="gcDownAmt" style="color:var(--green)">50%</strong> downpayment via <strong style="color:var(--green)">GCash</strong>
+          </p>
+          <div class="gc-num">0935 935 5010</div>
           <div class="gc-name">Smash Grove Bambulo Pickleyard</div>
-          <div class="qr">
-            <div class="qr-p"></div>
-            <span class="qr-l">SCAN<br>GCash QR<br>[MOCK]</span>
+          <div class="qr-scan-wrap">
+            <img src="gcash-qrcode.jpg" class="qr-img" alt="GCash QR Code" />
+            <div class="qr-scan-hint">📱 Open GCash → Scan QR → Pay</div>
           </div>
-          <div class="gc-note">📸 Screenshot your receipt — save it and bring it on your booking day.</div>
+          <div class="gc-note">📸 Screenshot your receipt after paying — you'll need it at the front desk.</div>
         </div>
 
-        <!-- GCash Reference Number -->
+        <!-- GoTyme QR section -->
+        <div class="gcash" id="gotymeBox">
+          <p style="color:var(--muted);font-size:.83rem;margin-bottom:6px">
+            Send <strong id="gtDownAmt" style="color:var(--green)">50%</strong> downpayment via <strong style="color:var(--green)">GoTyme Bank</strong>
+          </p>
+          <div class="gc-name" style="font-size:1rem;font-weight:700;margin-bottom:4px">Smash Grove Bambulo Pickleyard</div>
+          <div class="qr-scan-wrap">
+            <img src="gotyme-qrcode.jpg" class="qr-img" alt="GoTyme QR Code" />
+            <div class="qr-scan-hint">📱 Open GoTyme → Scan QR → Pay</div>
+          </div>
+          <div class="gc-note">📸 Screenshot your receipt after paying — you'll need it at the front desk.</div>
+        </div>
+
+        <!-- Reference number (GCash & GoTyme) -->
         <div class="fg" id="gcashRefWrap" style="display:none">
-          <label class="fl" for="bGcashRef">🔖 GCash Reference / Transaction No.</label>
+          <label class="fl" for="bGcashRef">🔖 Reference / Transaction No. <span id="refMethodLabel" style="color:var(--green);font-weight:700"></span></label>
           <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890" maxlength="30" />
-          <div style="font-size:.74rem;color:var(--muted);margin-top:5px">Found in your GCash transaction history after sending.</div>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:5px">Found in your app's transaction history after sending payment.</div>
         </div>
 
         <!-- Cash downpayment note -->
@@ -1345,6 +1377,7 @@ function updatePrice() {
   $('pTot').textContent  = fmt(total);
   $('pDown').textContent = fmt(down);
   if ($('gcDownAmt'))   $('gcDownAmt').textContent   = fmt(down);
+  if ($('gtDownAmt'))   $('gtDownAmt').textContent   = fmt(down);
   if ($('cashDownAmt')) $('cashDownAmt').textContent = fmt(down);
 }
 
@@ -1354,11 +1387,14 @@ function updatePrice() {
 function pickPay(m) {
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.toggle('on', el.dataset.m === m));
   $('bPay').value = m;
-  $('gcashBox').classList.toggle('show', m === 'gcash');
-  $('gcashRefWrap').style.display = m === 'gcash' ? '' : 'none';
-  $('cashNote').style.display     = m === 'cash'  ? '' : 'none';
-  if (m === 'gcash') $('bGcashRef').setAttribute('required','');
-  else               $('bGcashRef').removeAttribute('required');
+  const isDigital = m === 'gcash' || m === 'gotyme';
+  $('gcashBox').classList.toggle('show',  m === 'gcash');
+  $('gotymeBox').classList.toggle('show', m === 'gotyme');
+  $('gcashRefWrap').style.display = isDigital ? '' : 'none';
+  $('cashNote').style.display     = m === 'cash' ? '' : 'none';
+  if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '(GCash)' : m === 'gotyme' ? '(GoTyme)' : '';
+  if (isDigital) $('bGcashRef').setAttribute('required','');
+  else           $('bGcashRef').removeAttribute('required');
 }
 
 /* =============================================
@@ -1377,7 +1413,7 @@ async function submitBooking(e) {
     [!$('bEmail').value.trim(), 'Please enter your email.'],
     [!payMethod, 'Please select a payment method.'],
     [!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('bEmail').value), 'Please enter a valid email address.'],
-    [payMethod === 'gcash' && !gcashRef, 'Please enter your GCash reference number.'],
+    [(payMethod === 'gcash' || payMethod === 'gotyme') && !gcashRef, `Please enter your ${payMethod === 'gotyme' ? 'GoTyme' : 'GCash'} reference number.`],
   ];
   for (const [fail, msg] of checks) { if (fail) { toast(msg, 'err'); return; } }
 
@@ -1431,6 +1467,7 @@ function resetForm() {
   m.style.display = '';
   m.textContent = 'Select a date above to see real-time availability.';
   $('gcashBox').classList.remove('show');
+  $('gotymeBox').classList.remove('show');
   $('gcashRefWrap').style.display = 'none';
   $('cashNote').style.display = 'none';
   $('bGcashRef').value = '';
@@ -1452,7 +1489,7 @@ function showInvoice(b) {
   $('iDate').textContent = fmtD(b.date);
   $('iTime').textContent = `${b.startTime} – ${b.endTime}`;
   $('iDur').textContent = `${b.duration} hr${b.duration !== 1 ? 's' : ''}`;
-  $('iPay').textContent = b.paymentMethod === 'gcash' ? 'GCash' : 'Cash';
+  $('iPay').textContent = b.paymentMethod === 'gcash' ? 'GCash' : b.paymentMethod === 'gotyme' ? 'GoTyme Bank' : 'Cash';
   $('iStatus').textContent = 'Pending';
   $('iStatus').className = 'bdg bdg-p';
   $('iTot').textContent  = fmt(b.total);
@@ -1460,7 +1497,7 @@ function showInvoice(b) {
   if (b.gcashRef) {
     $('iGcashRefRow').style.display = '';
     $('iGcashRef').textContent = b.gcashRef;
-    $('iDownNote').textContent = 'GCash downpayment sent ✓ — show receipt at front desk.';
+    $('iDownNote').textContent = `${b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash'} downpayment sent ✓ — show receipt at front desk.`;
   } else {
     $('iGcashRefRow').style.display = 'none';
     $('iDownNote').textContent = 'Pay downpayment at front desk before your session.';
