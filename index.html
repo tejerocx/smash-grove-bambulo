@@ -673,11 +673,174 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .sr.d3 { transition-delay: .3s; }
 .sr.d4 { transition-delay: .4s; }
 
+/* ── SPLASH SCREEN ── */
+#splashScreen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; overflow: hidden;
+  transition: transform .7s cubic-bezier(.76,0,.24,1), opacity .4s ease;
+}
+#splashScreen.dismissed { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+
+/* Radial glow */
+.sp-glow {
+  position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+  width: 750px; height: 650px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse, rgba(74,154,74,.2) 0%, transparent 65%);
+  animation: spGlowPulse 3.5s ease-in-out infinite;
+}
+@keyframes spGlowPulse {
+  0%,100% { opacity:.6; transform:translateX(-50%) scale(1); }
+  50%      { opacity:1;  transform:translateX(-50%) scale(1.1); }
+}
+/* Grid */
+.sp-grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: .04;
+  background-image:
+    repeating-linear-gradient(0deg,  var(--green) 0, var(--green) 1px, transparent 1px, transparent 72px),
+    repeating-linear-gradient(90deg, var(--green) 0, var(--green) 1px, transparent 1px, transparent 72px);
+}
+/* Expanding rings */
+.sp-ring {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(74,154,74,.18);
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: spRingExpand 3.2s ease-out infinite;
+}
+.sp-ring:nth-child(1) { width:260px; height:260px; animation-delay:0s; }
+.sp-ring:nth-child(2) { width:430px; height:430px; animation-delay:.9s; }
+.sp-ring:nth-child(3) { width:600px; height:600px; animation-delay:1.8s; }
+@keyframes spRingExpand {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(.7); }
+  35%  { opacity:1; }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.12); }
+}
+/* Content */
+.sp-content {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+/* Logo */
+.sp-logo-img {
+  width: 96px; height: 96px; border-radius: 22px; object-fit: cover;
+  border: 2px solid rgba(74,154,74,.45);
+  box-shadow: 0 0 50px rgba(74,154,74,.35), 0 16px 48px rgba(0,0,0,.6);
+  margin-bottom: 24px;
+  animation: spDropIn .75s cubic-bezier(.34,1.56,.64,1) .1s both;
+}
+@keyframes spDropIn {
+  from { opacity:0; transform:scale(.4) translateY(-24px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+/* Brand name */
+.sp-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  letter-spacing: 6px; color: var(--text); line-height: 1;
+  text-shadow: 0 0 80px rgba(74,154,74,.35);
+  animation: spFadeUp .6s ease .3s both;
+}
+.sp-sub {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(.8rem, 2.5vw, 1rem);
+  letter-spacing: 7px; color: var(--green);
+  margin-top: 4px; margin-bottom: 36px;
+  animation: spFadeUp .6s ease .45s both;
+}
+@keyframes spFadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+/* Divider */
+.sp-line {
+  width: 64px; height: 2px; margin-bottom: 36px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: spFadeUp .4s ease .55s both;
+}
+/* Tap circle */
+.sp-tap-ring-wrap {
+  position: relative; width: 78px; height: 78px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  animation: spFadeUp .5s ease .65s both;
+}
+.sp-tap-ring-wrap::before,
+.sp-tap-ring-wrap::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid var(--green);
+  animation: spTapPulse 2s ease-in-out infinite;
+}
+.sp-tap-ring-wrap::after {
+  inset: -10px; border-color: rgba(74,154,74,.35);
+  animation-delay: .4s;
+}
+@keyframes spTapPulse {
+  0%,100% { transform:scale(1);    opacity:1;  }
+  50%      { transform:scale(1.14); opacity:.5; }
+}
+.sp-tap-icon {
+  font-size: 2.1rem; line-height: 1;
+  animation: spBounce 2.2s ease-in-out infinite;
+}
+@keyframes spBounce {
+  0%,100% { transform:translateY(0); }
+  50%     { transform:translateY(-5px); }
+}
+/* Tap text */
+.sp-tap-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+  letter-spacing: 10px; color: var(--green);
+  animation: spFadeUp .5s ease .75s both, tapGlow 2.2s ease-in-out infinite;
+  margin-bottom: 10px;
+}
+@keyframes tapGlow {
+  0%,100% { text-shadow: 0 0 20px rgba(74,154,74,.4); }
+  50%      { text-shadow: 0 0 50px rgba(74,154,74,1), 0 0 100px rgba(74,154,74,.3); }
+}
+.sp-tap-sub {
+  font-size: .82rem; color: var(--muted); letter-spacing: 1.5px;
+  animation: spFadeUp .5s ease .88s both;
+}
+/* Bottom label */
+.sp-bottom {
+  position: absolute; bottom: 26px;
+  font-size: .7rem; color: var(--border); letter-spacing: 3px; text-transform: uppercase;
+  animation: spFadeUp .4s ease 1.1s both; pointer-events: none;
+}
+/* Light mode overrides for splash */
+body.light #splashScreen { background: var(--bg); }
+
 </style>
 </head>
 <body>
 
 <div class="toasts" id="toasts"></div>
+
+<!-- SPLASH SCREEN -->
+<div id="splashScreen" onclick="dismissSplash()">
+  <div class="sp-glow"></div>
+  <div class="sp-grid"></div>
+  <div class="sp-ring"></div>
+  <div class="sp-ring"></div>
+  <div class="sp-ring"></div>
+
+  <div class="sp-content">
+    <img class="sp-logo-img" src="f6b5eb3c-a6b6-49ce-981e-d9b127b67ba3.jpg" alt="Smash Grove Logo" />
+    <div class="sp-brand">SMASH GROVE</div>
+    <div class="sp-sub">BAMBULO PICKLEYARD</div>
+    <div class="sp-line"></div>
+    <div class="sp-tap-ring-wrap">
+      <span class="sp-tap-icon">🏓</span>
+    </div>
+    <div class="sp-tap-text">TAP TO BOOK</div>
+    <div class="sp-tap-sub">Select your court and reserve your slot</div>
+  </div>
+
+  <div class="sp-bottom">Smash Grove &nbsp;·&nbsp; Bambulo Pickleyard</div>
+</div>
 
 <!-- NAVBAR -->
 <nav class="nav">
@@ -1633,6 +1796,18 @@ function animateStat(el, final) {
 /* =============================================
    INIT
    ============================================= */
+/* =============================================
+   SPLASH SCREEN
+   ============================================= */
+function dismissSplash() {
+  const sp = document.getElementById('splashScreen');
+  sp.classList.add('dismissed');
+  document.body.style.overflow = '';
+  sp.addEventListener('transitionend', () => { sp.style.display = 'none'; }, { once: true });
+}
+// Lock scroll while splash is showing
+document.body.style.overflow = 'hidden';
+
 document.addEventListener('DOMContentLoaded', async () => {
   initDark();
   await DB.seedDefaultData();
