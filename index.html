@@ -781,8 +781,9 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   50%      { transform:scale(1.14); opacity:.5; }
 }
 .sp-tap-icon {
-  font-size: 2.1rem; line-height: 1;
+  display: block; width: 62px; height: 62px;
   animation: spBounce 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(74,154,74,.8));
 }
 @keyframes spBounce {
   0%,100% { transform:translateY(0); }
@@ -833,7 +834,31 @@ body.light #splashScreen { background: var(--bg); }
     <div class="sp-sub">BAMBULO PICKLEYARD</div>
     <div class="sp-line"></div>
     <div class="sp-tap-ring-wrap">
-      <span class="sp-tap-icon">🏓</span>
+      <svg class="sp-tap-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Paddle group rotated -38deg -->
+        <g transform="rotate(-38, 46, 46)">
+          <!-- Paddle head: wide rounded square, green fill -->
+          <rect x="18" y="4" width="42" height="46" rx="14" fill="#4a9a4a"/>
+          <!-- Inner white border detail -->
+          <rect x="23" y="9" width="32" height="36" rx="9" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2.2"/>
+          <!-- Handle -->
+          <rect x="31" y="49" width="18" height="28" rx="6" fill="#4a9a4a"/>
+          <!-- Grip wrap lines -->
+          <rect x="31" y="57" width="18" height="3.5" rx="1.8" fill="rgba(0,0,0,0.28)"/>
+          <rect x="31" y="65" width="18" height="3.5" rx="1.8" fill="rgba(0,0,0,0.28)"/>
+          <!-- Handle butt cap -->
+          <rect x="31" y="73" width="18" height="4" rx="2" fill="#3a8a3a"/>
+        </g>
+        <!-- Pickleball (not rotated, lower-right) -->
+        <circle cx="74" cy="74" r="16" fill="#5aaa5a"/>
+        <!-- Ball holes pattern -->
+        <circle cx="69" cy="69" r="2.8" fill="#0d1a0d"/>
+        <circle cx="79" cy="69" r="2.8" fill="#0d1a0d"/>
+        <circle cx="74" cy="78" r="2.8" fill="#0d1a0d"/>
+        <circle cx="65" cy="76" r="2.2" fill="#0d1a0d"/>
+        <circle cx="83" cy="75" r="2.2" fill="#0d1a0d"/>
+        <circle cx="72" cy="62" r="2.2" fill="#0d1a0d"/>
+      </svg>
     </div>
     <div class="sp-tap-text">TAP TO BOOK</div>
     <div class="sp-tap-sub">Select your court and reserve your slot</div>
