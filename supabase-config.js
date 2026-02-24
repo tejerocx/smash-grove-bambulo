@@ -237,10 +237,10 @@ window.Auth = {
 
     // Fetch role/name from accounts table (now accessible as authenticated user)
     const { data: acc } = await _sb.from('accounts').select('*').eq('email', email).single();
-    if (acc) {
-      const session = { ...rowToAccount(acc), loginAt: new Date().toISOString() };
-      sessionStorage.setItem('pb_session', JSON.stringify(session));
-    }
+    const session = acc
+      ? { ...rowToAccount(acc), loginAt: new Date().toISOString() }
+      : { id: data.user.id, email: data.user.email, role: 'admin', fullName: 'Admin', loginAt: new Date().toISOString() };
+    sessionStorage.setItem('pb_session', JSON.stringify(session));
     return { ok: true };
   },
 

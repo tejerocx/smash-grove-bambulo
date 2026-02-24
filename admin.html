@@ -871,6 +871,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   const { data: authData } = await _supabase.auth.getUser();
   if (!authData.user) { window.location.href = 'login.html'; return; }
 
+  // If sessionStorage was cleared (tab restore, refresh, etc.) rebuild it from auth
+  if (!Auth.getSession()) {
+    const { data: acc } = await _supabase.from('accounts').select('*').eq('email', authData.user.email).single();
+    const session = acc
+      ? { ...rowToAccount(acc), loginAt: new Date().toISOString() }
+      : { id: authData.user.id, email: authData.user.email, role: 'admin', fullName: 'Admin', loginAt: new Date().toISOString() };
+    sessionStorage.setItem('pb_session', JSON.stringify(session));
+  }
+
   sess = Auth.requireAuth();
   if (!sess) return;
 
