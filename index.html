@@ -255,21 +255,44 @@ body.light .nav { background:rgba(242,237,229,.95); }
 /* legacy — kept for compatibility */
 .ct,.cb-body,.cn,.cd,.cf,.cr,.cr-s,.feats,.feat,.cb,.cb-av,.cb-mt { display:none; }
 
-/* BOOKING PANEL */
-.bp { background:var(--card); border:1px solid var(--border); border-radius:var(--r); }
-.bp-top {
-  padding:20px 26px; border-bottom:1px solid var(--border);
-  background:linear-gradient(135deg,rgba(74,154,74,.07),transparent);
-  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+/* BOOKING MODAL */
+.bk-modal-overlay {
+  display:none; position:fixed; inset:0; z-index:300;
+  background:rgba(0,0,0,.75); backdrop-filter:blur(8px);
+  align-items:center; justify-content:center; padding:16px;
 }
-.bp-top h2 { font-size:1.5rem; }
-.steps { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.stp { display:flex; align-items:center; gap:5px; font-size:.77rem; color:var(--muted); }
-.stp-n { width:19px; height:19px; border-radius:50%; background:var(--border); font-size:.67rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
-.stp.on .stp-n { background:var(--green); color:#000; }
-.stp.on { color:var(--green); }
-.stp-line { width:18px; height:1px; background:var(--border); }
-.bp-body { padding:26px; }
+.bk-modal-overlay.active { display:flex; }
+.bk-modal {
+  background:var(--card); border:1px solid var(--border); border-radius:18px;
+  width:100%; max-width:520px; max-height:92vh;
+  display:flex; flex-direction:column;
+  box-shadow:0 28px 70px rgba(0,0,0,.65);
+  animation:modalIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalIn {
+  from { opacity:0; transform:scale(.93) translateY(16px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+.bk-modal-hd {
+  padding:18px 22px; border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  background:linear-gradient(135deg,rgba(74,154,74,.09),transparent);
+  border-radius:18px 18px 0 0; flex-shrink:0;
+}
+.bk-modal-court { font-family:'Bebas Neue',sans-serif; font-size:1.55rem; letter-spacing:1.5px; }
+.bk-modal-meta { font-size:.82rem; color:var(--muted); margin-top:3px; line-height:1.5; }
+.bk-modal-x {
+  background:var(--input); border:1px solid var(--border); border-radius:8px;
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--text); font-size:1rem; flex-shrink:0; transition:all .2s;
+}
+.bk-modal-x:hover { background:var(--red); border-color:var(--red); color:#fff; }
+.bk-modal-body { overflow-y:auto; padding:22px 22px; flex:1; }
+.bk-modal-ft {
+  padding:14px 22px; border-top:1px solid var(--border); flex-shrink:0;
+  display:flex; gap:10px; background:var(--card); border-radius:0 0 18px 18px;
+}
+.bk-modal-ft .btn { flex:1; justify-content:center; }
 
 /* FORM */
 .frow { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
@@ -508,25 +531,8 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 
 /* RESPONSIVE */
 @media(max-width:700px){ .frow{grid-template-columns:1fr;} .ft-g{grid-template-columns:1fr;gap:24px;} .ft-bot{flex-direction:column;text-align:center;} .pay-opts{grid-template-columns:1fr;} }
-@media(max-width:480px){ .nav{padding:0 14px;} .bp-body{padding:18px;} .sec{padding:32px 14px;} }
+@media(max-width:480px){ .nav{padding:0 14px;} .bk-modal-body{padding:16px;} .bk-modal-ft{padding:12px 16px;} .sec{padding:32px 14px;} }
 
-/* ── BOOKING SECTION — hidden until court selected ── */
-.booking-sec {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: max-height 0.55s cubic-bezier(.4,0,.2,1), opacity 0.4s ease, padding 0.4s;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-.booking-sec.visible {
-  max-height: 4000px;
-  opacity: 1;
-  pointer-events: all;
-  padding-top: 40px !important;
-  padding-bottom: 40px !important;
-}
 
 /* ── REAL-TIME SLOTS ── */
 .slots-grid {
@@ -667,8 +673,6 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .sr.d3 { transition-delay: .3s; }
 .sr.d4 { transition-delay: .4s; }
 
-/* Booking panel — nicer content fade when expanded */
-.booking-sec.visible .bp { animation: fadeSlideUp .5s ease .15s both; }
 </style>
 </head>
 <body>
@@ -706,72 +710,44 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   <div class="courts" id="courtsGrid"></div>
 </div>
 
-<!-- BOOKING FORM — hidden until court is selected -->
-<div class="sec booking-sec" id="bookSec">
-  <div class="sec-hd">
-    <h2>📋 BOOKING DETAILS</h2>
-    <p>Fill in your information and confirm your reservation.</p>
-  </div>
+<!-- BOOKING MODAL -->
+<div class="bk-modal-overlay" id="bookModal" onclick="if(event.target===this) closeBookModal()">
+  <div class="bk-modal">
 
-  <div class="bp">
-    <div class="bp-top">
-      <h2>RESERVE YOUR COURT</h2>
-      <div class="steps">
-        <div class="stp on"><div class="stp-n">1</div> Court</div>
-        <div class="stp-line"></div>
-        <div class="stp on"><div class="stp-n">2</div> Time</div>
-        <div class="stp-line"></div>
-        <div class="stp on"><div class="stp-n">3</div> Details</div>
-        <div class="stp-line"></div>
-        <div class="stp on"><div class="stp-n">4</div> Confirm</div>
+    <!-- Header -->
+    <div class="bk-modal-hd">
+      <div>
+        <div class="bk-modal-court" id="bmCourtName">Court</div>
+        <div class="bk-modal-meta" id="bmMeta">—</div>
       </div>
+      <button class="bk-modal-x" onclick="closeBookModal()" type="button">✕</button>
     </div>
 
-    <div class="bp-body">
+    <!-- Scrollable body -->
+    <div class="bk-modal-body">
       <form id="bookForm" onsubmit="submitBooking(event)">
 
-        <!-- Hidden fields (set by card selection) -->
+        <!-- Hidden fields -->
         <input type="hidden" id="bDate" />
         <input type="hidden" id="courtDisp" />
-
-        <!-- Booking Summary (read-only) -->
-        <div class="bk-summary" id="bkSummary">
-          <div class="bk-sum-row"><span class="bk-sum-lbl">🏟️ Court</span><span class="bk-sum-val" id="bsCourtName">—</span></div>
-          <div class="bk-sum-row"><span class="bk-sum-lbl">📅 Date</span><span class="bk-sum-val" id="bsDate">—</span></div>
-          <div class="bk-sum-row"><span class="bk-sum-lbl">⏰ Time</span><span class="bk-sum-val" id="bsTime">—</span></div>
-          <div class="bk-sum-row"><span class="bk-sum-lbl">⌛ Duration</span><span class="bk-sum-val" id="bsDuration">—</span></div>
-        </div>
-
-        <!-- Price -->
-        <div class="price-bx">
-          <div class="pr"><span>Duration</span><span id="pHrs">0 hrs</span></div>
-          <div class="pr"><span>Hourly Rate</span><span id="pRate">₱0/hr</span></div>
-          <div class="pr tot"><span>TOTAL</span><span id="pTot">₱0.00</span></div>
-          <div class="pr down-row"><span>⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
-        </div>
-        <div class="down-note">
-          ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash or pay cash at the front desk before your session.
-        </div>
-
-        <div class="divider"></div>
 
         <!-- Personal info -->
         <div class="frow">
           <div class="fg" style="margin:0">
             <label class="fl" for="bName">👤 Full Name</label>
-            <input type="text" class="fi" id="bName" placeholder="First Name / Last Name " />
+            <input type="text" class="fi" id="bName" placeholder="First Name / Last Name" required />
           </div>
           <div class="fg" style="margin:0">
             <label class="fl" for="bPhone">📱 Contact Number</label>
-            <input type="tel" class="fi" id="bPhone" placeholder="09XX XXX XXXX" />
+            <input type="tel" class="fi" id="bPhone" placeholder="09XX XXX XXXX" required />
           </div>
         </div>
         <div class="fg">
           <label class="fl" for="bEmail">✉️ Email Address</label>
-          <input type="email" class="fi" id="bEmail" placeholder="youremail@gmail.com" />
+          <input type="email" class="fi" id="bEmail" placeholder="youremail@gmail.com" required />
         </div>
 
-        <!-- Payment -->
+        <!-- Payment Method -->
         <div class="fg">
           <label class="fl">💳 Downpayment Method</label>
           <div class="pay-opts pay-opts-3">
@@ -857,11 +833,27 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
           💵 Please pay <strong id="cashDownAmt" style="color:var(--green)">50%</strong> downpayment at the front desk before your scheduled session to confirm your slot.
         </div>
 
-        <button type="submit" class="btn btn-p btn-full btn-lg" style="margin-top:24px">
-          🎾 Confirm Booking
-        </button>
+        <!-- Price Breakdown -->
+        <div class="divider"></div>
+        <div class="price-bx">
+          <div class="pr"><span>Duration</span><span id="pHrs">0 hrs</span></div>
+          <div class="pr"><span>Hourly Rate</span><span id="pRate">₱0/hr</span></div>
+          <div class="pr tot"><span>TOTAL</span><span id="pTot">₱0.00</span></div>
+          <div class="pr down-row"><span>⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
+        </div>
+        <div class="down-note" style="margin-top:10px">
+          ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.
+        </div>
+
       </form>
     </div>
+
+    <!-- Footer buttons -->
+    <div class="bk-modal-ft">
+      <button class="btn btn-g" onclick="closeBookModal()" type="button">Cancel</button>
+      <button type="submit" form="bookForm" class="btn btn-p">🎾 Confirm Booking</button>
+    </div>
+
   </div>
 </div>
 
@@ -893,7 +885,7 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
       <h4>Quick Links</h4>
       <ul>
         <li><a href="#courts">Courts</a></li>
-        <li><a href="#bookSec">Book Now</a></li>
+        <li><a href="#courts">Book Now</a></li>
       </ul>
     </div>
     <div class="ft-c">
@@ -1103,22 +1095,23 @@ async function proceedToBook(courtId) {
   selSlots = [...cardSel.slots];
   $('bDate').value = cardSel.date;
 
-  // Populate read-only summary in the form
+  // Populate modal header
   const mn  = Math.min(...selSlots);
   const mx  = Math.max(...selSlots);
   const hrs = selSlots.length;
-  $('bsCourtName').textContent = court ? court.name : courtId;
-  $('bsDate').textContent      = fmtD(cardSel.date);
-  $('bsTime').textContent      = `${fmtT(mn)} – ${fmtT(mx + 1)}`;
   const bookTotal = selSlots.reduce((s, h) => s + getRateForHour(h), 0);
-  $('bsDuration').textContent  = `${hrs} hr${hrs > 1 ? 's' : ''} · ${fmt(bookTotal)}`;
+  $('bmCourtName').textContent = court ? court.name : courtId;
+  $('bmMeta').textContent = `📅 ${fmtD(cardSel.date)}  ·  ⏰ ${fmtT(mn)} – ${fmtT(mx + 1)}  ·  ${hrs} hr${hrs > 1 ? 's' : ''}  ·  ${fmt(bookTotal)}`;
 
   updatePrice();
 
-  const sec = $('bookSec');
-  sec.classList.add('visible');
-  setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-  toast('Great! Fill in your details below to confirm.', 'inf');
+  $('bookModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBookModal() {
+  $('bookModal').classList.remove('active');
+  document.body.style.overflow = '';
 }
 
 /* =============================================
@@ -1526,7 +1519,7 @@ function resetForm() {
   $('cashNote').style.display = 'none';
   $('bGcashRef').value = '';
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('on'));
-  $('bookSec').classList.remove('visible');
+  closeBookModal();
   updatePrice();
   renderCourts();
 }
@@ -1648,6 +1641,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   startRealtime();
   $('bDate').min = todayStr();
   $('invModal').addEventListener('click', e => { if (e.target === $('invModal')) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBookModal(); });
   initScrollReveal();
 });
 </script>
