@@ -224,22 +224,23 @@ window.DB = {
 };
 
 // =============================================
-// AUTH — Session via sessionStorage
-// (No Firebase/Supabase Auth — validates against accounts table)
+// AUTH — Supabase Auth (email + password)
+// Admin accounts are managed in Supabase Dashboard → Authentication → Users
+// The accounts table stores role/display info linked by email.
 // =============================================
 window.Auth = {
 
-  async login(username, password) {
-    const { data, error } = await _sb
-      .from('accounts')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password)
-      .single();
-    if (error || !data) return { ok: false };
-    const session = rowToAccount(data);
-    session.loginAt = new Date().toISOString();
-    sessionStorage.setItem('pb_session', JSON.stringify(session));
+  async login(email, password) {
+    // Sign in via Supabase Auth — establishes a verified JWT session
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return { ok: false };
+
+    // Fetch role/name from accounts table (now accessible as authenticated user)
+    const { data: acc } = await _sb.from('accounts').select('*').eq('email', email).single();
+    if (acc) {
+      const session = { ...rowToAccount(acc), loginAt: new Date().toISOString() };
+      sessionStorage.setItem('pb_session', JSON.stringify(session));
+    }
     return { ok: true };
   },
 
@@ -254,7 +255,8 @@ window.Auth = {
     return sess;
   },
 
-  logout() {
+  async logout() {
+    await _sb.auth.signOut();
     sessionStorage.removeItem('pb_session');
     window.location.href = 'login.html';
   },

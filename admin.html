@@ -867,6 +867,10 @@ async function removeBlocked(d){
 function logout(){ Auth.logout(); }
 
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Verify real Supabase Auth session — not just sessionStorage
+  const { data: authData } = await _supabase.auth.getUser();
+  if (!authData.user) { window.location.href = 'login.html'; return; }
+
   sess = Auth.requireAuth();
   if (!sess) return;
 

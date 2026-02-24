@@ -52,11 +52,11 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
   </div>
   <div class="divider"></div>
 
-  <div class="err" id="errBox">❌ Invalid username or password.</div>
+  <div class="err" id="errBox">❌ Invalid email or password.</div>
 
   <form id="loginForm" onsubmit="doLogin(event)">
-    <label class="fl" for="uname">👤 Username</label>
-    <input type="text" class="fi" id="uname" placeholder="Enter username" autocomplete="username"/>
+    <label class="fl" for="uname">✉️ Email</label>
+    <input type="email" class="fi" id="uname" placeholder="admin@yourdomain.com" autocomplete="email"/>
     <label class="fl" for="upass">🔒 Password</label>
     <input type="password" class="fi" id="upass" placeholder="Enter password" autocomplete="current-password"/>
     <button type="submit" class="btn btn-p">Login to Dashboard →</button>
