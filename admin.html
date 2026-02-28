@@ -343,39 +343,6 @@ tr:hover td{background:rgba(0,200,83,.025);}
           </div>
         </div>
 
-        <div class="fg">
-          <label class="fl">GCash Checkout Mode</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text);cursor:pointer">
-            <input type="checkbox" id="payGcashCheckoutOn" />
-            Enable secure checkout link flow (recommended)
-          </label>
-          <div style="font-size:.74rem;color:var(--muted);margin-top:6px">
-            When enabled, users will see a "Pay Securely with GCash" button before entering transaction reference.
-          </div>
-        </div>
-
-        <div class="fg">
-          <label class="fl" for="payGcashCheckoutUrl">GCash Checkout URL</label>
-          <input type="url" class="fi" id="payGcashCheckoutUrl" placeholder="https://your-gateway-checkout-link" />
-          <div style="font-size:.74rem;color:var(--muted);margin-top:6px">
-            Optional only for legacy/template mode. If you're using PayMongo API mode, leave this blank.
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-            <button type="button" class="btn btn-g btn-sm" onclick="clearCheckoutUrl()">Clear URL</button>
-            <span style="font-size:.74rem;color:var(--muted)">Recommended when using dynamic PayMongo checkout.</span>
-          </div>
-        </div>
-
-        <div class="frow">
-          <div class="fg" style="margin:0">
-            <label class="fl" for="payGcashMerchantNumber">Merchant GCash Number</label>
-            <input type="text" class="fi" id="payGcashMerchantNumber" placeholder="09XX XXX XXXX" />
-          </div>
-          <div class="fg" style="margin:0">
-            <label class="fl" for="payGcashMerchantName">Merchant Display Name</label>
-            <input type="text" class="fi" id="payGcashMerchantName" placeholder="Business Name" />
-          </div>
-        </div>
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">
           <button class="btn btn-p btn-sm" onclick="savePaymentSettings()">💾 Save Payment Settings</button>
@@ -858,39 +825,21 @@ async function savePricingTiers() {
    ============================================== */
 async function renderPaymentSettings() {
   const settings = await DB.getSettings();
-  const checkoutOn = settings.gcash_checkout_enabled === '1';
-  const checkoutUrl = settings.gcash_checkout_url || '';
-  const merchantNumber = settings.gcash_merchant_number || '0935 935 5010';
-  const merchantName = settings.gcash_merchant_name || 'Smash Grove Bambulo Pickleyard';
   const cashOn = settings.payment_method_cash !== '0';
   const gcashOn = settings.payment_method_gcash !== '0';
   const gotymeOn = settings.payment_method_gotyme !== '0';
 
-  $('payGcashCheckoutOn').checked = checkoutOn;
-  $('payGcashCheckoutUrl').value = checkoutUrl;
-  $('payGcashMerchantNumber').value = merchantNumber;
-  $('payGcashMerchantName').value = merchantName;
   $('payMethodCashOn').checked = cashOn;
   $('payMethodGcashOn').checked = gcashOn;
   $('payMethodGotymeOn').checked = gotymeOn;
 
   const summaryParts = [
     `Methods: ${(cashOn?'Cash ':'')}${(gcashOn?'GCash ':'')}${(gotymeOn?'GoTyme':'')}`.trim() || 'none',
-    checkoutOn ? 'Checkout: ON' : 'Checkout: OFF',
-    checkoutUrl ? 'Template URL saved' : 'No template URL',
   ];
   $('paySettingsSummary').textContent = summaryParts.join(' • ');
 }
 
-function clearCheckoutUrl() {
-  $('payGcashCheckoutUrl').value = '';
-}
-
 async function savePaymentSettings() {
-  const checkoutOn = $('payGcashCheckoutOn').checked;
-  const checkoutUrl = $('payGcashCheckoutUrl').value.trim();
-  const merchantNumber = $('payGcashMerchantNumber').value.trim();
-  const merchantName = $('payGcashMerchantName').value.trim();
   const cashOn = $('payMethodCashOn').checked;
   const gcashOn = $('payMethodGcashOn').checked;
   const gotymeOn = $('payMethodGotymeOn').checked;
@@ -901,10 +850,6 @@ async function savePaymentSettings() {
   }
 
   try {
-    await DB.saveSetting('gcash_checkout_enabled', checkoutOn ? '1' : '0');
-    await DB.saveSetting('gcash_checkout_url', checkoutUrl);
-    await DB.saveSetting('gcash_merchant_number', merchantNumber || '0935 935 5010');
-    await DB.saveSetting('gcash_merchant_name', merchantName || 'Smash Grove Bambulo Pickleyard');
     await DB.saveSetting('payment_method_cash', cashOn ? '1' : '0');
     await DB.saveSetting('payment_method_gcash', gcashOn ? '1' : '0');
     await DB.saveSetting('payment_method_gotyme', gotymeOn ? '1' : '0');
