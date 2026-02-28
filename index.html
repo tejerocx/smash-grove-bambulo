@@ -1829,6 +1829,27 @@ async function submitBooking(e) {
   try {
     await DB.addBooking(booking);
     bookingSaved = true;
+
+    // Notify owner via Telegram (fire-and-forget — never blocks booking flow)
+    fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-telegram-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({
+        bookingRef:    booking.ref,
+        fullName:      booking.fullName,
+        contactNumber: booking.contactNumber,
+        courtName:     booking.courtName,
+        date:          booking.date,
+        startTime:     booking.startTime,
+        endTime:       booking.endTime,
+        duration:      booking.duration,
+        total:         booking.total,
+        downpayment:   booking.downpayment,
+        paymentMethod: booking.paymentMethod,
+        gcashRef:      booking.gcashRef || null,
+      }),
+    }).catch(() => {}); // Silent fail — never interrupt booking
+
     if (gcashNeedsCheckout) {
       try {
         const session = await createSecurePaymentSession(booking);
