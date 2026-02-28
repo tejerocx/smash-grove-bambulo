@@ -203,6 +203,20 @@ window.DB = {
   },
 
   async addBooking(booking) {
+    // Check for slot conflicts before inserting
+    const { data: existing } = await _sb
+      .from('bookings')
+      .select('ref, slots')
+      .eq('court_id', booking.courtId)
+      .eq('date', booking.date)
+      .neq('status', 'cancelled');
+
+    if (existing) {
+      const bookedSlots = existing.flatMap(b => b.slots || []);
+      const conflict = (booking.slots || []).some(s => bookedSlots.includes(s));
+      if (conflict) throw new Error('One or more time slots are no longer available. Please refresh and choose a different time.');
+    }
+
     const { error } = await _sb.from('bookings').insert(bookingToRow(booking));
     if (error) { console.error('addBooking:', error); throw error; }
   },

@@ -1,0 +1,16 @@
+# Secret / API key files
+*.txt
+resendAPIKEY.txt
+.env
+.env.local
+.env*.local
+
+# Supabase local temp files
+supabase/.temp/
+
+# Claude workspace
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
