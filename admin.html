@@ -521,6 +521,61 @@ tr:hover td{background:rgba(0,200,83,.025);}
   </div>
 </div>
 
+<!-- RESCHEDULE MODAL -->
+<div class="overlay" id="rescheduleModal">
+  <div class="modal" style="max-width:440px">
+    <div class="m-hd" style="background:linear-gradient(135deg,rgba(74,154,220,.1),transparent)">
+      <h2 style="color:#5a9ad4">📅 RESCHEDULE BOOKING</h2>
+      <button class="m-x" onclick="closeModal('rescheduleModal')">✕</button>
+    </div>
+    <div class="m-body">
+      <!-- Current schedule -->
+      <div style="background:rgba(200,160,96,.07);border:1px solid rgba(200,160,96,.25);border-radius:8px;padding:12px 16px;margin-bottom:18px;">
+        <div style="font-size:.67rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px;">Current Schedule</div>
+        <div style="font-size:.9rem;font-weight:700;color:var(--text)" id="rsOldCourt">—</div>
+        <div style="font-size:.84rem;color:var(--yellow);margin-top:2px"><span id="rsOldDate">—</span> · <span id="rsOldTime">—</span></div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:3px;">👤 <span id="rsName">—</span></div>
+      </div>
+
+      <!-- New date -->
+      <div class="fg">
+        <label class="fl">New Date</label>
+        <input type="date" class="fi" id="rsNewDate" />
+      </div>
+
+      <!-- Start time + Duration -->
+      <div class="frow" style="gap:10px;">
+        <div class="fg" style="margin:0;flex:1">
+          <label class="fl">Start Time</label>
+          <select class="fi" id="rsStartTime" onchange="updateRsEndTime()"></select>
+        </div>
+        <div class="fg" style="margin:0;flex:1">
+          <label class="fl">Duration</label>
+          <select class="fi" id="rsDuration" onchange="updateRsEndTime()">
+            <option value="1">1 hour</option>
+            <option value="2" selected>2 hours</option>
+            <option value="3">3 hours</option>
+            <option value="4">4 hours</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:6px;margin-bottom:14px;">
+        New end time: <strong id="rsEndTimeDisplay" style="color:#5a9ad4;">—</strong>
+      </div>
+
+      <!-- Note to customer -->
+      <div class="fg" style="margin:0">
+        <label class="fl">Note to Customer <span style="color:var(--muted);font-weight:400;text-transform:none;">(sent via email)</span></label>
+        <textarea class="fi" id="rsNote" rows="3" placeholder="e.g. Heavy rain expected — we moved your slot to keep you safe!" style="resize:none;font-size:.84rem;line-height:1.5;"></textarea>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn btn-g" onclick="closeModal('rescheduleModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveReschedule()">📅 Reschedule & Notify</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ==============================================
    UTILS
@@ -608,6 +663,7 @@ async function renderBookings(){
       <td>${statusBdg(b.status)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         ${b.gcashRef && b.status==='pending' && (b.paymentMethod==='gcash'||b.paymentMethod==='gotyme')?`<button class="btn btn-sm" style="background:rgba(200,160,96,.15);color:var(--yellow);border:1px solid rgba(200,160,96,.35);font-weight:700" onclick="openVerifyModal('${b.ref}')">🔍 Verify</button>`:''}
+        ${b.status!=='cancelled'?`<button class="btn btn-sm" style="background:rgba(74,154,220,.12);color:#5a9ad4;border:1px solid rgba(74,154,220,.3)" onclick="openRescheduleModal('${b.ref}')">📅 Reschedule</button>`:''}
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updateStatus('${b.ref}',this.value)">
           <option value="pending" ${b.status==='pending'?'selected':''}>Pending</option>
           <option value="confirmed" ${b.status==='confirmed'?'selected':''}>Confirmed</option>
@@ -726,6 +782,126 @@ async function delBooking(ref){
   toast('Booking deleted.','inf');
   renderBookings();
   renderDash();
+}
+
+/* ==============================================
+   RESCHEDULE
+   ============================================== */
+function fmtHour(h) {
+  if (h === 0 || h === 24) return '12:00 AM';
+  if (h === 12) return '12:00 PM';
+  const suffix = h < 12 ? 'AM' : 'PM';
+  const hh = h % 12 || 12;
+  return `${hh}:00 ${suffix}`;
+}
+
+function populateRsTimePicker(selectedHour) {
+  const sel = $('rsStartTime');
+  sel.innerHTML = '';
+  for (let h = 6; h <= 21; h++) {
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = fmtHour(h);
+    if (h === selectedHour) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  updateRsEndTime();
+}
+
+function updateRsEndTime() {
+  const start = parseInt($('rsStartTime').value);
+  const dur = parseInt($('rsDuration').value);
+  $('rsEndTimeDisplay').textContent = fmtHour(start + dur);
+}
+
+async function openRescheduleModal(ref) {
+  const b = await DB.getBookingByRef(ref);
+  if (!b) { toast('Booking not found.', 'err'); return; }
+
+  $('rsOldCourt').textContent = b.courtName;
+  $('rsOldDate').textContent = fmtD(b.date);
+  $('rsOldTime').textContent = `${b.startTime} – ${b.endTime}`;
+  $('rsName').textContent = b.fullName;
+
+  // Default to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  $('rsNewDate').value = tomorrow.toISOString().split('T')[0];
+  $('rsNewDate').min = new Date().toISOString().split('T')[0];
+
+  // Match original start hour and duration
+  const startH = b.slots?.length ? Math.min(...b.slots) : 8;
+  const dur = Math.min(Math.max(b.duration || 2, 1), 4);
+  $('rsDuration').value = dur;
+  populateRsTimePicker(startH);
+
+  $('rsNote').value = 'Due to expected heavy rain, we have rescheduled your booking for your safety and convenience. We apologize for the inconvenience!';
+
+  $('rescheduleModal').dataset.ref = ref;
+  $('rescheduleModal').dataset.oldDate = b.date;
+  $('rescheduleModal').dataset.oldStart = b.startTime;
+  $('rescheduleModal').dataset.oldEnd = b.endTime;
+  $('rescheduleModal').classList.add('show');
+}
+
+async function saveReschedule() {
+  const ref = $('rescheduleModal').dataset.ref;
+  if (!ref) return;
+
+  const newDate = $('rsNewDate').value;
+  const startH = parseInt($('rsStartTime').value);
+  const dur = parseInt($('rsDuration').value);
+  const endH = startH + dur;
+  const note = $('rsNote').value.trim();
+
+  if (!newDate) { toast('Please select a new date.', 'err'); return; }
+  if (isNaN(startH) || isNaN(dur)) { toast('Please select a start time and duration.', 'err'); return; }
+
+  const slots = Array.from({ length: dur }, (_, i) => startH + i);
+  const newStartTime = fmtHour(startH);
+  const newEndTime = fmtHour(endH);
+
+  try {
+    await DB.updateBooking(ref, {
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      duration: dur,
+      slots,
+    });
+
+    closeModal('rescheduleModal');
+    toast('📅 Booking rescheduled!');
+    await renderBookings();
+    renderDash();
+
+    // Send reschedule email fire-and-forget
+    DB.getBookingByRef(ref).then(bk => {
+      if (!bk?.email) return;
+      fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-reschedule-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+        body: JSON.stringify({
+          bookingRef:   bk.ref,
+          email:        bk.email,
+          fullName:     bk.fullName,
+          courtName:    bk.courtName,
+          oldDate:      $('rescheduleModal').dataset.oldDate,
+          oldStartTime: $('rescheduleModal').dataset.oldStart,
+          oldEndTime:   $('rescheduleModal').dataset.oldEnd,
+          newDate,
+          newStartTime,
+          newEndTime,
+          newDuration:  dur,
+          note,
+        }),
+      }).then(r => r.json()).then(j => {
+        if (j?.ok) toast('📧 Reschedule email sent to customer!');
+      }).catch(() => {});
+    }).catch(() => {});
+  } catch(e) {
+    toast('Failed to reschedule booking.', 'err');
+  }
 }
 
 async function exportCSV(){

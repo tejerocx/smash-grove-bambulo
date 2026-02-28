@@ -226,6 +226,11 @@ window.DB = {
     if (updates.paidAt !== undefined) row.paid_at = updates.paidAt;
     if (updates.gcashRef !== undefined) row.gcash_ref = updates.gcashRef;
     if (updates.downpayment !== undefined) row.downpayment = updates.downpayment;
+    if (updates.date !== undefined) row.date = updates.date;
+    if (updates.startTime !== undefined) row.start_time = updates.startTime;
+    if (updates.endTime !== undefined) row.end_time = updates.endTime;
+    if (updates.duration !== undefined) row.duration = updates.duration;
+    if (updates.slots !== undefined) row.slots = updates.slots;
     const { error } = await _sb.from('bookings').update(row).eq('ref', ref);
     if (error) console.error('updateBooking:', error);
   },
