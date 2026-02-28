@@ -272,8 +272,8 @@ tr:hover td{background:rgba(0,200,83,.025);}
         </div>
         <div class="tbl-scroll">
           <table>
-            <thead><tr><th>Ref</th><th>Customer</th><th>Court</th><th>Schedule</th><th>Amount</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="bookBody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No bookings.</td></tr></tbody>
+            <thead><tr><th>Ref</th><th>Customer</th><th>Court</th><th>Schedule</th><th>Amount</th><th>Payment</th><th>Pay State</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="bookBody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No bookings.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -312,6 +312,74 @@ tr:hover td{background:rgba(0,200,83,.025);}
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
           <button class="btn btn-g btn-sm" onclick="addTierRow()">+ Add Tier</button>
           <button class="btn btn-p btn-sm" onclick="savePricingTiers()">💾 Save Tiers</button>
+        </div>
+      </div>
+
+      <!-- PAYMENT SETTINGS PANEL -->
+      <div class="panel" style="margin-bottom:20px;border:1px solid var(--border);">
+        <h4>📲 GCash Payment Settings</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">
+          Configure a legit GCash checkout link (e.g. gateway payment link) and merchant details shown on the booking page.
+        </p>
+
+        <div class="fg">
+          <label class="fl">Enabled Payment Methods</label>
+          <div style="display:flex;gap:14px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodCashOn" />
+              Cash
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodGcashOn" />
+              GCash
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodGotymeOn" />
+              GoTyme
+            </label>
+          </div>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:6px">
+            Disable any method you do not want to show on booking form.
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="fl">GCash Checkout Mode</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text);cursor:pointer">
+            <input type="checkbox" id="payGcashCheckoutOn" />
+            Enable secure checkout link flow (recommended)
+          </label>
+          <div style="font-size:.74rem;color:var(--muted);margin-top:6px">
+            When enabled, users will see a "Pay Securely with GCash" button before entering transaction reference.
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="fl" for="payGcashCheckoutUrl">GCash Checkout URL</label>
+          <input type="url" class="fi" id="payGcashCheckoutUrl" placeholder="https://your-gateway-checkout-link" />
+          <div style="font-size:.74rem;color:var(--muted);margin-top:6px">
+            Optional only for legacy/template mode. If you're using PayMongo API mode, leave this blank.
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <button type="button" class="btn btn-g btn-sm" onclick="clearCheckoutUrl()">Clear URL</button>
+            <span style="font-size:.74rem;color:var(--muted)">Recommended when using dynamic PayMongo checkout.</span>
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="fg" style="margin:0">
+            <label class="fl" for="payGcashMerchantNumber">Merchant GCash Number</label>
+            <input type="text" class="fi" id="payGcashMerchantNumber" placeholder="09XX XXX XXXX" />
+          </div>
+          <div class="fg" style="margin:0">
+            <label class="fl" for="payGcashMerchantName">Merchant Display Name</label>
+            <input type="text" class="fi" id="payGcashMerchantName" placeholder="Business Name" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">
+          <button class="btn btn-p btn-sm" onclick="savePaymentSettings()">💾 Save Payment Settings</button>
+          <span id="paySettingsSummary" style="font-size:.78rem;color:var(--muted)"></span>
         </div>
       </div>
 
@@ -418,6 +486,12 @@ const $=id=>document.getElementById(id);
 const fmt=n=>'₱'+Number(n).toLocaleString('en-PH',{minimumFractionDigits:2});
 const fmtD=s=>{if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});};
 function statusBdg(s){const m={pending:'bdg-p',confirmed:'bdg-c',completed:'bdg-d',cancelled:'bdg-x'};return`<span class="bdg ${m[s]||''}">${s}</span>`;}
+function payStatusBdg(s){
+  const v = (s || 'unpaid').toLowerCase();
+  const label = v.replace(/_/g, ' ');
+  const cls = v === 'paid' ? 'bdg-c' : v === 'pending' ? 'bdg-p' : v === 'failed' ? 'bdg-x' : 'bdg-d';
+  return `<span class="bdg ${cls}">${label}</span>`;
+}
 function toast(msg,type='ok'){const icons={ok:'✅',err:'❌',inf:'ℹ️'};const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;$('toasts').appendChild(el);setTimeout(()=>el.remove(),3800);}
 function closeModal(id){$(id).classList.remove('show');}
 
@@ -475,7 +549,7 @@ async function renderBookings(){
   if(q) bks=bks.filter(b=>b.ref.toLowerCase().includes(q)||b.fullName.toLowerCase().includes(q)||b.email.toLowerCase().includes(q)||b.courtName.toLowerCase().includes(q));
   if(fd) bks=bks.filter(b=>b.date===fd);
   if(fs) bks=bks.filter(b=>b.status===fs);
-  $('bookBody').innerHTML=bks.length===0?'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px">No bookings found.</td></tr>':
+  $('bookBody').innerHTML=bks.length===0?'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">No bookings found.</td></tr>':
     bks.map(b=>`<tr>
       <td><code style="color:var(--green);font-size:.76rem">${b.ref}</code></td>
       <td><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--muted)">${b.email}</div></td>
@@ -487,6 +561,7 @@ async function renderBookings(){
         ${b.gcashRef?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px">Ref: <code style="color:var(--green)">${b.gcashRef}</code></div>`:''}
       </td>
       <td><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase()}</span></td>
+      <td>${payStatusBdg(b.paymentStatus)}</td>
       <td>${statusBdg(b.status)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updateStatus('${b.ref}',this.value)">
@@ -546,6 +621,7 @@ async function exportCSV(){
 async function renderCourts(){
   await renderHours();
   await loadPricingTiers();
+  await renderPaymentSettings();
   const courts=await DB.getCourts();
   $('courtBody').innerHTML=courts.map(c=>`<tr>
     <td>
@@ -774,6 +850,68 @@ async function savePricingTiers() {
     toast(`✓ ${tiers.length} pricing tier${tiers.length!==1?'s':''} saved!`);
   } catch(e) {
     toast('Failed to save pricing tiers.', 'err');
+  }
+}
+
+/* ==============================================
+   PAYMENT SETTINGS
+   ============================================== */
+async function renderPaymentSettings() {
+  const settings = await DB.getSettings();
+  const checkoutOn = settings.gcash_checkout_enabled === '1';
+  const checkoutUrl = settings.gcash_checkout_url || '';
+  const merchantNumber = settings.gcash_merchant_number || '0935 935 5010';
+  const merchantName = settings.gcash_merchant_name || 'Smash Grove Bambulo Pickleyard';
+  const cashOn = settings.payment_method_cash !== '0';
+  const gcashOn = settings.payment_method_gcash !== '0';
+  const gotymeOn = settings.payment_method_gotyme !== '0';
+
+  $('payGcashCheckoutOn').checked = checkoutOn;
+  $('payGcashCheckoutUrl').value = checkoutUrl;
+  $('payGcashMerchantNumber').value = merchantNumber;
+  $('payGcashMerchantName').value = merchantName;
+  $('payMethodCashOn').checked = cashOn;
+  $('payMethodGcashOn').checked = gcashOn;
+  $('payMethodGotymeOn').checked = gotymeOn;
+
+  const summaryParts = [
+    `Methods: ${(cashOn?'Cash ':'')}${(gcashOn?'GCash ':'')}${(gotymeOn?'GoTyme':'')}`.trim() || 'none',
+    checkoutOn ? 'Checkout: ON' : 'Checkout: OFF',
+    checkoutUrl ? 'Template URL saved' : 'No template URL',
+  ];
+  $('paySettingsSummary').textContent = summaryParts.join(' • ');
+}
+
+function clearCheckoutUrl() {
+  $('payGcashCheckoutUrl').value = '';
+}
+
+async function savePaymentSettings() {
+  const checkoutOn = $('payGcashCheckoutOn').checked;
+  const checkoutUrl = $('payGcashCheckoutUrl').value.trim();
+  const merchantNumber = $('payGcashMerchantNumber').value.trim();
+  const merchantName = $('payGcashMerchantName').value.trim();
+  const cashOn = $('payMethodCashOn').checked;
+  const gcashOn = $('payMethodGcashOn').checked;
+  const gotymeOn = $('payMethodGotymeOn').checked;
+
+  if (!cashOn && !gcashOn && !gotymeOn) {
+    toast('Enable at least one payment method.', 'err');
+    return;
+  }
+
+  try {
+    await DB.saveSetting('gcash_checkout_enabled', checkoutOn ? '1' : '0');
+    await DB.saveSetting('gcash_checkout_url', checkoutUrl);
+    await DB.saveSetting('gcash_merchant_number', merchantNumber || '0935 935 5010');
+    await DB.saveSetting('gcash_merchant_name', merchantName || 'Smash Grove Bambulo Pickleyard');
+    await DB.saveSetting('payment_method_cash', cashOn ? '1' : '0');
+    await DB.saveSetting('payment_method_gcash', gcashOn ? '1' : '0');
+    await DB.saveSetting('payment_method_gotyme', gotymeOn ? '1' : '0');
+    await renderPaymentSettings();
+    toast('Payment settings saved.');
+  } catch(e) {
+    toast('Failed to save payment settings.', 'err');
   }
 }
 

@@ -12,6 +12,57 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Expose globally so HTML pages can use real-time subscriptions
 window._supabase = _sb;
 
+function _safeJsonParse(v) {
+  try { return JSON.parse(v); } catch(_) { return null; }
+}
+
+function _extractFnError(err, fallback = 'Edge Function request failed') {
+  if (!err) return fallback;
+  if (typeof err === 'string') return err;
+  if (err.message) return String(err.message);
+  if (err.error_description) return String(err.error_description);
+  if (err.error) return String(err.error);
+  if (err.context) {
+    const parsed = _safeJsonParse(err.context);
+    if (parsed?.error) return String(parsed.error);
+    if (typeof err.context === 'string') return err.context;
+  }
+  try { return JSON.stringify(err); } catch(_) { return fallback; }
+}
+
+async function _invokePaymentSessionFallback(payload) {
+  const fnUrl = `${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/create-payment-session`;
+  const sess = await _sb.auth.getSession();
+  const accessToken = sess?.data?.session?.access_token || '';
+  const authHeader = accessToken ? `Bearer ${accessToken}` : `Bearer ${SUPABASE_ANON_KEY}`;
+
+  let res;
+  try {
+    res = await fetch(fnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': authHeader,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (networkErr) {
+    throw new Error(`Cannot reach Edge Function endpoint (${fnUrl}). ${_extractFnError(networkErr, 'Network error')}`);
+  }
+
+  const txt = await res.text();
+  const json = _safeJsonParse(txt);
+  if (!res.ok) {
+    const reason = json?.error || txt || `HTTP ${res.status}`;
+    throw new Error(`Edge Function HTTP ${res.status}: ${reason}`);
+  }
+  if (!json || json.ok !== true || !json.checkoutUrl) {
+    throw new Error(`Invalid Edge Function response: ${txt || 'empty body'}`);
+  }
+  return json;
+}
+
 // =============================================
 // ROW ↔ JS OBJECT MAPPING
 // SQL uses snake_case; JS objects use camelCase
@@ -32,6 +83,14 @@ function rowToBooking(r) {
     rate:          r.rate,
     total:         r.total,
     paymentMethod: r.payment_method,
+    paymentFlow:   r.payment_flow || null,
+    paymentStatus: r.payment_status || 'unpaid',
+    paymentProvider: r.payment_provider || null,
+    paymentSessionId: r.payment_session_id || null,
+    paymentCheckoutUrl: r.payment_checkout_url || null,
+    paidAt:        r.paid_at || null,
+    gcashRef:      r.gcash_ref || null,
+    downpayment:   r.downpayment || null,
     status:        r.status,
     createdAt:     r.created_at,
   };
@@ -53,6 +112,14 @@ function bookingToRow(b) {
     rate:           b.rate,
     total:          b.total,
     payment_method: b.paymentMethod,
+    payment_flow:   b.paymentFlow || null,
+    payment_status: b.paymentStatus || 'unpaid',
+    payment_provider: b.paymentProvider || null,
+    payment_session_id: b.paymentSessionId || null,
+    payment_checkout_url: b.paymentCheckoutUrl || null,
+    paid_at:        b.paidAt || null,
+    gcash_ref:      b.gcashRef || null,
+    downpayment:    b.downpayment || null,
     status:         b.status,
     created_at:     b.createdAt,
   };
@@ -140,11 +207,25 @@ window.DB = {
     if (error) { console.error('addBooking:', error); throw error; }
   },
 
+  async getBookingByRef(ref) {
+    const { data, error } = await _sb.from('bookings').select('*').eq('ref', ref).single();
+    if (error) { console.error('getBookingByRef:', error); return null; }
+    return rowToBooking(data);
+  },
+
   async updateBooking(ref, updates) {
     // Map only the fields provided (camelCase → snake_case)
     const row = {};
     if (updates.status    !== undefined) row.status = updates.status;
     if (updates.fullName  !== undefined) row.full_name = updates.fullName;
+    if (updates.paymentStatus !== undefined) row.payment_status = updates.paymentStatus;
+    if (updates.paymentFlow !== undefined) row.payment_flow = updates.paymentFlow;
+    if (updates.paymentProvider !== undefined) row.payment_provider = updates.paymentProvider;
+    if (updates.paymentSessionId !== undefined) row.payment_session_id = updates.paymentSessionId;
+    if (updates.paymentCheckoutUrl !== undefined) row.payment_checkout_url = updates.paymentCheckoutUrl;
+    if (updates.paidAt !== undefined) row.paid_at = updates.paidAt;
+    if (updates.gcashRef !== undefined) row.gcash_ref = updates.gcashRef;
+    if (updates.downpayment !== undefined) row.downpayment = updates.downpayment;
     const { error } = await _sb.from('bookings').update(row).eq('ref', ref);
     if (error) console.error('updateBooking:', error);
   },
@@ -200,6 +281,26 @@ window.DB = {
   async saveSetting(key, value) {
     const { error } = await _sb.from('settings').upsert({ key, value });
     if (error) { console.error('saveSetting:', error); throw error; }
+  },
+
+  async createPaymentSession(payload) {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error('Supabase configuration missing (SUPABASE_URL / SUPABASE_ANON_KEY).');
+    }
+    const { data, error } = await _sb.functions.invoke('create-payment-session', { body: payload });
+    if (!error && data) return data;
+
+    // Fallback path: direct HTTP call to the function endpoint. This helps diagnose
+    // invoke-wrapper issues and still allows checkout if endpoint is reachable.
+    try {
+      return await _invokePaymentSessionFallback(payload);
+    } catch (fallbackErr) {
+      const baseReason = _extractFnError(error, 'Failed to send a request to the Edge Function');
+      const fbReason = _extractFnError(fallbackErr, 'Fallback call failed');
+      console.error('createPaymentSession.invokeError:', error);
+      console.error('createPaymentSession.fallbackError:', fallbackErr);
+      throw new Error(`${baseReason}. Fallback failed: ${fbReason}`);
+    }
   },
 
   // ---- SEED DEFAULT DATA (runs once on first load) ----

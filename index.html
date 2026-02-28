@@ -939,22 +939,23 @@ body.light #splashScreen { background: var(--bg); }
         <div class="fg">
           <label class="fl">💳 Downpayment Method</label>
           <div class="pay-opts pay-opts-3">
-            <div class="pay-opt" data-m="gcash" onclick="pickPay('gcash')">
+            <div class="pay-opt" id="payOptGcash" data-m="gcash" onclick="pickPay('gcash')">
               <div class="pay-ic">📲</div>
               <div class="pay-lb">GCash</div>
-              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
+              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Secure checkout or QR</div>
             </div>
-            <div class="pay-opt" data-m="gotyme" onclick="pickPay('gotyme')">
+            <div class="pay-opt" id="payOptGotyme" data-m="gotyme" onclick="pickPay('gotyme')">
               <div class="pay-ic">🏦</div>
               <div class="pay-lb">GoTyme</div>
               <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
             </div>
-            <div class="pay-opt" data-m="cash" onclick="pickPay('cash')">
+            <div class="pay-opt" id="payOptCash" data-m="cash" onclick="pickPay('cash')">
               <div class="pay-ic">💵</div>
               <div class="pay-lb">Cash</div>
               <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Pay at front desk</div>
             </div>
           </div>
+          <div id="payMethodsHint" style="display:none;font-size:.74rem;color:var(--red);margin-top:8px"></div>
           <input type="hidden" id="bPay" />
         </div>
 
@@ -963,8 +964,11 @@ body.light #splashScreen { background: var(--bg); }
           <p style="font-size:.84rem;margin-bottom:4px">
             Send <strong id="gcDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> downpayment via <strong style="color:var(--green)">GCash</strong>
           </p>
-          <div class="gc-num">0935 935 5010</div>
-          <div class="gc-name">Smash Grove Bambulo Pickleyard</div>
+          <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
+          <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
+          <div style="font-size:.74rem;color:var(--muted);margin:10px 0 12px">
+            Confirm Booking opens secure PayMongo checkout for the exact 50% downpayment.
+          </div>
           <div class="qr-steps">
             <span class="qr-step">1️⃣ Open GCash</span>
             <span style="color:var(--muted)">→</span>
@@ -1009,12 +1013,7 @@ body.light #splashScreen { background: var(--bg); }
           <div class="gc-note">After paying, take a screenshot of your receipt — bring it on your booking day for verification.</div>
         </div>
 
-        <!-- Reference number (GCash & GoTyme) -->
-        <div class="fg" id="gcashRefWrap" style="display:none">
-          <label class="fl" for="bGcashRef">🔖 Reference / Transaction No. <span id="refMethodLabel" style="color:var(--green);font-weight:700"></span></label>
-          <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890" maxlength="30" />
-          <div style="font-size:.74rem;color:var(--muted);margin-top:5px">Found in your app's transaction history after sending payment.</div>
-        </div>
+        <input type="hidden" id="bGcashRef" />
 
         <!-- Cash downpayment note -->
         <div class="cash-note" id="cashNote" style="display:none">
@@ -1097,7 +1096,7 @@ body.light #splashScreen { background: var(--bg); }
 <div class="overlay" id="invModal">
   <div class="modal">
     <div class="m-hd">
-      <h2>🎾 BOOKING CONFIRMED!</h2>
+      <h2 id="iTitle">🎾 BOOKING CONFIRMED!</h2>
       <button class="m-x" onclick="closeModal()">✕</button>
     </div>
     <div class="m-body">
@@ -1151,6 +1150,15 @@ let pricingTiers = [
   { from: 16, to: 24, rate: 250 },
   { from: 0,  to: 4,  rate: 300 },
 ];
+let gcashSettings = {
+  checkoutEnabled: false,
+  checkoutUrl: '',
+  merchantNumber: '0935 935 5010',
+  merchantName: 'Smash Grove Bambulo Pickleyard',
+  checkoutVisited: false,
+};
+let paymentMethods = { cash: true, gcash: true, gotyme: true };
+let paymentWatch = { ref: null, timer: null, tries: 0 };
 
 /* =============================================
    HELPERS
@@ -1200,8 +1208,98 @@ async function loadOperatingHours() {
   if (settings.pricing_tiers) {
     try { pricingTiers = JSON.parse(settings.pricing_tiers); } catch(e) {}
   }
+  applyPaymentSettings(settings);
   const note = $('slotHoursNote');
   if (note) note.textContent = `(${fmtT(openHour)} – ${fmtT(closeHour)} · select consecutive hours)`;
+}
+
+function applyPaymentSettings(settings) {
+  gcashSettings.checkoutEnabled = settings.gcash_checkout_enabled === '1';
+  gcashSettings.checkoutUrl = (settings.gcash_checkout_url || '').trim();
+  gcashSettings.merchantNumber = settings.gcash_merchant_number || '0935 935 5010';
+  gcashSettings.merchantName = settings.gcash_merchant_name || 'Smash Grove Bambulo Pickleyard';
+  paymentMethods.cash = settings.payment_method_cash !== '0';
+  paymentMethods.gcash = settings.payment_method_gcash !== '0';
+  paymentMethods.gotyme = settings.payment_method_gotyme !== '0';
+
+  if ($('gcMerchantNumber')) $('gcMerchantNumber').textContent = gcashSettings.merchantNumber;
+  if ($('gcMerchantName')) $('gcMerchantName').textContent = gcashSettings.merchantName;
+
+  applyPaymentMethodVisibility();
+}
+
+function applyPaymentMethodVisibility() {
+  if ($('payOptCash')) $('payOptCash').style.display = paymentMethods.cash ? '' : 'none';
+  if ($('payOptGcash')) $('payOptGcash').style.display = paymentMethods.gcash ? '' : 'none';
+  if ($('payOptGotyme')) $('payOptGotyme').style.display = paymentMethods.gotyme ? '' : 'none';
+
+  const hasAny = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme;
+  if ($('payMethodsHint')) {
+    $('payMethodsHint').style.display = hasAny ? 'none' : '';
+    $('payMethodsHint').textContent = hasAny ? '' : 'No payment method is currently available. Please contact admin.';
+  }
+
+  const selected = $('bPay')?.value || '';
+  if (selected && !paymentMethods[selected]) {
+    $('bPay').value = '';
+    document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('on'));
+    $('gcashBox').classList.remove('show');
+    $('gotymeBox').classList.remove('show');
+    const refWrap = $('gcashRefWrap');
+    if (refWrap) refWrap.style.display = 'none';
+    $('cashNote').style.display = 'none';
+  }
+}
+
+async function createSecurePaymentSession(booking) {
+  const payload = {
+    bookingRef: booking.ref,
+    amountPhp: Number(booking.downpayment || 0),
+    customer: {
+      name: booking.fullName,
+      email: booking.email,
+      phone: booking.contactNumber,
+    },
+    metadata: {
+      court: booking.courtName,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+    },
+  };
+  return DB.createPaymentSession(payload);
+}
+
+function extractErrMsg(err) {
+  if (!err) return 'Unknown error';
+  if (typeof err === 'string') return err;
+  if (err.message) return String(err.message);
+  if (err.error_description) return String(err.error_description);
+  if (err.error) return String(err.error);
+  try { return JSON.stringify(err); } catch(_) { return 'Unknown error'; }
+}
+
+function stopPaymentWatch() {
+  if (paymentWatch.timer) clearInterval(paymentWatch.timer);
+  paymentWatch = { ref: null, timer: null, tries: 0 };
+}
+
+function startPaymentWatch(ref) {
+  stopPaymentWatch();
+  paymentWatch.ref = ref;
+  paymentWatch.timer = setInterval(async () => {
+    paymentWatch.tries += 1;
+    if (paymentWatch.tries > 60) { stopPaymentWatch(); return; }
+    const b = await DB.getBookingByRef(ref);
+    if (!b) return;
+    if (b.paymentStatus === 'paid') {
+      stopPaymentWatch();
+      toast('Payment received. Booking is now waiting for admin confirmation.', 'ok');
+      await renderCourts();
+      if (court && $('bDate').value) await renderSlots();
+      if ($('invModal') && $('invModal').classList.contains('show')) showInvoice(b);
+    }
+  }, 5000);
 }
 
 function getRateForHour(h) {
@@ -1367,8 +1465,10 @@ async function renderCourts() {
   const [courts, bookings] = await Promise.all([DB.getCourts(), DB.getBookings()]);
   const today = todayStr();
   const curHour = nowHour();
+  const courtsGrid = $('courtsGrid');
+  if (!courtsGrid) return;
 
-  $('courtsGrid').innerHTML = courts.map(c => {
+  courtsGrid.innerHTML = courts.map(c => {
     const blk = c.blocked;
     const allSlots = Array.from({length: closeHour - openHour}, (_, i) => i + openHour);
 
@@ -1477,8 +1577,10 @@ async function onDate() {
   if (blocked.includes(v)) {
     toast('This date is blocked for maintenance.', 'err');
     $('bDate').value = '';
-    $('slotsGrid').innerHTML = '';
+    const sg = $('slotsGrid');
+    if (sg) sg.innerHTML = '';
     const m = $('slotMsg');
+    if (!m) return;
     m.style.display = '';
     m.textContent = 'That date is unavailable — please choose another.';
     return;
@@ -1503,6 +1605,7 @@ async function getBookedSlots(cid, date) {
 
 async function renderSlots() {
   const g = $('slotsGrid'), m = $('slotMsg');
+  if (!g || !m) return;
   const date = $('bDate').value;
 
   if (!court || !date) {
@@ -1620,16 +1723,21 @@ function updatePrice() {
    PAYMENT
    ============================================= */
 function pickPay(m) {
+  if (!paymentMethods[m]) {
+    toast('This payment method is currently unavailable.', 'err');
+    return;
+  }
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.toggle('on', el.dataset.m === m));
   $('bPay').value = m;
-  const isDigital = m === 'gcash' || m === 'gotyme';
+  gcashSettings.checkoutVisited = false;
   $('gcashBox').classList.toggle('show',  m === 'gcash');
   $('gotymeBox').classList.toggle('show', m === 'gotyme');
-  $('gcashRefWrap').style.display = isDigital ? '' : 'none';
+  const refWrap = $('gcashRefWrap');
+  if (refWrap) refWrap.style.display = m === 'gotyme' ? '' : 'none';
   $('cashNote').style.display     = m === 'cash' ? '' : 'none';
   if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '(GCash)' : m === 'gotyme' ? '(GoTyme)' : '';
-  if (isDigital) $('bGcashRef').setAttribute('required','');
-  else           $('bGcashRef').removeAttribute('required');
+  if (m === 'gotyme') $('bGcashRef')?.setAttribute('required','');
+  else           $('bGcashRef')?.removeAttribute('required');
 }
 
 /* =============================================
@@ -1637,8 +1745,16 @@ function pickPay(m) {
    ============================================= */
 async function submitBooking(e) {
   e.preventDefault();
+  const submitBtn = document.querySelector('#bookModal .bk-modal-ft button[type="submit"]');
+  if (submitBtn?.disabled) return;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+  }
   const payMethod = $('bPay').value;
-  const gcashRef  = $('bGcashRef').value.trim();
+  const gcashRef  = $('bGcashRef')?.value?.trim() || '';
+  const hasPaymentMethod = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme;
+  const gcashNeedsCheckout = payMethod === 'gcash';
   const checks = [
     [!court, 'Please select a court.'],
     [!$('bDate').value, 'Please select a date.'],
@@ -1646,11 +1762,18 @@ async function submitBooking(e) {
     [!$('bName').value.trim(), 'Please enter your full name.'],
     [!$('bPhone').value.trim(), 'Please enter your contact number.'],
     [!$('bEmail').value.trim(), 'Please enter your email.'],
+    [!hasPaymentMethod, 'No payment method is enabled right now. Please contact admin.'],
     [!payMethod, 'Please select a payment method.'],
+    [!!payMethod && !paymentMethods[payMethod], 'Selected payment method is no longer available.'],
     [!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('bEmail').value), 'Please enter a valid email address.'],
-    [(payMethod === 'gcash' || payMethod === 'gotyme') && !gcashRef, `Please enter your ${payMethod === 'gotyme' ? 'GoTyme' : 'GCash'} reference number.`],
   ];
-  for (const [fail, msg] of checks) { if (fail) { toast(msg, 'err'); return; } }
+  for (const [fail, msg] of checks) {
+    if (fail) {
+      toast(msg, 'err');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '🎾 Confirm Booking'; }
+      return;
+    }
+  }
 
   const hrs = selSlots.length;
   const startH = Math.min(...selSlots);
@@ -1671,18 +1794,66 @@ async function submitBooking(e) {
     total: selSlots.reduce((s, h) => s + getRateForHour(h), 0),
     paymentMethod: payMethod,
     gcashRef: gcashRef || null,
+    paymentFlow: gcashNeedsCheckout ? 'gcash_checkout_link' : payMethod,
     downpayment: selSlots.reduce((s, h) => s + getRateForHour(h), 0) / 2,
+    paymentStatus: gcashNeedsCheckout ? 'pending' : (payMethod === 'cash' ? 'unpaid' : 'for_verification'),
     status: 'pending',
     createdAt: new Date().toISOString(),
   };
 
+  let bookingSaved = false;
+  let checkoutOpened = false;
   try {
     await DB.addBooking(booking);
+    bookingSaved = true;
+    if (gcashNeedsCheckout) {
+      try {
+        const session = await createSecurePaymentSession(booking);
+        const checkoutUrl = session?.checkoutUrl || session?.checkout_url || '';
+        const sessionId = session?.sessionId || session?.session_id || null;
+        const provider = session?.provider || 'gcash_gateway';
+
+        try {
+          await DB.updateBooking(booking.ref, {
+            paymentProvider: provider,
+            paymentSessionId: sessionId,
+            paymentCheckoutUrl: checkoutUrl,
+          });
+        } catch(_) {}
+
+        if (checkoutUrl) {
+          window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+          checkoutOpened = true;
+        }
+        startPaymentWatch(booking.ref);
+        toast('Secure checkout opened. After payment, admin will confirm your booking.', 'ok');
+      } catch (payErr) {
+        try { await DB.deleteBooking(booking.ref); } catch(_) {}
+        toast(`Secure checkout failed to initialize: ${extractErrMsg(payErr)}`, 'err');
+      }
+    }
+    if (gcashNeedsCheckout && !checkoutOpened) {
+      // Do not proceed to confirmation UI if checkout could not be launched.
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🎾 Confirm Booking';
+      }
+      return;
+    }
     showInvoice(booking);
     resetForm();
     toast('Booking submitted successfully! 🎾');
   } catch(err) {
-    toast('Failed to save booking. Please try again.', 'err');
+    if (bookingSaved) {
+      toast(`Booking saved, but post-processing failed: ${extractErrMsg(err)}`, 'err');
+    } else {
+      toast(`Failed to save booking: ${extractErrMsg(err)}`, 'err');
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🎾 Confirm Booking';
+    }
   }
 }
 
@@ -1697,15 +1868,20 @@ function resetForm() {
   d.textContent = 'Click a court above to select';
   d.classList.remove('on');
   document.querySelectorAll('.cc').forEach(el => el.classList.remove('sel'));
-  $('slotsGrid').innerHTML = '';
+  const sg2 = $('slotsGrid');
+  if (sg2) sg2.innerHTML = '';
   const m = $('slotMsg');
-  m.style.display = '';
-  m.textContent = 'Select a date above to see real-time availability.';
+  if (m) {
+    m.style.display = '';
+    m.textContent = 'Select a date above to see real-time availability.';
+  }
   $('gcashBox').classList.remove('show');
   $('gotymeBox').classList.remove('show');
-  $('gcashRefWrap').style.display = 'none';
+  const refWrap2 = $('gcashRefWrap');
+  if (refWrap2) refWrap2.style.display = 'none';
   $('cashNote').style.display = 'none';
-  $('bGcashRef').value = '';
+  if ($('bGcashRef')) $('bGcashRef').value = '';
+  gcashSettings.checkoutVisited = false;
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('on'));
   closeBookModal();
   updatePrice();
@@ -1716,29 +1892,50 @@ function resetForm() {
    INVOICE MODAL
    ============================================= */
 function showInvoice(b) {
-  $('iRef').textContent = b.ref;
-  $('iName').textContent = b.fullName;
-  $('iContact').textContent = b.contactNumber;
-  $('iEmail').textContent = b.email;
-  $('iCourt').textContent = b.courtName;
-  $('iDate').textContent = fmtD(b.date);
-  $('iTime').textContent = `${b.startTime} – ${b.endTime}`;
-  $('iDur').textContent = `${b.duration} hr${b.duration !== 1 ? 's' : ''}`;
-  $('iPay').textContent = b.paymentMethod === 'gcash' ? 'GCash' : b.paymentMethod === 'gotyme' ? 'GoTyme Bank' : 'Cash';
-  $('iStatus').textContent = 'Pending';
-  $('iStatus').className = 'bdg bdg-p';
-  $('iTot').textContent  = fmt(b.total);
-  $('iDown').textContent = fmt(b.downpayment);
-  if (b.gcashRef) {
-    $('iGcashRefRow').style.display = '';
-    $('iGcashRef').textContent = b.gcashRef;
-    $('iDownNote').textContent = `${b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash'} downpayment sent ✓ — show receipt at front desk.`;
-  } else {
-    $('iGcashRefRow').style.display = 'none';
-    $('iDownNote').textContent = 'Pay downpayment at front desk before your session.';
+  const setTxt = (id, value) => {
+    const el = $(id);
+    if (el) el.textContent = value;
+  };
+  const paid = b.paymentStatus === 'paid';
+  const isConfirmed = b.status === 'confirmed';
+  let title = '🎾 BOOKING CONFIRMED!';
+  if (!isConfirmed && b.paymentMethod === 'gcash' && b.paymentFlow === 'gcash_checkout_link') {
+    title = paid ? '🎾 PAYMENT RECEIVED - AWAITING ADMIN CONFIRMATION' : '🎾 BOOKING PENDING PAYMENT';
+  } else if (!isConfirmed) {
+    title = '🎾 BOOKING PENDING CONFIRMATION';
   }
-  $('iEmailNote').textContent = `📧 Confirmation email simulated to: ${b.email}`;
-  $('invModal').classList.add('show');
+  setTxt('iTitle', title);
+  setTxt('iRef', b.ref);
+  setTxt('iName', b.fullName);
+  setTxt('iContact', b.contactNumber);
+  setTxt('iEmail', b.email);
+  setTxt('iCourt', b.courtName);
+  setTxt('iDate', fmtD(b.date));
+  setTxt('iTime', `${b.startTime} – ${b.endTime}`);
+  setTxt('iDur', `${b.duration} hr${b.duration !== 1 ? 's' : ''}`);
+  setTxt('iPay', b.paymentMethod === 'gcash' ? 'GCash' : b.paymentMethod === 'gotyme' ? 'GoTyme Bank' : 'Cash');
+  const iStatus = $('iStatus');
+  if (iStatus) {
+    iStatus.textContent = isConfirmed ? 'Confirmed' : (paid ? 'Paid (Awaiting Admin Confirmation)' : 'Pending');
+    iStatus.className = isConfirmed ? 'bdg bdg-c' : 'bdg bdg-p';
+  }
+  setTxt('iTot', fmt(b.total));
+  setTxt('iDown', fmt(b.downpayment));
+  if (b.gcashRef) {
+    if ($('iGcashRefRow')) $('iGcashRefRow').style.display = '';
+    setTxt('iGcashRef', b.gcashRef);
+    setTxt('iDownNote', `${b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash'} downpayment sent ✓ — show receipt at front desk.`);
+  } else if (b.paymentMethod === 'gcash' && b.paymentFlow === 'gcash_checkout_link') {
+    if ($('iGcashRefRow')) $('iGcashRefRow').style.display = 'none';
+    setTxt('iDownNote', paid
+      ? 'GCash payment confirmed automatically.'
+      : 'Waiting for secure GCash payment confirmation... this updates automatically.');
+  } else {
+    if ($('iGcashRefRow')) $('iGcashRefRow').style.display = 'none';
+    setTxt('iDownNote', 'Pay downpayment at front desk before your session.');
+  }
+  setTxt('iEmailNote', `📧 Confirmation email simulated to: ${b.email}`);
+  if ($('invModal')) $('invModal').classList.add('show');
 }
 
 function closeModal() {
