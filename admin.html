@@ -549,9 +549,44 @@ function clearFilters(){
   renderBookings();
 }
 
-async function updateStatus(ref,status){
-  await DB.updateBooking(ref,{status});
+async function updateStatus(ref, status) {
+  await DB.updateBooking(ref, { status });
   toast(`Status updated to ${status}.`);
+
+  if (status === 'confirmed') {
+    try {
+      const bk = await DB.getBookingByRef(ref);
+      if (bk && bk.email) {
+        const fnUrl = `https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email`;
+        const res = await fetch(fnUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+          body: JSON.stringify({
+            bookingRef:    bk.ref,
+            email:         bk.email,
+            fullName:      bk.fullName,
+            courtName:     bk.courtName,
+            date:          bk.date,
+            startTime:     bk.startTime,
+            endTime:       bk.endTime,
+            duration:      bk.duration,
+            total:         bk.total,
+            downpayment:   bk.downpayment || Math.round(bk.total * 0.5),
+            contactNumber: bk.contactNumber,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.ok) {
+          toast('📧 Confirmation email sent to customer!');
+        } else {
+          toast(`⚠️ Booking confirmed but email failed: ${json.error || res.status}`, 'err');
+        }
+      }
+    } catch (e) {
+      toast('⚠️ Booking confirmed but email could not be sent.', 'err');
+    }
+  }
+
   renderBookings();
   renderDash();
 }

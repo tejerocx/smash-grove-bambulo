@@ -44,7 +44,7 @@ async function createPayMongoCheckoutSession(input: {
         send_email_receipt: false,
         show_description: true,
         show_line_items: true,
-        payment_method_types: ["gcash"],
+        payment_method_types: ["qrph"],
         line_items: [
           {
             currency: "PHP",
