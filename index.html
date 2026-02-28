@@ -993,7 +993,7 @@ body.light #splashScreen { background: var(--bg); }
           <p style="font-size:.84rem;margin-bottom:4px">
             Send <strong id="gtDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> downpayment via <strong style="color:var(--green)">GoTyme Bank</strong>
           </p>
-          <div class="gc-name" style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px">Smash Grove Bambulo Pickleyard</div>
+          <div class="gc-name" id="gtMerchantName" style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px">Smash Grove Bambulo Pickleyard</div>
           <div class="qr-steps">
             <span class="qr-step">1️⃣ Open GoTyme</span>
             <span style="color:var(--muted)">→</span>
@@ -1013,7 +1013,19 @@ body.light #splashScreen { background: var(--bg); }
           <div class="gc-note">After paying, take a screenshot of your receipt — bring it on your booking day for verification.</div>
         </div>
 
-        <input type="hidden" id="bGcashRef" />
+        <!-- GCash / GoTyme Reference Number proof -->
+        <div id="gcashRefWrap" style="display:none;margin-top:2px;">
+          <div style="background:rgba(74,154,74,.07);border:1.5px solid rgba(74,154,74,.3);border-radius:var(--r);padding:14px 16px;">
+            <label style="display:block;font-size:.73rem;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:8px;font-weight:700">
+              🔖 Reference Number <span id="refMethodLabel" style="color:var(--muted);text-transform:none;font-size:.72rem;font-weight:400;letter-spacing:0"></span>
+            </label>
+            <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890123"
+              style="font-family:monospace;letter-spacing:1.5px;font-size:.93rem;" maxlength="30" autocomplete="off" />
+            <div style="font-size:.7rem;color:var(--muted);margin-top:7px;line-height:1.6">
+              After paying, open your GCash/GoTyme receipt and copy the reference number here. The owner will verify this before confirming your slot.
+            </div>
+          </div>
+        </div>
 
         <!-- Cash downpayment note -->
         <div class="cash-note" id="cashNote" style="display:none">
@@ -1224,6 +1236,13 @@ function applyPaymentSettings(settings) {
 
   if ($('gcMerchantNumber')) $('gcMerchantNumber').textContent = gcashSettings.merchantNumber;
   if ($('gcMerchantName')) $('gcMerchantName').textContent = gcashSettings.merchantName;
+  if ($('gtMerchantName')) $('gtMerchantName').textContent = settings.gotyme_merchant_name || 'Smash Grove Bambulo Pickleyard';
+
+  // Load QR images from DB settings
+  const gcashQrImg = document.querySelector('#gcashBox .qr-img');
+  const gotymeQrImg = document.querySelector('#gotymeBox .qr-img');
+  if (gcashQrImg && settings.gcash_qr_image) gcashQrImg.src = settings.gcash_qr_image;
+  if (gotymeQrImg && settings.gotyme_qr_image) gotymeQrImg.src = settings.gotyme_qr_image;
 
   applyPaymentMethodVisibility();
 }
@@ -1733,11 +1752,11 @@ function pickPay(m) {
   $('gcashBox').classList.toggle('show',  m === 'gcash');
   $('gotymeBox').classList.toggle('show', m === 'gotyme');
   const refWrap = $('gcashRefWrap');
-  if (refWrap) refWrap.style.display = m === 'gotyme' ? '' : 'none';
+  if (refWrap) refWrap.style.display = (m === 'gcash' || m === 'gotyme') ? '' : 'none';
   $('cashNote').style.display     = m === 'cash' ? '' : 'none';
-  if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '(GCash)' : m === 'gotyme' ? '(GoTyme)' : '';
-  if (m === 'gotyme') $('bGcashRef')?.setAttribute('required','');
-  else           $('bGcashRef')?.removeAttribute('required');
+  if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '— GCash' : m === 'gotyme' ? '— GoTyme' : '';
+  if (m === 'gcash' || m === 'gotyme') $('bGcashRef')?.setAttribute('required','');
+  else $('bGcashRef')?.removeAttribute('required');
 }
 
 /* =============================================
@@ -1754,7 +1773,7 @@ async function submitBooking(e) {
   const payMethod = $('bPay').value;
   const gcashRef  = $('bGcashRef')?.value?.trim() || '';
   const hasPaymentMethod = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme;
-  const gcashNeedsCheckout = payMethod === 'gcash';
+  const gcashNeedsCheckout = false; // Manual QR flow: customer pays via QR and enters ref number
   const checks = [
     [!court, 'Please select a court.'],
     [!$('bDate').value, 'Please select a date.'],
@@ -1766,6 +1785,7 @@ async function submitBooking(e) {
     [!payMethod, 'Please select a payment method.'],
     [!!payMethod && !paymentMethods[payMethod], 'Selected payment method is no longer available.'],
     [!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('bEmail').value), 'Please enter a valid email address.'],
+    [(payMethod === 'gcash' || payMethod === 'gotyme') && !gcashRef, 'Please enter your GCash/GoTyme reference number after paying.'],
   ];
   for (const [fail, msg] of checks) {
     if (fail) {
@@ -1899,10 +1919,8 @@ function showInvoice(b) {
   const paid = b.paymentStatus === 'paid';
   const isConfirmed = b.status === 'confirmed';
   let title = '🎾 BOOKING CONFIRMED!';
-  if (!isConfirmed && b.paymentMethod === 'gcash' && b.paymentFlow === 'gcash_checkout_link') {
-    title = paid ? '🎾 PAYMENT RECEIVED - AWAITING ADMIN CONFIRMATION' : '🎾 BOOKING PENDING PAYMENT';
-  } else if (!isConfirmed) {
-    title = '🎾 BOOKING PENDING CONFIRMATION';
+  if (!isConfirmed) {
+    title = '🎾 BOOKING RECEIVED — PENDING CONFIRMATION';
   }
   setTxt('iTitle', title);
   setTxt('iRef', b.ref);
@@ -1924,12 +1942,7 @@ function showInvoice(b) {
   if (b.gcashRef) {
     if ($('iGcashRefRow')) $('iGcashRefRow').style.display = '';
     setTxt('iGcashRef', b.gcashRef);
-    setTxt('iDownNote', `${b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash'} downpayment sent ✓ — show receipt at front desk.`);
-  } else if (b.paymentMethod === 'gcash' && b.paymentFlow === 'gcash_checkout_link') {
-    if ($('iGcashRefRow')) $('iGcashRefRow').style.display = 'none';
-    setTxt('iDownNote', paid
-      ? 'GCash payment confirmed automatically.'
-      : 'Waiting for secure GCash payment confirmation... this updates automatically.');
+    setTxt('iDownNote', `${b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash'} ref # submitted ✓ — owner will verify and confirm your slot.`);
   } else {
     if ($('iGcashRefRow')) $('iGcashRefRow').style.display = 'none';
     setTxt('iDownNote', 'Pay downpayment at front desk before your session.');

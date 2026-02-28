@@ -317,34 +317,75 @@ tr:hover td{background:rgba(0,200,83,.025);}
 
       <!-- PAYMENT SETTINGS PANEL -->
       <div class="panel" style="margin-bottom:20px;border:1px solid var(--border);">
-        <h4>📲 GCash Payment Settings</h4>
+        <h4>📲 Payment QR Settings</h4>
         <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">
-          Configure a legit GCash checkout link (e.g. gateway payment link) and merchant details shown on the booking page.
+          Update QR codes and merchant details. Changes reflect immediately on the booking form.
         </p>
 
         <div class="fg">
           <label class="fl">Enabled Payment Methods</label>
           <div style="display:flex;gap:14px;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-              <input type="checkbox" id="payMethodCashOn" />
-              Cash
+              <input type="checkbox" id="payMethodCashOn" /> Cash
             </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-              <input type="checkbox" id="payMethodGcashOn" />
-              GCash
+              <input type="checkbox" id="payMethodGcashOn" /> GCash
             </label>
             <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-              <input type="checkbox" id="payMethodGotymeOn" />
-              GoTyme
+              <input type="checkbox" id="payMethodGotymeOn" /> GoTyme
             </label>
-          </div>
-          <div style="font-size:.74rem;color:var(--muted);margin-top:6px">
-            Disable any method you do not want to show on booking form.
           </div>
         </div>
 
+        <!-- GCash Section -->
+        <div style="margin-top:16px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:10px;">📲 GCash</div>
+          <div class="frow" style="gap:10px;margin-bottom:10px;">
+            <div class="fg" style="margin:0;flex:1">
+              <label class="fl">GCash Number</label>
+              <input type="text" class="fi" id="gcashNumInput" placeholder="e.g. 0935 935 5010" />
+            </div>
+            <div class="fg" style="margin:0;flex:1">
+              <label class="fl">Account Name</label>
+              <input type="text" class="fi" id="gcashNameInput" placeholder="e.g. Smash Grove Bambulo" />
+            </div>
+          </div>
+          <div class="fg" style="margin:0">
+            <label class="fl">GCash QR Code Image</label>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div id="gcashQrPreviewWrap" style="display:none">
+                <img id="gcashQrPreview" src="" alt="GCash QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+              </div>
+              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
+                📷 Upload GCash QR image
+                <input type="file" accept="image/*" id="gcashQrFile" style="display:none" onchange="handleQrUpload('gcash',event)"/>
+              </label>
+            </div>
+          </div>
+        </div>
 
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">
+        <!-- GoTyme Section -->
+        <div style="margin-top:12px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--yellow);margin-bottom:10px;">🏦 GoTyme</div>
+          <div class="fg" style="margin-bottom:10px">
+            <label class="fl">Account Name</label>
+            <input type="text" class="fi" id="gotymeNameInput" placeholder="e.g. Smash Grove Bambulo" />
+          </div>
+          <div class="fg" style="margin:0">
+            <label class="fl">GoTyme QR Code Image</label>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div id="gotymeQrPreviewWrap" style="display:none">
+                <img id="gotymeQrPreview" src="" alt="GoTyme QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+              </div>
+              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)'">
+                📷 Upload GoTyme QR image
+                <input type="file" accept="image/*" id="gotymeQrFile" style="display:none" onchange="handleQrUpload('gotyme',event)"/>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px">
           <button class="btn btn-p btn-sm" onclick="savePaymentSettings()">💾 Save Payment Settings</button>
           <span id="paySettingsSummary" style="font-size:.78rem;color:var(--muted)"></span>
         </div>
@@ -445,6 +486,41 @@ tr:hover td{background:rgba(0,200,83,.025);}
   </div>
 </div>
 
+<!-- VERIFY PAYMENT MODAL -->
+<div class="overlay" id="verifyModal">
+  <div class="modal" style="max-width:400px">
+    <div class="m-hd" style="background:linear-gradient(135deg,rgba(200,160,96,.1),transparent)">
+      <h2 style="color:var(--yellow)">🔍 VERIFY PAYMENT</h2>
+      <button class="m-x" onclick="closeModal('verifyModal')">✕</button>
+    </div>
+    <div class="m-body">
+      <div style="text-align:center;margin-bottom:16px">
+        <span id="vmMethod" style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:2px;padding:5px 18px;border-radius:20px;background:rgba(74,154,74,.1);color:var(--green);border:1px solid rgba(74,154,74,.25)">GCash</span>
+      </div>
+      <div style="background:rgba(74,154,74,.07);border:1.5px solid rgba(74,154,74,.28);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px">
+        <div style="font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Payment Reference #</div>
+        <div id="vmGcashRef" style="font-family:monospace;font-size:1.55rem;font-weight:800;color:var(--green);letter-spacing:2px">—</div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:5px">Check your GCash/GoTyme app for this reference</div>
+      </div>
+      <div style="font-size:.82rem;color:var(--muted)">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>Customer</span><strong style="color:var(--text)" id="vmName">—</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>Contact</span><span id="vmContact">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>Booking Ref</span><code style="color:var(--green)" id="vmRef">—</code></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>Court</span><span id="vmCourt">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>Schedule</span><span id="vmDate">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span>Downpayment</span><strong style="color:var(--yellow)" id="vmAmount">—</strong></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6">
+        Open your GCash inbox and match the reference above, then mark as received to confirm the booking and send an email to the customer.
+      </p>
+    </div>
+    <div class="m-foot">
+      <button class="btn btn-d" onclick="rejectPayment()">❌ Not Received</button>
+      <button class="btn btn-p" onclick="verifyAndConfirm()">✅ Received — Confirm</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ==============================================
    UTILS
@@ -531,6 +607,7 @@ async function renderBookings(){
       <td>${payStatusBdg(b.paymentStatus)}</td>
       <td>${statusBdg(b.status)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${b.gcashRef && b.status==='pending' && (b.paymentMethod==='gcash'||b.paymentMethod==='gotyme')?`<button class="btn btn-sm" style="background:rgba(200,160,96,.15);color:var(--yellow);border:1px solid rgba(200,160,96,.35);font-weight:700" onclick="openVerifyModal('${b.ref}')">🔍 Verify</button>`:''}
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updateStatus('${b.ref}',this.value)">
           <option value="pending" ${b.status==='pending'?'selected':''}>Pending</option>
           <option value="confirmed" ${b.status==='confirmed'?'selected':''}>Confirmed</option>
@@ -589,6 +666,68 @@ async function updateStatus(ref, status) {
 
   renderBookings();
   renderDash();
+}
+
+async function openVerifyModal(ref) {
+  const b = await DB.getBookingByRef(ref);
+  if (!b) { toast('Booking not found.', 'err'); return; }
+  $('vmMethod').textContent = b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash';
+  $('vmGcashRef').textContent = b.gcashRef || '—';
+  $('vmName').textContent = b.fullName;
+  $('vmContact').textContent = b.contactNumber;
+  $('vmRef').textContent = b.ref;
+  $('vmCourt').textContent = b.courtName;
+  $('vmDate').textContent = `${fmtD(b.date)} · ${b.startTime}–${b.endTime}`;
+  $('vmAmount').textContent = fmt(b.downpayment || b.total / 2);
+  $('verifyModal').dataset.ref = ref;
+  $('verifyModal').classList.add('show');
+}
+
+async function verifyAndConfirm() {
+  const ref = $('verifyModal').dataset.ref;
+  if (!ref) return;
+  try {
+    await DB.updateBooking(ref, { status: 'confirmed', paymentStatus: 'verified' });
+    // Send confirmation email
+    try {
+      const bk = await DB.getBookingByRef(ref);
+      if (bk?.email) {
+        const fnUrl = `https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email`;
+        await fetch(fnUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+          body: JSON.stringify({
+            bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
+            courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
+            endTime: bk.endTime, duration: bk.duration, total: bk.total,
+            downpayment: bk.downpayment || Math.round(bk.total * 0.5),
+            contactNumber: bk.contactNumber,
+          }),
+        });
+      }
+    } catch(_) {}
+    closeModal('verifyModal');
+    toast('✅ Payment verified & booking confirmed! Email sent.');
+    renderBookings();
+    renderDash();
+  } catch(e) {
+    toast('Failed to confirm booking.', 'err');
+  }
+}
+
+async function rejectPayment() {
+  const ref = $('verifyModal').dataset.ref;
+  if (!ref) return;
+  if (!confirm(`Cancel booking ${ref}? This cannot be undone.`)) return;
+  try {
+    await DB.updateBooking(ref, { status: 'cancelled' });
+    closeModal('verifyModal');
+    toast('Booking cancelled — payment not verified.', 'err');
+    renderBookings();
+    renderDash();
+  } catch(e) {
+    toast('Failed to cancel booking.', 'err');
+  }
 }
 
 async function delBooking(ref){
@@ -868,10 +1007,40 @@ async function renderPaymentSettings() {
   $('payMethodGcashOn').checked = gcashOn;
   $('payMethodGotymeOn').checked = gotymeOn;
 
-  const summaryParts = [
-    `Methods: ${(cashOn?'Cash ':'')}${(gcashOn?'GCash ':'')}${(gotymeOn?'GoTyme':'')}`.trim() || 'none',
-  ];
+  if ($('gcashNumInput')) $('gcashNumInput').value = settings.gcash_merchant_number || '';
+  if ($('gcashNameInput')) $('gcashNameInput').value = settings.gcash_merchant_name || '';
+  if ($('gotymeNameInput')) $('gotymeNameInput').value = settings.gotyme_merchant_name || '';
+
+  const gcashQr = settings.gcash_qr_image || '';
+  if (gcashQr && $('gcashQrPreview')) {
+    $('gcashQrPreview').src = gcashQr;
+    $('gcashQrPreviewWrap').style.display = '';
+  }
+  const gotymeQr = settings.gotyme_qr_image || '';
+  if (gotymeQr && $('gotymeQrPreview')) {
+    $('gotymeQrPreview').src = gotymeQr;
+    $('gotymeQrPreviewWrap').style.display = '';
+  }
+
+  const summaryParts = [`Methods: ${(cashOn?'Cash ':'')}${(gcashOn?'GCash ':'')}${(gotymeOn?'GoTyme':'')}`.trim() || 'none'];
   $('paySettingsSummary').textContent = summaryParts.join(' • ');
+}
+
+function handleQrUpload(type, e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = ev.target.result;
+    if (type === 'gcash') {
+      $('gcashQrPreview').src = data;
+      $('gcashQrPreviewWrap').style.display = '';
+    } else {
+      $('gotymeQrPreview').src = data;
+      $('gotymeQrPreviewWrap').style.display = '';
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 async function savePaymentSettings() {
@@ -888,8 +1057,22 @@ async function savePaymentSettings() {
     await DB.saveSetting('payment_method_cash', cashOn ? '1' : '0');
     await DB.saveSetting('payment_method_gcash', gcashOn ? '1' : '0');
     await DB.saveSetting('payment_method_gotyme', gotymeOn ? '1' : '0');
+
+    const gcashNum = $('gcashNumInput')?.value.trim() || '';
+    const gcashName = $('gcashNameInput')?.value.trim() || '';
+    const gotymeName = $('gotymeNameInput')?.value.trim() || '';
+    if (gcashNum) await DB.saveSetting('gcash_merchant_number', gcashNum);
+    if (gcashName) await DB.saveSetting('gcash_merchant_name', gcashName);
+    if (gotymeName) await DB.saveSetting('gotyme_merchant_name', gotymeName);
+
+    // Save QR images (base64 data URLs)
+    const gcashQrSrc = $('gcashQrPreview')?.src || '';
+    const gotymeQrSrc = $('gotymeQrPreview')?.src || '';
+    if (gcashQrSrc && gcashQrSrc.startsWith('data:')) await DB.saveSetting('gcash_qr_image', gcashQrSrc);
+    if (gotymeQrSrc && gotymeQrSrc.startsWith('data:')) await DB.saveSetting('gotyme_qr_image', gotymeQrSrc);
+
     await renderPaymentSettings();
-    toast('Payment settings saved.');
+    toast('✅ Payment settings saved!');
   } catch(e) {
     toast('Failed to save payment settings.', 'err');
   }
