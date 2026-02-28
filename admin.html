@@ -630,42 +630,29 @@ async function updateStatus(ref, status) {
   await DB.updateBooking(ref, { status });
   toast(`Status updated to ${status}.`);
 
-  if (status === 'confirmed') {
-    try {
-      const bk = await DB.getBookingByRef(ref);
-      if (bk && bk.email) {
-        const fnUrl = `https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email`;
-        const res = await fetch(fnUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
-          body: JSON.stringify({
-            bookingRef:    bk.ref,
-            email:         bk.email,
-            fullName:      bk.fullName,
-            courtName:     bk.courtName,
-            date:          bk.date,
-            startTime:     bk.startTime,
-            endTime:       bk.endTime,
-            duration:      bk.duration,
-            total:         bk.total,
-            downpayment:   bk.downpayment || Math.round(bk.total * 0.5),
-            contactNumber: bk.contactNumber,
-          }),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (res.ok && json.ok) {
-          toast('📧 Confirmation email sent to customer!');
-        } else {
-          toast(`⚠️ Booking confirmed but email failed: ${json.error || res.status}`, 'err');
-        }
-      }
-    } catch (e) {
-      toast('⚠️ Booking confirmed but email could not be sent.', 'err');
-    }
-  }
-
-  renderBookings();
+  // Refresh table immediately — don't wait for email
+  await renderBookings();
   renderDash();
+
+  // Send confirmation email fire-and-forget
+  if (status === 'confirmed') {
+    DB.getBookingByRef(ref).then(bk => {
+      if (!bk?.email) return;
+      fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+        body: JSON.stringify({
+          bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
+          courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
+          endTime: bk.endTime, duration: bk.duration, total: bk.total,
+          downpayment: bk.downpayment || Math.round(bk.total * 0.5),
+          contactNumber: bk.contactNumber,
+        }),
+      }).then(r => r.json()).then(j => {
+        if (j?.ok) toast('📧 Confirmation email sent to customer!');
+      }).catch(() => {});
+    }).catch(() => {});
+  }
 }
 
 async function openVerifyModal(ref) {
@@ -687,29 +674,32 @@ async function verifyAndConfirm() {
   const ref = $('verifyModal').dataset.ref;
   if (!ref) return;
   try {
-    await DB.updateBooking(ref, { status: 'confirmed', paymentStatus: 'verified' });
-    // Send confirmation email
-    try {
-      const bk = await DB.getBookingByRef(ref);
-      if (bk?.email) {
-        const fnUrl = `https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email`;
-        await fetch(fnUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
-          body: JSON.stringify({
-            bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
-            courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
-            endTime: bk.endTime, duration: bk.duration, total: bk.total,
-            downpayment: bk.downpayment || Math.round(bk.total * 0.5),
-            contactNumber: bk.contactNumber,
-          }),
-        });
-      }
-    } catch(_) {}
+    // Update DB first — use 'paid' (safe known value) for paymentStatus
+    await DB.updateBooking(ref, { status: 'confirmed', paymentStatus: 'paid' });
+
+    // Close modal and refresh table immediately — don't wait for email
     closeModal('verifyModal');
-    toast('✅ Payment verified & booking confirmed! Email sent.');
-    renderBookings();
+    toast('✅ Payment verified & booking confirmed!');
+    await renderBookings();
     renderDash();
+
+    // Send confirmation email fire-and-forget
+    DB.getBookingByRef(ref).then(bk => {
+      if (!bk?.email) return;
+      fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+        body: JSON.stringify({
+          bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
+          courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
+          endTime: bk.endTime, duration: bk.duration, total: bk.total,
+          downpayment: bk.downpayment || Math.round(bk.total * 0.5),
+          contactNumber: bk.contactNumber,
+        }),
+      }).then(r => r.json()).then(j => {
+        if (j?.ok) toast('📧 Confirmation email sent to customer!');
+      }).catch(() => {});
+    }).catch(() => {});
   } catch(e) {
     toast('Failed to confirm booking.', 'err');
   }
