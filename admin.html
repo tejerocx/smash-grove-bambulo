@@ -694,7 +694,7 @@ async function updateStatus(ref, status) {
   if (status === 'confirmed') {
     DB.getBookingByRef(ref).then(bk => {
       if (!bk?.email) return;
-      fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email', {
+      fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
         body: JSON.stringify({
@@ -706,7 +706,8 @@ async function updateStatus(ref, status) {
         }),
       }).then(r => r.json()).then(j => {
         if (j?.ok) toast('📧 Confirmation email sent to customer!');
-      }).catch(() => {});
+        else toast(`⚠️ Booking confirmed but email failed: ${j?.error || 'unknown error'}`, 'err');
+      }).catch(err => toast(`⚠️ Booking confirmed but email failed: ${err.message}`, 'err'));
     }).catch(() => {});
   }
 }
@@ -742,7 +743,7 @@ async function verifyAndConfirm() {
     // Send confirmation email fire-and-forget
     DB.getBookingByRef(ref).then(bk => {
       if (!bk?.email) return;
-      fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-confirmation-email', {
+      fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
         body: JSON.stringify({
@@ -754,7 +755,8 @@ async function verifyAndConfirm() {
         }),
       }).then(r => r.json()).then(j => {
         if (j?.ok) toast('📧 Confirmation email sent to customer!');
-      }).catch(() => {});
+        else toast(`⚠️ Booking confirmed but email failed: ${j?.error || 'unknown error'}`, 'err');
+      }).catch(err => toast(`⚠️ Booking confirmed but email failed: ${err.message}`, 'err'));
     }).catch(() => {});
   } catch(e) {
     toast('Failed to confirm booking.', 'err');
