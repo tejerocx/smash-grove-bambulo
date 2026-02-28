@@ -966,9 +966,6 @@ body.light #splashScreen { background: var(--bg); }
           </p>
           <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
           <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
-          <div style="font-size:.74rem;color:var(--muted);margin:10px 0 12px">
-            Confirm Booking opens secure PayMongo checkout for the exact 50% downpayment.
-          </div>
           <div class="qr-steps">
             <span class="qr-step">1️⃣ Open GCash</span>
             <span style="color:var(--muted)">→</span>
@@ -977,15 +974,14 @@ body.light #splashScreen { background: var(--bg); }
             <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
           </div>
           <div class="qr-scan-wrap">
-            <img src="gcash-qrcode.jpg" class="qr-img" alt="GCash QR Code"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-            <div style="display:none;width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);align-items:center;justify-content:center;flex-direction:column;gap:8px">
+            <img id="gcashQrImg" class="qr-img" alt="GCash QR Code" style="display:none" />
+            <div id="gcashQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
               <span style="font-size:2rem">📲</span>
-              <span style="font-size:.78rem;color:var(--muted)">GCash QR loading...</span>
+              <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
             </div>
             <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
           </div>
-          <div class="gc-note">After paying, take a screenshot of your receipt — bring it on your booking day for verification.</div>
+          <div class="gc-note">After scanning and paying, enter your GCash reference number below.</div>
         </div>
 
         <!-- GoTyme QR section -->
@@ -1002,15 +998,14 @@ body.light #splashScreen { background: var(--bg); }
             <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
           </div>
           <div class="qr-scan-wrap">
-            <img src="gotyme-qrcode.jpg" class="qr-img" alt="GoTyme QR Code"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-            <div style="display:none;width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);align-items:center;justify-content:center;flex-direction:column;gap:8px">
+            <img id="gotymeQrImg" class="qr-img" alt="GoTyme QR Code" style="display:none" />
+            <div id="gotymeQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
               <span style="font-size:2rem">🏦</span>
-              <span style="font-size:.78rem;color:var(--muted)">GoTyme QR loading...</span>
+              <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
             </div>
             <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
           </div>
-          <div class="gc-note">After paying, take a screenshot of your receipt — bring it on your booking day for verification.</div>
+          <div class="gc-note">After scanning and paying, enter your GoTyme reference number below.</div>
         </div>
 
         <!-- GCash / GoTyme Reference Number proof -->
@@ -1238,11 +1233,19 @@ function applyPaymentSettings(settings) {
   if ($('gcMerchantName')) $('gcMerchantName').textContent = gcashSettings.merchantName;
   if ($('gtMerchantName')) $('gtMerchantName').textContent = settings.gotyme_merchant_name || 'Smash Grove Bambulo Pickleyard';
 
-  // Load QR images from DB settings
-  const gcashQrImg = document.querySelector('#gcashBox .qr-img');
-  const gotymeQrImg = document.querySelector('#gotymeBox .qr-img');
-  if (gcashQrImg && settings.gcash_qr_image) gcashQrImg.src = settings.gcash_qr_image;
-  if (gotymeQrImg && settings.gotyme_qr_image) gotymeQrImg.src = settings.gotyme_qr_image;
+  // Load QR images from DB — show img and hide placeholder only when image exists
+  if (settings.gcash_qr_image) {
+    const img = $('gcashQrImg');
+    if (img) { img.src = settings.gcash_qr_image; img.style.display = ''; }
+    const ph = $('gcashQrPlaceholder');
+    if (ph) ph.style.display = 'none';
+  }
+  if (settings.gotyme_qr_image) {
+    const img = $('gotymeQrImg');
+    if (img) { img.src = settings.gotyme_qr_image; img.style.display = ''; }
+    const ph = $('gotymeQrPlaceholder');
+    if (ph) ph.style.display = 'none';
+  }
 
   applyPaymentMethodVisibility();
 }
