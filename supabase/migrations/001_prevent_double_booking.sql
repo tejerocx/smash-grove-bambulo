@@ -20,12 +20,7 @@ BEGIN
       AND b.date = NEW.date
       AND b.status != 'cancelled'
       AND b.ref != NEW.ref
-      AND EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements(b.slots) s1,
-             jsonb_array_elements(NEW.slots) s2
-        WHERE s1 = s2
-      )
+      AND b.slots && NEW.slots
   ) THEN
     RAISE EXCEPTION 'One or more time slots are already booked for this court and date.';
   END IF;
