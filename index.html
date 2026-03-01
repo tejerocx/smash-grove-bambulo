@@ -528,6 +528,17 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   line-height: 1.6;
   margin-top: 8px;
 }
+.pay-amount-toggle { display:flex; gap:8px; margin-bottom:14px; }
+.pat-btn {
+  flex:1; padding:10px 8px; border-radius:10px;
+  border:1.5px solid var(--border); background:var(--input);
+  color:var(--muted); font-size:.8rem; font-weight:600;
+  cursor:pointer; text-align:center; transition:all .15s; line-height:1.5;
+}
+.pat-btn:hover { border-color:var(--green); color:var(--text); }
+.pat-btn.on { border-color:var(--green); background:rgba(74,154,74,.15); color:var(--green); }
+.pat-btn .pat-icon { font-size:1.2rem; margin-bottom:2px; }
+.pat-btn .pat-amt { font-size:.72rem; color:inherit; opacity:.8; margin-top:2px; }
 
 /* RESPONSIVE */
 @media(max-width:700px){ .frow{grid-template-columns:1fr;} .ft-g{grid-template-columns:1fr;gap:24px;} .ft-bot{flex-direction:column;text-align:center;} .pay-opts{grid-template-columns:1fr;} }
@@ -961,8 +972,21 @@ body.light #splashScreen { background: var(--bg); }
 
         <!-- GCash QR section -->
         <div class="gcash" id="gcashBox">
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
+          <div class="pay-amount-toggle">
+            <div class="pat-btn on" id="gcPat50" onclick="setPayAmount('half')">
+              <div class="pat-icon">⚡</div>
+              <div>50% Downpayment</div>
+              <div class="pat-amt" id="gcPat50Amt"></div>
+            </div>
+            <div class="pat-btn" id="gcPat100" onclick="setPayAmount('full')">
+              <div class="pat-icon">✅</div>
+              <div>Full Payment</div>
+              <div class="pat-amt" id="gcPat100Amt"></div>
+            </div>
+          </div>
           <p style="font-size:.84rem;margin-bottom:4px">
-            Send <strong id="gcDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> downpayment via <strong style="color:var(--green)">GCash</strong>
+            Send <strong id="gcDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> via <strong style="color:var(--green)">GCash</strong>
           </p>
           <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
           <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
@@ -986,8 +1010,21 @@ body.light #splashScreen { background: var(--bg); }
 
         <!-- GoTyme QR section -->
         <div class="gcash" id="gotymeBox">
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
+          <div class="pay-amount-toggle">
+            <div class="pat-btn on" id="gtPat50" onclick="setPayAmount('half')">
+              <div class="pat-icon">⚡</div>
+              <div>50% Downpayment</div>
+              <div class="pat-amt" id="gtPat50Amt"></div>
+            </div>
+            <div class="pat-btn" id="gtPat100" onclick="setPayAmount('full')">
+              <div class="pat-icon">✅</div>
+              <div>Full Payment</div>
+              <div class="pat-amt" id="gtPat100Amt"></div>
+            </div>
+          </div>
           <p style="font-size:.84rem;margin-bottom:4px">
-            Send <strong id="gtDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> downpayment via <strong style="color:var(--green)">GoTyme Bank</strong>
+            Send <strong id="gtDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> via <strong style="color:var(--green)">GoTyme Bank</strong>
           </p>
           <div class="gc-name" id="gtMerchantName" style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px">Smash Grove Bambulo Pickleyard</div>
           <div class="qr-steps">
@@ -1024,7 +1061,7 @@ body.light #splashScreen { background: var(--bg); }
 
         <!-- Cash downpayment note -->
         <div class="cash-note" id="cashNote" style="display:none">
-          💵 Please pay <strong id="cashDownAmt" style="color:var(--green)">50%</strong> downpayment at the front desk before your scheduled session to confirm your slot.
+          💵 <strong>Cash payment</strong> is only available for pre-arranged bookings — you must have already contacted the manager and received approval before selecting this option. Payment is due at the front desk upon arrival.
         </div>
 
         <!-- Price Breakdown -->
@@ -1033,9 +1070,9 @@ body.light #splashScreen { background: var(--bg); }
           <div class="pr"><span>Duration</span><span id="pHrs">0 hrs</span></div>
           <div class="pr"><span>Hourly Rate</span><span id="pRate">₱0/hr</span></div>
           <div class="pr tot"><span>TOTAL</span><span id="pTot">₱0.00</span></div>
-          <div class="pr down-row"><span>⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
+          <div class="pr down-row"><span id="pDownLabel">⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
         </div>
-        <div class="down-note" style="margin-top:10px">
+        <div class="down-note" id="downNote" style="margin-top:10px">
           ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.
         </div>
 
@@ -1152,6 +1189,7 @@ let selSlots = [];
 let openHour  = 6;
 let closeHour = 22;
 let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
+let payFull = false; // false = 50% downpayment, true = 100% full payment
 let cardSel   = { courtId: null, date: null, slots: [], rate: 0 };
 let pricingTiers = [
   { from: 6,  to: 16, rate: 150 },
@@ -1736,7 +1774,8 @@ function toggleSlot(h) {
 function updatePrice() {
   const hrs   = selSlots.length;
   const total = selSlots.reduce((s, h) => s + getRateForHour(h), 0);
-  const down  = total / 2;
+  const half  = total / 2;
+  const payAmt = payFull ? total : half;
   const rates = pricingTiers.map(t => t.rate);
   const rateLabel = rates.length > 0
     ? `${fmt(Math.min(...rates))} – ${fmt(Math.max(...rates))}/hr`
@@ -1744,10 +1783,23 @@ function updatePrice() {
   $('pHrs').textContent  = `${hrs} hr${hrs !== 1 ? 's' : ''}`;
   $('pRate').textContent = rateLabel;
   $('pTot').textContent  = fmt(total);
-  $('pDown').textContent = fmt(down);
-  if ($('gcDownAmt'))   $('gcDownAmt').textContent   = fmt(down);
-  if ($('gtDownAmt'))   $('gtDownAmt').textContent   = fmt(down);
-  if ($('cashDownAmt')) $('cashDownAmt').textContent = fmt(down);
+  $('pDown').textContent = fmt(payAmt);
+
+  // Update toggle button amount labels
+  if ($('gcPat50Amt'))  $('gcPat50Amt').textContent  = fmt(half);
+  if ($('gcPat100Amt')) $('gcPat100Amt').textContent = fmt(total);
+  if ($('gtPat50Amt'))  $('gtPat50Amt').textContent  = fmt(half);
+  if ($('gtPat100Amt')) $('gtPat100Amt').textContent = fmt(total);
+
+  // Update payment amount display in QR boxes
+  if ($('gcDownAmt'))   $('gcDownAmt').textContent   = payFull ? 'Full amount' : '50%';
+  if ($('gtDownAmt'))   $('gtDownAmt').textContent   = payFull ? 'Full amount' : '50%';
+
+  // Update price breakdown label and down note
+  if ($('pDownLabel')) $('pDownLabel').textContent = payFull ? '✅ Full Payment' : '⚡ 50% Downpayment Required';
+  if ($('downNote')) $('downNote').innerHTML = payFull
+    ? '✅ You selected <strong>full payment</strong>. No balance due on arrival.'
+    : '⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.';
 }
 
 /* =============================================
@@ -1761,6 +1813,12 @@ function pickPay(m) {
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.toggle('on', el.dataset.m === m));
   $('bPay').value = m;
   gcashSettings.checkoutVisited = false;
+
+  // Reset payment amount toggle to 50% when switching payment methods
+  payFull = false;
+  ['gcPat50','gtPat50'].forEach(id => $(id)?.classList.add('on'));
+  ['gcPat100','gtPat100'].forEach(id => $(id)?.classList.remove('on'));
+
   $('gcashBox').classList.toggle('show',  m === 'gcash');
   $('gotymeBox').classList.toggle('show', m === 'gotyme');
   const refWrap = $('gcashRefWrap');
@@ -1769,6 +1827,17 @@ function pickPay(m) {
   if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '— GCash' : m === 'gotyme' ? '— GoTyme' : '';
   if (m === 'gcash' || m === 'gotyme') $('bGcashRef')?.setAttribute('required','');
   else $('bGcashRef')?.removeAttribute('required');
+}
+
+function setPayAmount(mode) {
+  payFull = (mode === 'full');
+  ['gc','gt'].forEach(p => {
+    const btn50  = $(p + 'Pat50');
+    const btn100 = $(p + 'Pat100');
+    if (btn50)  btn50.classList.toggle('on', !payFull);
+    if (btn100) btn100.classList.toggle('on',  payFull);
+  });
+  updatePrice();
 }
 
 /* =============================================
@@ -1827,7 +1896,9 @@ async function submitBooking(e) {
     paymentMethod: payMethod,
     gcashRef: gcashRef || null,
     paymentFlow: gcashNeedsCheckout ? 'gcash_checkout_link' : payMethod,
-    downpayment: selSlots.reduce((s, h) => s + getRateForHour(h), 0) / 2,
+    downpayment: payFull
+      ? selSlots.reduce((s, h) => s + getRateForHour(h), 0)
+      : selSlots.reduce((s, h) => s + getRateForHour(h), 0) / 2,
     paymentStatus: gcashNeedsCheckout ? 'pending' : (payMethod === 'cash' ? 'unpaid' : 'for_verification'),
     status: 'pending',
     createdAt: new Date().toISOString(),
