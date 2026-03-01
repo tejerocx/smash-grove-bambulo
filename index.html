@@ -1151,6 +1151,7 @@ let court = null;
 let selSlots = [];
 let openHour  = 6;
 let closeHour = 22;
+let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
 let cardSel   = { courtId: null, date: null, slots: [], rate: 0 };
 let pricingTiers = [
   { from: 6,  to: 16, rate: 150 },
@@ -1639,7 +1640,8 @@ async function renderSlots() {
 
   m.style.display = 'none';
 
-  const booked = await getBookedSlots(court.id, date);
+  cachedBookedSlots = await getBookedSlots(court.id, date);
+  const booked = cachedBookedSlots;
   const todayFlag = isToday(date);
   const curHour = nowHour();
 
@@ -1687,16 +1689,15 @@ async function renderSlots() {
   g.innerHTML = liveNote + legend + `<div class="slots-grid">${slotHtml}</div>`;
 }
 
-async function toggleSlot(h) {
+function toggleSlot(h) {
   if (!court) { toast('Select a court first.', 'inf'); return; }
   const date = $('bDate').value;
   if (!date) { toast('Select a date first.', 'inf'); return; }
 
-  const booked = await getBookedSlots(court.id, date);
   const curHour = nowHour();
   const todayFlag = isToday(date);
 
-  if (booked.has(h)) { toast('This slot is already booked.', 'err'); return; }
+  if (cachedBookedSlots.has(h)) { toast('This slot is already booked.', 'err'); return; }
   if (todayFlag && h < curHour) { toast('This time slot has already passed.', 'err'); return; }
   if (todayFlag && h === curHour) { toast('This hour is currently in progress — book the next available slot.', 'inf'); return; }
 
@@ -1717,7 +1718,15 @@ async function toggleSlot(h) {
     if (h === mn || h === mx) selSlots.splice(i, 1);
     else { toast('Deselect from start or end only.', 'inf'); return; }
   }
-  await renderSlots();
+
+  // Update DOM instantly — no re-render, no DB call
+  document.querySelectorAll('#slotsGrid .slot').forEach(el => {
+    const elH = parseInt(el.dataset.h);
+    const isSel = selSlots.includes(elH);
+    el.className = el.className.replace(/\bsel\b/, '').trim();
+    if (isSel) el.classList.add('sel');
+  });
+
   updatePrice();
 }
 
