@@ -19,12 +19,12 @@ CREATE POLICY "bookings_insert_public"
 -- Only logged-in admins can update bookings (confirm, reschedule, etc.)
 CREATE POLICY "bookings_update_admin"
   ON bookings FOR UPDATE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 -- Only logged-in admins can delete bookings
 CREATE POLICY "bookings_delete_admin"
   ON bookings FOR DELETE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 
 -- ── COURTS ───────────────────────────────────────────────────
@@ -38,15 +38,15 @@ CREATE POLICY "courts_select_public"
 -- Only admins can add / edit / delete courts
 CREATE POLICY "courts_insert_admin"
   ON courts FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "courts_update_admin"
   ON courts FOR UPDATE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 CREATE POLICY "courts_delete_admin"
   ON courts FOR DELETE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 
 -- ── SETTINGS ─────────────────────────────────────────────────
@@ -60,15 +60,15 @@ CREATE POLICY "settings_select_public"
 -- Only admins can change settings
 CREATE POLICY "settings_insert_admin"
   ON settings FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "settings_update_admin"
   ON settings FOR UPDATE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 CREATE POLICY "settings_delete_admin"
   ON settings FOR DELETE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 
 -- ── BLOCKED DATES ────────────────────────────────────────────
@@ -80,11 +80,11 @@ CREATE POLICY "blocked_dates_select_public"
 
 CREATE POLICY "blocked_dates_insert_admin"
   ON blocked_dates FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 CREATE POLICY "blocked_dates_delete_admin"
   ON blocked_dates FOR DELETE
-  USING (auth.role() = 'authenticated');
+  USING (auth.uid() IS NOT NULL);
 
 
 -- ── PAYMENT SESSIONS ─────────────────────────────────────────
@@ -96,9 +96,9 @@ DO $$ BEGIN
       ON payment_sessions FOR INSERT WITH CHECK (true);
 
     CREATE POLICY "payment_sessions_select_admin"
-      ON payment_sessions FOR SELECT USING (auth.role() = 'authenticated');
+      ON payment_sessions FOR SELECT USING (auth.uid() IS NOT NULL);
 
     CREATE POLICY "payment_sessions_update_admin"
-      ON payment_sessions FOR UPDATE USING (auth.role() = 'authenticated');
+      ON payment_sessions FOR UPDATE USING (auth.uid() IS NOT NULL);
   END IF;
 END $$;
