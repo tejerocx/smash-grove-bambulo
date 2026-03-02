@@ -933,7 +933,7 @@ async function updateStatus(ref, status) {
       if (!bk?.email) return;
       fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
         body: JSON.stringify({
           bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
           courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
@@ -985,7 +985,7 @@ async function verifyAndConfirm() {
       if (!bk?.email) return;
       fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
         body: JSON.stringify({
           bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
           courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
@@ -1122,7 +1122,7 @@ async function saveReschedule() {
       if (!bk?.email) return;
       fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-reschedule-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': window._supabase?.supabaseKey || '' },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
         body: JSON.stringify({
           bookingRef:   bk.ref,
           email:        bk.email,
