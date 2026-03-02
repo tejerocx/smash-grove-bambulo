@@ -459,10 +459,11 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 @media(min-width:600px){ #invModal { align-items:center; padding:20px; } }
 .inv-card {
   background:var(--card); width:100%; max-width:480px; border-radius:20px 20px 0 0;
-  overflow:hidden; position:relative;
+  overflow:hidden auto; position:relative;
+  max-height:92dvh;
   animation:invSlideUp .38s cubic-bezier(.32,1.2,.5,1) both;
 }
-@media(min-width:600px){ .inv-card { border-radius:20px; animation:invScaleIn .32s cubic-bezier(.32,1.2,.5,1) both; } }
+@media(min-width:600px){ .inv-card { border-radius:20px; max-height:90dvh; animation:invScaleIn .32s cubic-bezier(.32,1.2,.5,1) both; } }
 @keyframes invSlideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
 @keyframes invScaleIn { from { transform:scale(.88); opacity:0; } to { transform:scale(1); opacity:1; } }
 
