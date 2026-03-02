@@ -371,6 +371,43 @@ select.fi option { background:var(--card); }
   border-radius:6px; padding:4px 10px;
 }
 
+/* GCash/GoTyme box — polished redesign */
+.gcash { animation:none; }
+.gcash.show { animation:gcSlideIn .22s ease; }
+@keyframes gcSlideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+.gc-header {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 16px; margin:-20px -20px 16px;
+  background:linear-gradient(135deg,rgba(74,154,74,.14),rgba(74,154,74,.04));
+  border-bottom:1px solid rgba(74,154,74,.2);
+  border-radius:var(--r) var(--r) 0 0;
+}
+.gc-header-icon { font-size:1.3rem; }
+.gc-header-lbl { font-size:.76rem; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:var(--green); }
+.gc-amount-card {
+  background:rgba(74,154,74,.1); border:1.5px solid rgba(74,154,74,.3);
+  border-radius:12px; padding:14px; text-align:center; margin-bottom:14px;
+}
+.gc-amount-lbl { font-size:.68rem; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:3px; }
+.gc-amount-val { font-size:1.9rem; font-weight:800; color:var(--green); letter-spacing:-.5px; line-height:1.1; }
+.gc-send-card {
+  background:var(--input); border:1px solid var(--border);
+  border-radius:12px; padding:13px 15px; margin-bottom:12px;
+}
+.gc-send-lbl { font-size:.68rem; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:7px; }
+.gc-num-row { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+.gc-copy-btn {
+  background:var(--green); color:#000; border:none; border-radius:7px;
+  padding:5px 12px; font-size:.76rem; font-weight:700; cursor:pointer;
+  transition:opacity .15s; display:inline-flex; align-items:center; gap:4px;
+}
+.gc-copy-btn:active { opacity:.65; }
+.gc-or {
+  display:flex; align-items:center; gap:8px;
+  color:var(--muted); font-size:.72rem; margin:8px 0 14px;
+}
+.gc-or::before,.gc-or::after { content:''; flex:1; height:1px; background:var(--border); }
+
 /* 3-column payment options */
 .pay-opts-3 { grid-template-columns:1fr 1fr 1fr; }
 @media(max-width:540px){ .pay-opts-3 { grid-template-columns:1fr; } }
@@ -972,6 +1009,10 @@ body.light #splashScreen { background: var(--bg); }
 
         <!-- GCash QR section -->
         <div class="gcash" id="gcashBox">
+          <div class="gc-header">
+            <span class="gc-header-icon">📲</span>
+            <span class="gc-header-lbl">GCash Payment</span>
+          </div>
           <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
           <div class="pay-amount-toggle">
             <div class="pat-btn on" id="gcPat50" onclick="setPayAmount('half')">
@@ -985,11 +1026,19 @@ body.light #splashScreen { background: var(--bg); }
               <div class="pat-amt" id="gcPat100Amt"></div>
             </div>
           </div>
-          <p style="font-size:.84rem;margin-bottom:4px">
-            Send <strong id="gcDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> via <strong style="color:var(--green)">GCash</strong>
-          </p>
-          <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
-          <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
+          <div class="gc-amount-card">
+            <div class="gc-amount-lbl">You will send</div>
+            <div class="gc-amount-val" id="gcDownAmt">—</div>
+          </div>
+          <div class="gc-send-card">
+            <div class="gc-send-lbl">Send to this GCash number</div>
+            <div class="gc-num-row">
+              <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
+              <button type="button" class="gc-copy-btn" onclick="copyMerchantNum()">📋 Copy</button>
+            </div>
+            <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
+          </div>
+          <div class="gc-or"><span>or scan QR code</span></div>
           <div class="qr-steps">
             <span class="qr-step">1️⃣ Open GCash</span>
             <span style="color:var(--muted)">→</span>
@@ -1005,11 +1054,15 @@ body.light #splashScreen { background: var(--bg); }
             </div>
             <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
           </div>
-          <div class="gc-note">After scanning and paying, enter your GCash reference number below.</div>
+          <div class="gc-note">After paying, scroll down and enter your GCash reference number below.</div>
         </div>
 
         <!-- GoTyme QR section -->
         <div class="gcash" id="gotymeBox">
+          <div class="gc-header">
+            <span class="gc-header-icon">🏦</span>
+            <span class="gc-header-lbl">GoTyme Payment</span>
+          </div>
           <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
           <div class="pay-amount-toggle">
             <div class="pat-btn on" id="gtPat50" onclick="setPayAmount('half')">
@@ -1023,10 +1076,15 @@ body.light #splashScreen { background: var(--bg); }
               <div class="pat-amt" id="gtPat100Amt"></div>
             </div>
           </div>
-          <p style="font-size:.84rem;margin-bottom:4px">
-            Send <strong id="gtDownAmt" style="color:var(--green);font-size:1.1rem">50%</strong> via <strong style="color:var(--green)">GoTyme Bank</strong>
-          </p>
-          <div class="gc-name" id="gtMerchantName" style="font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px">Smash Grove Bambulo Pickleyard</div>
+          <div class="gc-amount-card">
+            <div class="gc-amount-lbl">You will send</div>
+            <div class="gc-amount-val" id="gtDownAmt">—</div>
+          </div>
+          <div class="gc-send-card">
+            <div class="gc-send-lbl">Send to</div>
+            <div class="gc-name" id="gtMerchantName" style="font-size:1rem;font-weight:700;color:var(--text);margin:4px 0 0">Smash Grove Bambulo Pickleyard</div>
+          </div>
+          <div class="gc-or"><span>scan QR code to pay</span></div>
           <div class="qr-steps">
             <span class="qr-step">1️⃣ Open GoTyme</span>
             <span style="color:var(--muted)">→</span>
@@ -1042,19 +1100,26 @@ body.light #splashScreen { background: var(--bg); }
             </div>
             <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
           </div>
-          <div class="gc-note">After scanning and paying, enter your GoTyme reference number below.</div>
+          <div class="gc-note">After paying, scroll down and enter your GoTyme reference number below.</div>
         </div>
 
         <!-- GCash / GoTyme Reference Number proof -->
         <div id="gcashRefWrap" style="display:none;margin-top:2px;">
           <div style="background:rgba(74,154,74,.07);border:1.5px solid rgba(74,154,74,.3);border-radius:var(--r);padding:14px 16px;">
-            <label style="display:block;font-size:.73rem;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:8px;font-weight:700">
-              🔖 Reference Number <span id="refMethodLabel" style="color:var(--muted);text-transform:none;font-size:.72rem;font-weight:400;letter-spacing:0"></span>
-            </label>
-            <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890123"
-              style="font-family:monospace;letter-spacing:1.5px;font-size:.93rem;" maxlength="30" autocomplete="off" />
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <label style="font-size:.73rem;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700">
+                🔖 Reference Number <span id="refMethodLabel" style="color:var(--muted);text-transform:none;font-size:.72rem;font-weight:400;letter-spacing:0"></span>
+              </label>
+              <span id="gcRefCount" style="font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap">0 digits</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890123"
+                style="font-family:monospace;letter-spacing:1.5px;font-size:.93rem;flex:1;" maxlength="30" autocomplete="off"
+                oninput="updateRefCount()" inputmode="numeric" />
+              <button type="button" class="gc-copy-btn" onclick="pasteRef()" style="background:var(--input);color:var(--text);border:1px solid var(--border);flex-shrink:0;">📋 Paste</button>
+            </div>
             <div style="font-size:.7rem;color:var(--muted);margin-top:7px;line-height:1.6">
-              After paying, open your GCash/GoTyme receipt and copy the reference number here. The owner will verify this before confirming your slot.
+              Open your GCash/GoTyme receipt and copy the reference number here. The owner will verify this before confirming your slot.
             </div>
           </div>
         </div>
@@ -1792,8 +1857,8 @@ function updatePrice() {
   if ($('gtPat100Amt')) $('gtPat100Amt').textContent = fmt(total);
 
   // Update payment amount display in QR boxes
-  if ($('gcDownAmt'))   $('gcDownAmt').textContent   = payFull ? 'Full amount' : '50%';
-  if ($('gtDownAmt'))   $('gtDownAmt').textContent   = payFull ? 'Full amount' : '50%';
+  if ($('gcDownAmt'))   $('gcDownAmt').textContent   = fmt(payAmt);
+  if ($('gtDownAmt'))   $('gtDownAmt').textContent   = fmt(payAmt);
 
   // Update price breakdown label and down note
   if ($('pDownLabel')) $('pDownLabel').textContent = payFull ? '✅ Full Payment' : '⚡ 50% Downpayment Required';
@@ -1827,6 +1892,38 @@ function pickPay(m) {
   if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '— GCash' : m === 'gotyme' ? '— GoTyme' : '';
   if (m === 'gcash' || m === 'gotyme') $('bGcashRef')?.setAttribute('required','');
   else $('bGcashRef')?.removeAttribute('required');
+}
+
+function copyMerchantNum() {
+  const num = ($('gcMerchantNumber')?.textContent || '').replace(/\s/g,'');
+  if (!num) return;
+  const fallback = () => {
+    const el = document.createElement('textarea');
+    el.value = num; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    toast('GCash number copied!', 'ok');
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(num).then(() => toast('GCash number copied! 📋', 'ok')).catch(fallback);
+  } else { fallback(); }
+}
+
+function pasteRef() {
+  if (navigator.clipboard?.readText) {
+    navigator.clipboard.readText().then(text => {
+      const clean = text.replace(/\D/g,'').slice(0,30);
+      if (clean) { $('bGcashRef').value = clean; updateRefCount(); toast('Reference pasted!', 'ok'); }
+      else toast('No number found in clipboard.', 'inf');
+    }).catch(() => toast('Tap the input field and long-press to paste.', 'inf'));
+  } else { toast('Tap the input field and long-press to paste.', 'inf'); }
+}
+
+function updateRefCount() {
+  const len = ($('bGcashRef')?.value || '').length;
+  const el = $('gcRefCount');
+  if (!el) return;
+  el.textContent = len + (len === 1 ? ' digit' : ' digits');
+  el.style.color = len >= 13 ? 'var(--green)' : 'var(--muted)';
 }
 
 function setPayAmount(mode) {
