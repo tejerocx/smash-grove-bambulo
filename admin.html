@@ -599,8 +599,8 @@ const fmtD=s=>{if(!s)return'—';return new Date(s+'T00:00:00').toLocaleDateStri
 function statusBdg(s){const m={pending:'bdg-p',confirmed:'bdg-c',completed:'bdg-d',cancelled:'bdg-x'};return`<span class="bdg ${m[s]||''}">${s}</span>`;}
 function payStatusBdg(s){
   const v = (s || 'unpaid').toLowerCase();
-  const label = v.replace(/_/g, ' ');
-  const cls = v === 'paid' ? 'bdg-c' : v === 'pending' ? 'bdg-p' : v === 'failed' ? 'bdg-x' : 'bdg-d';
+  const label = v === 'paid' ? 'Fully Paid' : v === 'downpayment_paid' ? 'Downpayment Paid' : v === 'for_verification' ? 'For Verification' : v === 'pending' ? 'Pending' : v === 'failed' ? 'Failed' : 'Unpaid';
+  const cls = v === 'paid' ? 'bdg-c' : v === 'downpayment_paid' ? 'bdg-p' : v === 'for_verification' ? 'bdg-p' : v === 'failed' ? 'bdg-x' : 'bdg-d';
   return `<span class="bdg ${cls}">${label}</span>`;
 }
 function toast(msg,type='ok'){const icons={ok:'✅',err:'❌',inf:'ℹ️'};const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;$('toasts').appendChild(el);setTimeout(()=>el.remove(),3800);}
@@ -672,7 +672,14 @@ async function renderBookings(){
         ${b.gcashRef?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px">Ref: <code style="color:var(--green)">${b.gcashRef}</code></div>`:''}
       </td>
       <td><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase()}</span></td>
-      <td>${payStatusBdg(b.paymentStatus)}</td>
+      <td>
+        <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updatePaymentStatus('${b.ref}',this.value)">
+          <option value="unpaid" ${(!b.paymentStatus||b.paymentStatus==='unpaid')?'selected':''}>Unpaid</option>
+          <option value="downpayment_paid" ${b.paymentStatus==='downpayment_paid'?'selected':''}>Downpayment Paid</option>
+          <option value="paid" ${b.paymentStatus==='paid'?'selected':''}>Fully Paid</option>
+          <option value="for_verification" ${b.paymentStatus==='for_verification'?'selected':''}>For Verification</option>
+        </select>
+      </td>
       <td>${statusBdg(b.status)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap">
         ${b.gcashRef && b.status==='pending' && (b.paymentMethod==='gcash'||b.paymentMethod==='gotyme')?`<button class="btn btn-sm" style="background:rgba(200,160,96,.15);color:var(--yellow);border:1px solid rgba(200,160,96,.35);font-weight:700" onclick="openVerifyModal('${b.ref}')">🔍 Verify</button>`:''}
@@ -693,6 +700,14 @@ function clearFilters(){
   if($('fDate')) $('fDate').value='';
   if($('fStatus')) $('fStatus').value='';
   renderBookings();
+}
+
+async function updatePaymentStatus(ref, status) {
+  await DB.updateBooking(ref, { paymentStatus: status });
+  const labels = { unpaid: 'Unpaid', downpayment_paid: 'Downpayment Paid', paid: 'Fully Paid', for_verification: 'For Verification' };
+  toast(`Payment marked as: ${labels[status] || status}.`);
+  await renderBookings();
+  renderDash();
 }
 
 async function updateStatus(ref, status) {
