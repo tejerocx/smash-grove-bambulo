@@ -455,7 +455,7 @@ tr:hover td{background:rgba(0,200,83,.025);}
         </div>
         <div id="cmTiersWrap" style="display:none;background:var(--input);border:1.5px solid var(--border);border-radius:8px;padding:12px;">
           <div id="cmTiersRows" style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;"></div>
-          <button type="button" onclick="addTierRow()" style="background:transparent;border:1.5px dashed var(--border);border-radius:6px;color:var(--muted);font-size:.8rem;padding:6px 14px;cursor:pointer;width:100%;transition:border-color .2s;font-family:inherit;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Add Time Range</button>
+          <button type="button" onclick="addCourtTierRow()" style="background:transparent;border:1.5px dashed var(--border);border-radius:6px;color:var(--muted);font-size:.8rem;padding:6px 14px;cursor:pointer;width:100%;transition:border-color .2s;font-family:inherit;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Add Time Range</button>
           <div style="font-size:.72rem;color:var(--muted);margin-top:8px;">Tip: 6AM–4PM ₱150, 4PM–12MN ₱300, 12MN–6AM ₱350</div>
         </div>
       </div>
@@ -971,9 +971,9 @@ function _tierHrOpts(sel) {
 function toggleTiersUI() {
   const on = $('cmTiersEnabled').checked;
   $('cmTiersWrap').style.display = on ? 'block' : 'none';
-  if (on && $('cmTiersRows').children.length === 0) addTierRow(6, 16, '');
+  if (on && $('cmTiersRows').children.length === 0) addCourtTierRow(6, 16, '');
 }
-function addTierRow(from='', to='', rate='') {
+function addCourtTierRow(from='', to='', rate='') {
   const row = document.createElement('div');
   row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 90px 32px;gap:5px;align-items:center;';
   row.innerHTML =
@@ -1007,7 +1007,7 @@ async function openCourtModal(id){
   const tiers = c?.rateSchedule;
   $('cmTiersEnabled').checked = !!(tiers && tiers.length);
   $('cmTiersWrap').style.display = (tiers && tiers.length) ? 'block' : 'none';
-  if (tiers && tiers.length) tiers.forEach(t => addTierRow(t.from, t.to, t.rate));
+  if (tiers && tiers.length) tiers.forEach(t => addCourtTierRow(t.from, t.to, t.rate));
   // Photo
   const photo=c?.photo||'';
   $('cmPhoto').value=photo;
