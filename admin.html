@@ -177,6 +177,20 @@ tr:hover td{background:rgba(0,200,83,.025);}
 .cal-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:.75rem;color:var(--muted);}
 .cal-legend span{display:flex;align-items:center;gap:5px;}
 @media(max-width:600px){.cal-cell{min-height:52px;padding:4px;}.cal-dn{font-size:.7rem;}.cal-dot{width:5px;height:5px;}.cal-dh{font-size:.65rem;}}
+
+/* ── REPORTS ── */
+.rp-period{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.rp-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.rp-bar-label{min-width:110px;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rp-bar-track{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden;}
+.rp-bar-fill{height:100%;border-radius:5px;transition:width .5s ease;background:var(--green);}
+.rp-bar-val{min-width:80px;text-align:right;font-size:.8rem;font-weight:700;}
+.rp-trend-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.rp-trend-month{min-width:64px;font-size:.78rem;color:var(--muted);}
+.rp-trend-track{flex:1;height:22px;background:var(--border);border-radius:5px;overflow:hidden;}
+.rp-trend-fill{height:100%;border-radius:5px;transition:width .5s ease;background:var(--green);display:flex;align-items:center;padding-left:8px;font-size:.7rem;font-weight:700;color:#0d2a00;white-space:nowrap;min-width:0;}
+.rp-trend-val{min-width:82px;text-align:right;font-size:.8rem;font-weight:700;}
+.rp-empty{font-size:.82rem;color:var(--muted);font-style:italic;padding:8px 0;}
 </style>
 </head>
 <body>
@@ -206,6 +220,7 @@ tr:hover td{background:rgba(0,200,83,.025);}
     <div class="nav-grp">Overview</div>
     <div class="nav-item on" data-s="dash" onclick="goto('dash')">📊 Dashboard</div>
     <div class="nav-item" data-s="bookings" onclick="goto('bookings')">📋 Bookings</div>
+    <div class="nav-item" data-s="reports" onclick="goto('reports')">📈 Reports</div>
     <div class="nav-grp">Management</div>
     <div class="nav-item" data-s="courts" onclick="goto('courts')">🏟️ Courts</div>
     <div class="nav-item" data-s="blocked" onclick="goto('blocked')">🔒 Blocked Dates</div>
@@ -329,6 +344,53 @@ tr:hover td{background:rgba(0,200,83,.025);}
             </table>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="sec-reports" class="adm-sec">
+      <div class="toolbar">
+        <h2>📈 REVENUE REPORTS</h2>
+        <button class="btn btn-p btn-sm" onclick="exportReportCSV()">📥 Export CSV</button>
+      </div>
+
+      <!-- Period filter -->
+      <div class="rp-period">
+        <button class="view-btn active" id="rp-week" onclick="setReportPeriod('week')">This Week</button>
+        <button class="view-btn" id="rp-month" onclick="setReportPeriod('month')">This Month</button>
+        <button class="view-btn" id="rp-last" onclick="setReportPeriod('last')">Last Month</button>
+        <button class="view-btn" id="rp-all" onclick="setReportPeriod('all')">All Time</button>
+        <span style="display:flex;gap:6px;align-items:center;margin-left:4px">
+          <input type="date" id="rpFrom" class="fi" style="padding:5px 10px;font-size:.8rem" onchange="setReportPeriod('custom')">
+          <span style="color:var(--muted);font-size:.8rem">–</span>
+          <input type="date" id="rpTo" class="fi" style="padding:5px 10px;font-size:.8rem" onchange="setReportPeriod('custom')">
+        </span>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="stat-cards" style="margin-bottom:20px">
+        <div class="sc"><div class="sc-lbl">Gross Revenue</div><div class="sc-val" id="rpGross">₱0</div><div class="sc-ic">💰</div></div>
+        <div class="sc"><div class="sc-lbl">Collected</div><div class="sc-val" id="rpCollected">₱0</div><div class="sc-ic">✅</div></div>
+        <div class="sc"><div class="sc-lbl">Pending</div><div class="sc-val" id="rpPending">₱0</div><div class="sc-ic">⏳</div></div>
+        <div class="sc"><div class="sc-lbl">Active Bookings</div><div class="sc-val" id="rpCount">0</div><div class="sc-ic">📋</div></div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="rev-grid">
+        <div class="panel">
+          <h4>Revenue by Court</h4>
+          <div id="rpCourtChart"><p class="rp-empty">No data.</p></div>
+        </div>
+        <div class="panel">
+          <h4>Revenue by Payment Method</h4>
+          <div id="rpPayChart"><p class="rp-empty">No data.</p></div>
+        </div>
+      </div>
+
+      <!-- Monthly trend -->
+      <div class="panel" style="margin-top:16px">
+        <h4>Monthly Trend (Last 6 Months)</h4>
+        <div id="rpTrend"><p class="rp-empty">No data.</p></div>
       </div>
     </div>
 
@@ -664,14 +726,14 @@ let sess;
 /* ==============================================
    NAVIGATION
    ============================================== */
-const titles={dash:'Dashboard',bookings:'Bookings',courts:'Courts',accounts:'Accounts',blocked:'Blocked Dates'};
+const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Blocked Dates'};
 async function goto(s){
   document.querySelectorAll('.adm-sec').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('on',el.dataset.s===s));
   $('sec-'+s).classList.add('on');
   $('topTitle').textContent=titles[s]||s;
   document.getElementById('sidebar').classList.remove('open');
-  const loaders={dash:renderDash,bookings:renderBookings,courts:renderCourts,accounts:renderAccounts,blocked:renderBlocked};
+  const loaders={dash:renderDash,bookings:renderBookings,reports:renderReport,courts:renderCourts,accounts:renderAccounts,blocked:renderBlocked};
   if(loaders[s]) await loaders[s]();
 }
 
@@ -1100,6 +1162,118 @@ async function exportCSV(){
   a.download=`picklehub_bookings_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   toast('CSV exported!');
+}
+
+/* ==============================================
+   REPORTS
+   ============================================== */
+let _rpPeriod='week', _rpBks=[];
+
+function setReportPeriod(p){
+  _rpPeriod=p;
+  ['week','month','last','all','custom'].forEach(k=>{
+    const el=$('rp-'+k); if(el) el.classList.toggle('active',k===p);
+  });
+  renderReport();
+}
+
+function _rpDateRange(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const toStr=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  if(_rpPeriod==='week'){
+    const start=new Date(now); start.setDate(now.getDate()-now.getDay());
+    const end=new Date(start); end.setDate(start.getDate()+6);
+    return{from:toStr(start),to:toStr(end)};
+  }
+  if(_rpPeriod==='month'){
+    return{from:`${now.getFullYear()}-${pad(now.getMonth()+1)}-01`,to:toStr(new Date(now.getFullYear(),now.getMonth()+1,0))};
+  }
+  if(_rpPeriod==='last'){
+    const y=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+    const m=now.getMonth()===0?12:now.getMonth();
+    return{from:`${y}-${pad(m)}-01`,to:toStr(new Date(y,m,0))};
+  }
+  if(_rpPeriod==='custom'){
+    return{from:($('rpFrom')||{}).value||'',to:($('rpTo')||{}).value||''};
+  }
+  return{from:'',to:''};
+}
+
+async function renderReport(){
+  const allBks=await DB.getBookings();
+  const{from,to}=_rpDateRange();
+  let bks=allBks.filter(b=>b.status!=='cancelled');
+  if(from) bks=bks.filter(b=>b.date>=from);
+  if(to)   bks=bks.filter(b=>b.date<=to);
+  _rpBks=bks;
+
+  const gross=bks.reduce((s,b)=>s+(b.total||0),0);
+  const collected=bks.filter(b=>b.paymentStatus==='paid').reduce((s,b)=>s+(b.total||0),0);
+  const pending=bks.filter(b=>!b.paymentStatus||b.paymentStatus==='unpaid'||b.paymentStatus==='downpayment_paid').reduce((s,b)=>s+(b.total||0),0);
+  $('rpGross').textContent=fmt(gross);
+  $('rpCollected').textContent=fmt(collected);
+  $('rpPending').textContent=fmt(pending);
+  $('rpCount').textContent=bks.length;
+
+  // Revenue by court
+  const courtMap={};
+  bks.forEach(b=>{courtMap[b.courtName]=(courtMap[b.courtName]||0)+(b.total||0);});
+  const courtEntries=Object.entries(courtMap).sort((a,b)=>b[1]-a[1]);
+  const maxCourt=courtEntries[0]?courtEntries[0][1]:1;
+  $('rpCourtChart').innerHTML=courtEntries.length===0?'<p class="rp-empty">No bookings in this period.</p>':
+    courtEntries.map(([name,rev])=>`<div class="rp-bar-row">
+      <div class="rp-bar-label" title="${name}">${name}</div>
+      <div class="rp-bar-track"><div class="rp-bar-fill" style="width:${Math.round(rev/maxCourt*100)}%"></div></div>
+      <div class="rp-bar-val">${fmt(rev)}</div>
+    </div>`).join('');
+
+  // Revenue by payment method
+  const payMap={};
+  bks.forEach(b=>{const k=b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase();payMap[k]=(payMap[k]||0)+(b.total||0);});
+  const payEntries=Object.entries(payMap).sort((a,b)=>b[1]-a[1]);
+  const maxPay=payEntries[0]?payEntries[0][1]:1;
+  $('rpPayChart').innerHTML=payEntries.length===0?'<p class="rp-empty">No bookings in this period.</p>':
+    payEntries.map(([name,rev])=>`<div class="rp-bar-row">
+      <div class="rp-bar-label">${name}</div>
+      <div class="rp-bar-track"><div class="rp-bar-fill" style="width:${Math.round(rev/maxPay*100)}%"></div></div>
+      <div class="rp-bar-val">${fmt(rev)}</div>
+    </div>`).join('');
+
+  // Monthly trend — last 6 months (always all bookings, not filtered by period)
+  const now2=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now2.getFullYear(),now2.getMonth()-i,1);
+    months.push({label:d.toLocaleDateString('en-PH',{month:'short',year:'2-digit'}),key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`});
+  }
+  const monthMap={};
+  allBks.filter(b=>b.status!=='cancelled').forEach(b=>{
+    const mk=(b.date||'').substring(0,7);
+    if(months.find(m=>m.key===mk)) monthMap[mk]=(monthMap[mk]||0)+(b.total||0);
+  });
+  const maxMon=Math.max(...months.map(m=>monthMap[m.key]||0),1);
+  $('rpTrend').innerHTML=months.map(m=>{
+    const rev=monthMap[m.key]||0;
+    const w=Math.round(rev/maxMon*100);
+    return`<div class="rp-trend-row">
+      <div class="rp-trend-month">${m.label}</div>
+      <div class="rp-trend-track"><div class="rp-trend-fill" style="width:${w}%">${w>15?fmt(rev):''}</div></div>
+      <div class="rp-trend-val">${rev>0?fmt(rev):'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function exportReportCSV(){
+  const bks=_rpBks.length?_rpBks:(await DB.getBookings()).filter(b=>b.status!=='cancelled');
+  const h=['Ref','Name','Email','Contact','Court','Date','Start','End','Hrs','Total','Downpayment','Payment Method','Payment Status','Booking Status','Created'];
+  const rows=bks.map(b=>[b.ref,b.fullName,b.email,b.contactNumber,b.courtName,b.date,b.startTime,b.endTime,b.duration,b.total,b.downpayment??'',b.paymentMethod,b.paymentStatus||'unpaid',b.status,b.createdAt]);
+  const csv=[h,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`smashgrove_report_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  toast('Report exported!');
 }
 
 /* ==============================================
