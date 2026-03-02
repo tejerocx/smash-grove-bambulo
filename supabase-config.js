@@ -127,25 +127,27 @@ function bookingToRow(b) {
 
 function rowToCourt(r) {
   return {
-    id:      r.id,
-    name:    r.name,
-    desc:    r.description,
-    rate:    r.rate,
-    blocked: r.blocked,
-    feats:   r.feats || [],
-    photo:   r.photo || '',
+    id:           r.id,
+    name:         r.name,
+    desc:         r.description,
+    rate:         r.rate,
+    blocked:      r.blocked,
+    feats:        r.feats || [],
+    photo:        r.photo || '',
+    rateSchedule: r.rate_schedule || null,
   };
 }
 
 function courtToRow(c) {
   return {
-    id:          c.id,
-    name:        c.name,
-    description: c.desc,
-    rate:        c.rate,
-    blocked:     c.blocked,
-    feats:       c.feats || [],
-    photo:       c.photo || null,
+    id:            c.id,
+    name:          c.name,
+    description:   c.desc,
+    rate:          c.rate,
+    blocked:       c.blocked,
+    feats:         c.feats || [],
+    photo:         c.photo || null,
+    rate_schedule: c.rateSchedule || null,
   };
 }
 

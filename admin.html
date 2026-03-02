@@ -445,7 +445,20 @@ tr:hover td{background:rgba(0,200,83,.025);}
       <input type="hidden" id="cmPhoto"/>
       <div class="fg"><label class="fl">Court Name</label><input type="text" class="fi" id="cmName" placeholder="e.g. Court Alpha"/></div>
       <div class="fg"><label class="fl">Description</label><input type="text" class="fi" id="cmDesc" placeholder="e.g. Outdoor · Air passing through · Standard Flooring"/></div>
-      <div class="fg"><label class="fl">Hourly Rate (₱)</label><input type="number" class="fi" id="cmRate" placeholder="e.g. 350" min="1"/></div>
+      <div class="fg"><label class="fl">Default Hourly Rate (₱) <span style="color:var(--muted);font-size:.78rem;font-weight:400;text-transform:none">— fallback when no time range matches</span></label><input type="number" class="fi" id="cmRate" placeholder="e.g. 350" min="1"/></div>
+      <div class="fg">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label class="fl" style="margin:0">Time-Based Pricing</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.84rem;color:var(--muted)">
+            <input type="checkbox" id="cmTiersEnabled" onchange="toggleTiersUI()" style="accent-color:var(--green);width:15px;height:15px;cursor:pointer;"> Enable
+          </label>
+        </div>
+        <div id="cmTiersWrap" style="display:none;background:var(--input);border:1.5px solid var(--border);border-radius:8px;padding:12px;">
+          <div id="cmTiersRows" style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px;"></div>
+          <button type="button" onclick="addTierRow()" style="background:transparent;border:1.5px dashed var(--border);border-radius:6px;color:var(--muted);font-size:.8rem;padding:6px 14px;cursor:pointer;width:100%;transition:border-color .2s;font-family:inherit;" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Add Time Range</button>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:8px;">Tip: 6AM–4PM ₱150, 4PM–12MN ₱300, 12MN–6AM ₱350</div>
+        </div>
+      </div>
       <div class="fg">
         <label class="fl">Court Photo</label>
         <img id="cmPhotoPreview" src="" alt="Court preview" style="display:none;width:100%;max-height:150px;object-fit:cover;border-radius:8px;margin-bottom:10px;border:1px solid var(--border);"/>
@@ -949,6 +962,39 @@ async function renderCourts(){
   </tr>`).join('');
 }
 
+// ── TIME-BASED PRICING HELPERS ─────────────────────────────
+function _tierHrOpts(sel) {
+  const labels = ['12 AM','1 AM','2 AM','3 AM','4 AM','5 AM','6 AM','7 AM','8 AM','9 AM','10 AM','11 AM',
+                  '12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM','8 PM','9 PM','10 PM','11 PM','12 MN'];
+  return labels.map((l,i)=>`<option value="${i}"${i===sel?' selected':''}>${l}</option>`).join('');
+}
+function toggleTiersUI() {
+  const on = $('cmTiersEnabled').checked;
+  $('cmTiersWrap').style.display = on ? 'block' : 'none';
+  if (on && $('cmTiersRows').children.length === 0) addTierRow(6, 16, '');
+}
+function addTierRow(from='', to='', rate='') {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 90px 32px;gap:5px;align-items:center;';
+  row.innerHTML =
+    `<select class="fi tier-from" style="font-size:.8rem;padding:7px 6px;">${_tierHrOpts(from===''?6:Number(from))}</select>` +
+    `<select class="fi tier-to" style="font-size:.8rem;padding:7px 6px;">${_tierHrOpts(to===''?16:Number(to))}</select>` +
+    `<input type="number" class="fi tier-rate" placeholder="₱/hr" min="1" value="${rate}" style="font-size:.8rem;"/>` +
+    `<button type="button" onclick="this.closest('div').remove()" style="background:transparent;border:1.5px solid var(--border);border-radius:6px;color:var(--muted);font-size:.9rem;cursor:pointer;padding:4px 6px;line-height:1;transition:color .15s,border-color .15s;" onmouseover="this.style.color='#e55';this.style.borderColor='#e55'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕</button>`;
+  $('cmTiersRows').appendChild(row);
+}
+function _readTiers() {
+  if (!$('cmTiersEnabled').checked) return null;
+  const rows = [...$('cmTiersRows').children];
+  if (!rows.length) return null;
+  return rows.map(r => ({
+    from: parseInt(r.querySelector('.tier-from').value),
+    to:   parseInt(r.querySelector('.tier-to').value),
+    rate: parseFloat(r.querySelector('.tier-rate').value) || 0,
+  })).filter(t => t.rate > 0);
+}
+// ───────────────────────────────────────────────────────────
+
 async function openCourtModal(id){
   const c=id?(await DB.getCourts()).find(x=>x.id===id):null;
   $('cmTitle').textContent=c?'EDIT COURT':'ADD COURT';
@@ -956,6 +1002,12 @@ async function openCourtModal(id){
   $('cmName').value=c?c.name:'';
   $('cmDesc').value=c?c.desc:'';
   $('cmRate').value=c?c.rate:'';
+  // Rate schedule
+  $('cmTiersRows').innerHTML = '';
+  const tiers = c?.rateSchedule;
+  $('cmTiersEnabled').checked = !!(tiers && tiers.length);
+  $('cmTiersWrap').style.display = (tiers && tiers.length) ? 'block' : 'none';
+  if (tiers && tiers.length) tiers.forEach(t => addTierRow(t.from, t.to, t.rate));
   // Photo
   const photo=c?.photo||'';
   $('cmPhoto').value=photo;
@@ -996,10 +1048,11 @@ async function saveCourt(){
   const desc=$('cmDesc').value.trim();
   const rate=parseFloat($('cmRate').value);
   const photo=$('cmPhoto').value||null;
+  const rateSchedule=_readTiers();
   if(!name||!rate||isNaN(rate)){toast('Fill all fields.','err');return;}
   const court = id
-    ? { ...(await DB.getCourts()).find(c=>c.id===id), name, desc, rate, photo }
-    : { id:'c'+Date.now(), name, desc, rate, blocked:false, feats:[], photo };
+    ? { ...(await DB.getCourts()).find(c=>c.id===id), name, desc, rate, photo, rateSchedule }
+    : { id:'c'+Date.now(), name, desc, rate, blocked:false, feats:[], photo, rateSchedule };
   await DB.saveCourt(court);
   closeModal('courtModal');
   await renderCourts();

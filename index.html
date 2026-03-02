@@ -1312,6 +1312,8 @@ function initDark() {
 /* =============================================
    OPERATING HOURS
    ============================================= */
+let _settingsTiers = null; // backup of global tiers from settings
+
 async function loadOperatingHours() {
   const settings = await DB.getSettings();
   openHour  = parseInt(settings.open_hour  || '6');
@@ -1319,6 +1321,7 @@ async function loadOperatingHours() {
   if (settings.pricing_tiers) {
     try { pricingTiers = JSON.parse(settings.pricing_tiers); } catch(e) {}
   }
+  _settingsTiers = pricingTiers.length ? [...pricingTiers] : null;
   applyPaymentSettings(settings);
   const note = $('slotHoursNote');
   if (note) note.textContent = `(${fmtT(openHour)} – ${fmtT(closeHour)} · select consecutive hours)`;
@@ -1685,9 +1688,21 @@ async function selectCourt(id) {
   court = courts.find(c => c.id === id);
   if (!court) return;
   selSlots = [];
+  // Apply per-court rate schedule if set, else fall back to global settings tiers
+  if (court.rateSchedule && court.rateSchedule.length) {
+    pricingTiers = court.rateSchedule;
+  } else {
+    pricingTiers = _settingsTiers && _settingsTiers.length
+      ? _settingsTiers
+      : [{ from: openHour, to: closeHour, rate: court.rate }];
+  }
   document.querySelectorAll('.cc').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
   const d = $('courtDisp');
-  d.textContent = `${court.name} — ${fmt(court.rate)}/hr`;
+  const rates = pricingTiers.map(t => t.rate);
+  const rateDisp = rates.length && Math.min(...rates) !== Math.max(...rates)
+    ? `${fmt(Math.min(...rates))}–${fmt(Math.max(...rates))}/hr`
+    : `${fmt(court.rate)}/hr`;
+  d.textContent = `${court.name} — ${rateDisp}`;
   d.classList.add('on');
 
   await renderSlots();
