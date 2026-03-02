@@ -452,10 +452,119 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .m-x:hover { background:var(--red); }
 .m-body { padding:22px 24px; }
 .m-foot { padding:14px 24px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+/* ── BOOKING CONFIRMATION TICKET ─────────────────────────── */
+#invModal { align-items:flex-end; padding:0; }
+@media(min-width:600px){ #invModal { align-items:center; padding:20px; } }
+.inv-card {
+  background:var(--card); width:100%; max-width:480px; border-radius:20px 20px 0 0;
+  overflow:hidden; position:relative;
+  animation:invSlideUp .38s cubic-bezier(.32,1.2,.5,1) both;
+}
+@media(min-width:600px){ .inv-card { border-radius:20px; animation:invScaleIn .32s cubic-bezier(.32,1.2,.5,1) both; } }
+@keyframes invSlideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes invScaleIn { from { transform:scale(.88); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+.inv-hero {
+  background:linear-gradient(135deg, #0d2e0d 0%, #1a3d1a 100%);
+  padding:32px 24px 24px; text-align:center; position:relative; overflow:hidden;
+}
+.inv-hero::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(circle at 50% 0%, rgba(74,154,74,.25) 0%, transparent 70%);
+}
+.inv-check-wrap {
+  width:64px; height:64px; border-radius:50%;
+  background:linear-gradient(135deg,#4a9a4a,#2d6e2d);
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 14px; position:relative; z-index:1;
+  box-shadow:0 0 0 8px rgba(74,154,74,.15), 0 0 0 16px rgba(74,154,74,.07);
+  animation:invPop .5s .2s cubic-bezier(.32,1.4,.5,1) both;
+}
+@keyframes invPop { from { transform:scale(0); opacity:0; } to { transform:scale(1); opacity:1; } }
+.inv-check-icon { font-size:2rem; color:#fff; line-height:1; }
+.inv-hero-title { font-family:'Bebas Neue',sans-serif; font-size:1.7rem; letter-spacing:2px; position:relative; z-index:1; }
+.inv-hero-sub { font-size:.82rem; color:var(--muted); margin-top:4px; position:relative; z-index:1; }
+.inv-status-bdg { display:inline-block; margin-top:10px; padding:4px 14px; border-radius:20px; font-size:.75rem; font-weight:600; letter-spacing:.5px; position:relative; z-index:1; }
+.inv-status-pending { background:rgba(200,160,96,.15); color:var(--yellow); border:1px solid rgba(200,160,96,.35); }
+.inv-status-confirmed { background:rgba(74,154,74,.15); color:var(--green); border:1px solid rgba(74,154,74,.35); }
+
+.inv-ref-wrap {
+  padding:18px 24px 0; text-align:center;
+}
+.inv-ref-label { font-size:.68rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+.inv-ref-num { font-family:'Bebas Neue',sans-serif; font-size:2rem; color:var(--green); letter-spacing:3px; margin:2px 0 8px; }
+.inv-copy-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(74,154,74,.1); border:1px solid rgba(74,154,74,.3);
+  color:var(--green); border-radius:8px; padding:5px 14px;
+  font-size:.78rem; font-family:'Outfit',sans-serif; cursor:pointer;
+  transition:background .15s, transform .1s;
+}
+.inv-copy-btn:active { transform:scale(.95); }
+.inv-copy-btn:hover { background:rgba(74,154,74,.2); }
+
+.inv-perf {
+  margin:18px 0 0; height:1px;
+  background:repeating-linear-gradient(to right, var(--border) 0, var(--border) 6px, transparent 6px, transparent 12px);
+  position:relative;
+}
+.inv-perf::before, .inv-perf::after {
+  content:''; position:absolute; top:50%; transform:translateY(-50%);
+  width:20px; height:20px; border-radius:50%; background:var(--bg);
+}
+.inv-perf::before { left:-10px; }
+.inv-perf::after { right:-10px; }
+
+.inv-body { padding:18px 24px 0; }
+.i-row { display:flex; justify-content:space-between; align-items:flex-start; padding:7px 0; font-size:.86rem; border-bottom:1px solid rgba(255,255,255,.04); }
+.i-row:last-child { border-bottom:none; }
+.i-row .lb { color:var(--muted); flex-shrink:0; }
+.i-row .vl { font-weight:600; text-align:right; max-width:60%; }
+
+.inv-amount-wrap {
+  margin:16px 24px 0;
+  background:linear-gradient(135deg,rgba(74,154,74,.1),rgba(74,154,74,.04));
+  border:1px solid rgba(74,154,74,.2); border-radius:12px; padding:16px; text-align:center;
+}
+.inv-amt-total { font-size:.7rem; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
+.inv-amt-val { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; color:var(--green); }
+.inv-amt-down-wrap { margin-top:10px; padding-top:10px; border-top:1px dashed rgba(74,154,74,.25); }
+.inv-amt-down-label { font-size:.68rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+.inv-amt-down-val { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:var(--yellow); }
+.inv-amt-down-note { font-size:.72rem; color:var(--muted); margin-top:2px; }
+
+.inv-next {
+  margin:16px 24px 0;
+  background:rgba(74,154,74,.05); border:1px solid rgba(74,154,74,.15);
+  border-radius:12px; padding:14px 16px;
+}
+.inv-next-title { font-size:.72rem; font-weight:700; color:var(--green); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+.inv-next-step { display:flex; align-items:flex-start; gap:10px; font-size:.82rem; margin-bottom:8px; }
+.inv-next-step:last-child { margin-bottom:0; }
+.inv-next-num { width:20px; height:20px; border-radius:50%; background:rgba(74,154,74,.2); color:var(--green); font-size:.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.inv-next-txt { color:var(--muted); line-height:1.4; }
+.inv-next-txt strong { color:var(--text); }
+
+.inv-email-note { margin:12px 24px 0; font-size:.78rem; color:var(--muted); text-align:center; }
+
+.inv-actions {
+  padding:16px 24px 24px; display:flex; gap:10px; margin-top:6px;
+}
+.inv-actions .btn-print {
+  flex:1; padding:11px; border-radius:10px; font-size:.86rem; font-family:'Outfit',sans-serif;
+  background:var(--input); border:1px solid var(--border); color:var(--muted); cursor:pointer;
+  transition:background .15s;
+}
+.inv-actions .btn-print:hover { background:var(--border); }
+.inv-actions .btn-done {
+  flex:2; padding:11px; border-radius:10px; font-size:.9rem; font-weight:700; font-family:'Outfit',sans-serif;
+  background:linear-gradient(135deg,var(--green),var(--green-dark));
+  border:none; color:#fff; cursor:pointer; transition:opacity .15s, transform .1s;
+}
+.inv-actions .btn-done:active { transform:scale(.97); }
+
+/* legacy classes kept for compatibility */
 .inv-ref { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; color:var(--green); }
-.i-row { display:flex; justify-content:space-between; padding:6px 0; font-size:.87rem; }
-.i-row .lb { color:var(--muted); }
-.i-row .vl { font-weight:600; }
 .i-div { height:1px; background:var(--border); margin:12px 0; }
 .i-tot { background:linear-gradient(135deg,rgba(74,154,74,.1),rgba(74,154,74,.03)); border:1px solid rgba(74,154,74,.25); border-radius:var(--r); padding:16px; text-align:center; margin-top:14px; }
 .i-amt { font-family:'Bebas Neue',sans-serif; font-size:2.4rem; color:var(--green); }
@@ -1202,45 +1311,61 @@ body.light #splashScreen { background: var(--bg); }
 </footer>
 
 <!-- INVOICE MODAL -->
-<div class="overlay" id="invModal">
-  <div class="modal">
-    <div class="m-hd">
-      <h2 id="iTitle">🎾 BOOKING CONFIRMED!</h2>
-      <button class="m-x" onclick="closeModal()">✕</button>
+<div class="overlay" id="invModal" style="align-items:flex-end;padding:0;">
+  <div class="inv-card">
+    <!-- Hero -->
+    <div class="inv-hero">
+      <button onclick="closeModal()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,.08);border:none;color:var(--muted);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;z-index:2;">✕</button>
+      <div class="inv-check-wrap"><span class="inv-check-icon">✓</span></div>
+      <div class="inv-hero-title" id="iTitle">Booking Received!</div>
+      <div class="inv-hero-sub" id="iHeroSub">Your slot is reserved — pending confirmation</div>
+      <span class="inv-status-bdg inv-status-pending" id="iStatus">Pending Confirmation</span>
     </div>
-    <div class="m-body">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-        <div>
-          <div style="font-size:.71rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Reference No.</div>
-          <div class="inv-ref" id="iRef">—</div>
-        </div>
-        <span class="bdg bdg-p" id="iStatus">Pending</span>
-      </div>
-      <div class="i-div"></div>
+
+    <!-- Ref number -->
+    <div class="inv-ref-wrap">
+      <div class="inv-ref-label">Booking Reference</div>
+      <div class="inv-ref-num" id="iRef">—</div>
+      <button class="inv-copy-btn" onclick="copyInvRef()">📋 Copy Ref</button>
+    </div>
+
+    <!-- Perforated divider -->
+    <div class="inv-perf"></div>
+
+    <!-- Details -->
+    <div class="inv-body">
       <div class="i-row"><span class="lb">👤 Name</span><span class="vl" id="iName">—</span></div>
       <div class="i-row"><span class="lb">📱 Contact</span><span class="vl" id="iContact">—</span></div>
       <div class="i-row"><span class="lb">✉️ Email</span><span class="vl" id="iEmail">—</span></div>
-      <div class="i-div"></div>
       <div class="i-row"><span class="lb">🏟️ Court</span><span class="vl" id="iCourt">—</span></div>
       <div class="i-row"><span class="lb">📅 Date</span><span class="vl" id="iDate">—</span></div>
       <div class="i-row"><span class="lb">⏰ Time</span><span class="vl" id="iTime">—</span></div>
       <div class="i-row"><span class="lb">⌛ Duration</span><span class="vl" id="iDur">—</span></div>
       <div class="i-row"><span class="lb">💳 Payment</span><span class="vl" id="iPay">—</span></div>
       <div id="iGcashRefRow" class="i-row" style="display:none"><span class="lb">🔖 GCash Ref #</span><span class="vl" id="iGcashRef">—</span></div>
-      <div class="i-tot">
-        <div style="font-size:.74rem;color:var(--muted);margin-bottom:4px">TOTAL AMOUNT DUE</div>
-        <div class="i-amt" id="iTot">₱0.00</div>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed rgba(74,154,74,.3)">
-          <div style="font-size:.72rem;color:var(--muted);margin-bottom:2px">50% DOWNPAYMENT</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--yellow)" id="iDown">₱0.00</div>
-          <div style="font-size:.7rem;color:var(--muted)" id="iDownNote">—</div>
-        </div>
-      </div>
-      <div class="e-note" id="iEmailNote">📧 Confirmation email simulated.</div>
     </div>
-    <div class="m-foot">
-      <button class="btn btn-g" onclick="window.print()">🖨️ Print</button>
-      <button class="btn btn-p" onclick="closeModal()">Done ✓</button>
+
+    <!-- Amount -->
+    <div class="inv-amount-wrap">
+      <div class="inv-amt-total">Total Amount</div>
+      <div class="inv-amt-val" id="iTot">₱0.00</div>
+      <div class="inv-amt-down-wrap">
+        <div class="inv-amt-down-label" id="iDownLabel">50% Downpayment Due</div>
+        <div class="inv-amt-down-val" id="iDown">₱0.00</div>
+        <div class="inv-amt-down-note" id="iDownNote">—</div>
+      </div>
+    </div>
+
+    <!-- What's next -->
+    <div class="inv-next" id="iNext"></div>
+
+    <!-- Email note -->
+    <div class="inv-email-note" id="iEmailNote"></div>
+
+    <!-- Actions -->
+    <div class="inv-actions">
+      <button class="btn-print" onclick="window.print()">🖨️ Print</button>
+      <button class="btn-done" onclick="closeModal()">Done ✓</button>
     </div>
   </div>
 </div>
@@ -2128,43 +2253,80 @@ function resetForm() {
    INVOICE MODAL
    ============================================= */
 function showInvoice(b) {
-  const setTxt = (id, value) => {
-    const el = $(id);
-    if (el) el.textContent = value;
-  };
-  const paid = b.paymentStatus === 'paid';
+  const set = (id, value) => { const el = $(id); if (el) el.textContent = value; };
   const isConfirmed = b.status === 'confirmed';
-  let title = '🎾 BOOKING CONFIRMED!';
-  if (!isConfirmed) {
-    title = '🎾 BOOKING RECEIVED — PENDING CONFIRMATION';
+  const isFullPay = b.downpayment >= b.total;
+  const payLabel = b.paymentMethod === 'gcash' ? 'GCash' : b.paymentMethod === 'gotyme' ? 'GoTyme Bank' : 'Cash';
+
+  // Hero
+  set('iTitle', isConfirmed ? 'Booking Confirmed!' : 'Booking Received!');
+  set('iHeroSub', isConfirmed ? 'Your court is confirmed. See you on the court!' : 'Your slot is reserved — pending owner confirmation.');
+  const statusEl = $('iStatus');
+  if (statusEl) {
+    statusEl.textContent = isConfirmed ? '✓ Confirmed' : '⏳ Pending Confirmation';
+    statusEl.className = 'inv-status-bdg ' + (isConfirmed ? 'inv-status-confirmed' : 'inv-status-pending');
   }
-  setTxt('iTitle', title);
-  setTxt('iRef', b.ref);
-  setTxt('iName', b.fullName);
-  setTxt('iContact', b.contactNumber);
-  setTxt('iEmail', b.email);
-  setTxt('iCourt', b.courtName);
-  setTxt('iDate', fmtD(b.date));
-  setTxt('iTime', `${b.startTime} – ${b.endTime}`);
-  setTxt('iDur', `${b.duration} hr${b.duration !== 1 ? 's' : ''}`);
-  setTxt('iPay', b.paymentMethod === 'gcash' ? 'GCash' : b.paymentMethod === 'gotyme' ? 'GoTyme Bank' : 'Cash');
-  const iStatus = $('iStatus');
-  if (iStatus) {
-    iStatus.textContent = isConfirmed ? 'Confirmed' : (paid ? 'Paid (Awaiting Admin Confirmation)' : 'Pending');
-    iStatus.className = isConfirmed ? 'bdg bdg-c' : 'bdg bdg-p';
-  }
-  setTxt('iTot', fmt(b.total));
-  setTxt('iDown', fmt(b.downpayment));
+
+  // Ref & details
+  set('iRef', b.ref);
+  set('iName', b.fullName);
+  set('iContact', b.contactNumber);
+  set('iEmail', b.email);
+  set('iCourt', b.courtName);
+  set('iDate', fmtD(b.date));
+  set('iTime', `${b.startTime} – ${b.endTime}`);
+  set('iDur', `${b.duration} hr${b.duration !== 1 ? 's' : ''}`);
+  set('iPay', payLabel);
+
   if (b.gcashRef) {
     if ($('iGcashRefRow')) $('iGcashRefRow').style.display = '';
-    setTxt('iGcashRef', b.gcashRef);
-    setTxt('iDownNote', `${b.paymentMethod === 'gotyme' ? 'GoTyme' : 'GCash'} ref # submitted ✓ — owner will verify and confirm your slot.`);
+    set('iGcashRef', b.gcashRef);
   } else {
     if ($('iGcashRefRow')) $('iGcashRefRow').style.display = 'none';
-    setTxt('iDownNote', 'Pay downpayment at front desk before your session.');
   }
-  setTxt('iEmailNote', `📧 Confirmation email simulated to: ${b.email}`);
+
+  // Amount
+  set('iTot', fmt(b.total));
+  set('iDown', fmt(b.downpayment));
+  set('iDownLabel', isFullPay ? 'Full Payment' : '50% Downpayment Due');
+  set('iDownNote', isFullPay ? '✅ Fully paid — no balance due on arrival.' :
+    b.gcashRef ? `${payLabel} ref submitted ✓ — owner will verify shortly.` :
+    'Pay downpayment at the front desk before your session.');
+
+  // What's next steps
+  const nextEl = $('iNext');
+  if (nextEl) {
+    const steps = b.gcashRef ? [
+      ['Show this booking ref to the front desk.', '1'],
+      [`Your ${payLabel} ref # has been submitted for verification.`, '2'],
+      ['You\'ll receive a confirmation once the owner verifies payment.', '3'],
+    ] : b.paymentMethod === 'cash' ? [
+      ['Show this booking ref to the front desk.', '1'],
+      [`Pay the ${isFullPay ? 'full amount' : '50% downpayment'} of <strong>${fmt(b.downpayment)}</strong> in cash on arrival.`, '2'],
+      ['Your slot will be confirmed after payment.', '3'],
+    ] : [
+      ['Show this booking ref to the front desk.', '1'],
+      ['Your booking is awaiting confirmation.', '2'],
+    ];
+    nextEl.innerHTML = `<div class="inv-next-title">What's Next</div>` +
+      steps.map(([txt, n]) => `<div class="inv-next-step"><div class="inv-next-num">${n}</div><div class="inv-next-txt">${txt}</div></div>`).join('');
+  }
+
+  // Email note
+  set('iEmailNote', b.email ? `📧 Confirmation details sent to ${b.email}` : '');
+
   if ($('invModal')) $('invModal').classList.add('show');
+}
+
+function copyInvRef() {
+  const ref = $('iRef')?.textContent || '';
+  if (!ref || ref === '—') return;
+  navigator.clipboard.writeText(ref).then(() => toast('Booking ref copied! 📋', 'ok')).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = ref; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    toast('Booking ref copied! 📋', 'ok');
+  });
 }
 
 function closeModal() {
