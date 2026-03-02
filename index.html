@@ -1795,7 +1795,7 @@ async function renderWizCourts() {
     const isBlk = !!c.blocked;
     const isSel = court && court.id === c.id;
     return `<div class="wiz-court-card${isBlk ? ' blk' : isSel ? ' sel' : ''}"
-      ${isBlk ? '' : `onclick="wizPickCourt('${c.id}')"`}>
+      ${isBlk ? '' : `onclick="wizPickCourt('${c.id}', this)"`}>
       <div class="wiz-court-icon">🏟️</div>
       <div style="flex:1;min-width:0">
         <div class="wiz-court-name">${c.name}</div>
@@ -1806,10 +1806,10 @@ async function renderWizCourts() {
   }).join('');
 }
 
-async function wizPickCourt(id) {
+async function wizPickCourt(id, el) {
   await selectCourt(id);
-  document.querySelectorAll('.wiz-court-card').forEach(el => el.classList.remove('sel'));
-  event.currentTarget && event.currentTarget.classList.add('sel');
+  document.querySelectorAll('.wiz-court-card').forEach(e => e.classList.remove('sel'));
+  if (el) el.classList.add('sel');
   wizGoTo(2);
 }
 
