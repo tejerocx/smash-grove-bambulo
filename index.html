@@ -992,6 +992,38 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 /* Light mode overrides for splash */
 body.light #splashScreen { background: var(--bg); }
 
+/* ── BOOKING WIZARD ── */
+.wiz-steps { display:flex; align-items:flex-start; padding:18px 22px 12px; gap:0; border-bottom:1px solid var(--border); flex-shrink:0; }
+.wiz-step { display:flex; flex-direction:column; align-items:center; flex:1; position:relative; }
+.wiz-step:not(:last-child)::after { content:''; position:absolute; top:13px; left:calc(50% + 15px); right:calc(-50% + 15px); height:2px; background:var(--border); z-index:0; transition:background .3s; }
+.wiz-step.done::after { background:var(--green); }
+.wiz-dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:800; position:relative; z-index:1; transition:all .25s; }
+.wiz-step.done .wiz-dot   { background:var(--green); border-color:var(--green); color:#000; }
+.wiz-step.active .wiz-dot { border-color:var(--green); color:var(--green); background:rgba(74,154,74,.12); }
+.wiz-lbl { font-size:.58rem; margin-top:5px; color:var(--muted); white-space:nowrap; font-weight:600; letter-spacing:.3px; }
+.wiz-step.active .wiz-lbl, .wiz-step.done .wiz-lbl { color:var(--green); }
+.wiz-panel { display:none; }
+.wiz-panel.on { display:block; animation:wizFadeIn .18s ease; }
+@keyframes wizFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.wiz-sec-title { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.wiz-court-list { display:flex; flex-direction:column; gap:10px; }
+.wiz-court-card { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--input); border:2px solid var(--border); border-radius:12px; cursor:pointer; transition:all .2s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.wiz-court-card:hover { border-color:var(--green); background:rgba(74,154,74,.06); }
+.wiz-court-card.sel  { border-color:var(--green); background:rgba(74,154,74,.10); }
+.wiz-court-card.blk  { opacity:.5; cursor:not-allowed; }
+.wiz-court-icon { font-size:1.8rem; flex-shrink:0; }
+.wiz-court-name { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:1px; }
+.wiz-court-meta { font-size:.76rem; color:var(--muted); margin-top:2px; }
+.wiz-court-badge { margin-left:auto; font-size:.65rem; font-weight:800; padding:3px 9px; border-radius:20px; flex-shrink:0; }
+.wiz-court-badge.av  { background:var(--green); color:#000; }
+.wiz-court-badge.mnt { background:rgba(140,140,140,.6); color:#fff; }
+.wiz-date-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.wiz-date-row label { font-size:.77rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); white-space:nowrap; }
+.wiz-date-row .fi { flex:1; }
+.wiz-summary { background:var(--input); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-top:8px; }
+.wiz-summary-lbl { font-size:.68rem; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px; font-weight:700; }
+.btn-lg { padding:13px 28px; font-size:.95rem; }
+
 </style>
 </head>
 <body>
@@ -1071,213 +1103,253 @@ body.light #splashScreen { background: var(--bg); }
 <div class="sec" id="courts" style="padding-top:24px">
   <div class="sec-hd">
     <h2>🏟️ SELECT A COURT</h2>
-    <p>Tap a time slot to select, choose consecutive hours, then press <strong>Book Now</strong>.</p>
+    <p>Tap a time slot, choose consecutive hours, then press <strong>Book Now</strong>. Or use the step-by-step wizard below.</p>
+    <button class="btn btn-p btn-lg" onclick="openWizard()" style="margin-top:12px">🎾 Book a Court</button>
   </div>
   <div class="courts" id="courtsGrid"></div>
 </div>
 
-<!-- BOOKING MODAL -->
-<div class="bk-modal-overlay" id="bookModal" onclick="if(event.target===this) closeBookModal()">
+<!-- BOOKING MODAL — 4-step wizard -->
+<div class="bk-modal-overlay" id="bookModal">
   <div class="bk-modal">
 
-    <!-- Header -->
-    <div class="bk-modal-hd">
-      <div>
-        <div class="bk-modal-court" id="bmCourtName">Court</div>
-        <div class="bk-modal-meta" id="bmMeta">—</div>
+    <!-- Step indicator -->
+    <div class="wiz-steps">
+      <div class="wiz-step active" id="wizStep1">
+        <div class="wiz-dot">1</div>
+        <div class="wiz-lbl">Court</div>
       </div>
-      <button class="bk-modal-x" onclick="closeBookModal()" type="button">✕</button>
+      <div class="wiz-step" id="wizStep2">
+        <div class="wiz-dot">2</div>
+        <div class="wiz-lbl">Date &amp; Time</div>
+      </div>
+      <div class="wiz-step" id="wizStep3">
+        <div class="wiz-dot">3</div>
+        <div class="wiz-lbl">Details</div>
+      </div>
+      <div class="wiz-step" id="wizStep4">
+        <div class="wiz-dot">4</div>
+        <div class="wiz-lbl">Payment</div>
+      </div>
     </div>
 
     <!-- Scrollable body -->
     <div class="bk-modal-body">
-      <form id="bookForm" onsubmit="submitBooking(event)">
-
-        <!-- Hidden fields -->
-        <input type="hidden" id="bDate" />
+      <form id="bookForm" onsubmit="return false">
         <input type="hidden" id="courtDisp" />
 
-        <!-- Personal info -->
-        <div class="frow">
-          <div class="fg" style="margin:0">
-            <label class="fl" for="bName">👤 Full Name</label>
-            <input type="text" class="fi" id="bName" placeholder="First Name / Last Name" required autocomplete="off" />
-          </div>
-          <div class="fg" style="margin:0">
-            <label class="fl" for="bPhone">📱 Contact Number</label>
-            <input type="tel" class="fi" id="bPhone" placeholder="09XX XXX XXXX" required autocomplete="off" />
-          </div>
-        </div>
-        <div class="fg">
-          <label class="fl" for="bEmail">✉️ Email Address</label>
-          <input type="email" class="fi" id="bEmail" placeholder="youremail@gmail.com" required autocomplete="off" />
-        </div>
-
-        <!-- Payment Method -->
-        <div class="fg">
-          <label class="fl">💳 Downpayment Method</label>
-          <div class="pay-opts pay-opts-3">
-            <div class="pay-opt" id="payOptGcash" data-m="gcash" onclick="pickPay('gcash')">
-              <div class="pay-ic">📲</div>
-              <div class="pay-lb">GCash</div>
-              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Secure checkout or QR</div>
-            </div>
-            <div class="pay-opt" id="payOptGotyme" data-m="gotyme" onclick="pickPay('gotyme')">
-              <div class="pay-ic">🏦</div>
-              <div class="pay-lb">GoTyme</div>
-              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
-            </div>
-            <div class="pay-opt" id="payOptCash" data-m="cash" onclick="pickPay('cash')">
-              <div class="pay-ic">💵</div>
-              <div class="pay-lb">Cash</div>
-              <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Pay at front desk</div>
-            </div>
-          </div>
-          <div id="payMethodsHint" style="display:none;font-size:.74rem;color:var(--red);margin-top:8px"></div>
-          <input type="hidden" id="bPay" />
-        </div>
-
-        <!-- GCash QR section -->
-        <div class="gcash" id="gcashBox">
-          <div class="gc-header">
-            <span class="gc-header-icon">📲</span>
-            <span class="gc-header-lbl">GCash Payment</span>
-          </div>
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
-          <div class="pay-amount-toggle">
-            <div class="pat-btn on" id="gcPat50" onclick="setPayAmount('half')">
-              <div class="pat-icon">⚡</div>
-              <div>50% Downpayment</div>
-              <div class="pat-amt" id="gcPat50Amt"></div>
-            </div>
-            <div class="pat-btn" id="gcPat100" onclick="setPayAmount('full')">
-              <div class="pat-icon">✅</div>
-              <div>Full Payment</div>
-              <div class="pat-amt" id="gcPat100Amt"></div>
-            </div>
-          </div>
-          <div class="gc-amount-card">
-            <div class="gc-amount-lbl">You will send</div>
-            <div class="gc-amount-val" id="gcDownAmt">—</div>
-          </div>
-          <div class="gc-send-card">
-            <div class="gc-send-lbl">Send to this GCash number</div>
-            <div class="gc-num-row">
-              <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
-              <button type="button" class="gc-copy-btn" onclick="copyMerchantNum()">📋 Copy</button>
-            </div>
-            <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
-          </div>
-          <div class="gc-or"><span>or scan QR code</span></div>
-          <div class="qr-steps">
-            <span class="qr-step">1️⃣ Open GCash</span>
-            <span style="color:var(--muted)">→</span>
-            <span class="qr-step">2️⃣ Scan QR</span>
-            <span style="color:var(--muted)">→</span>
-            <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
-          </div>
-          <div class="qr-scan-wrap">
-            <img id="gcashQrImg" class="qr-img" alt="GCash QR Code" style="display:none" />
-            <div id="gcashQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-              <span style="font-size:2rem">📲</span>
-              <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
-            </div>
-            <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
-          </div>
-          <div class="gc-note">After paying, scroll down and enter your GCash reference number below.</div>
-        </div>
-
-        <!-- GoTyme QR section -->
-        <div class="gcash" id="gotymeBox">
-          <div class="gc-header">
-            <span class="gc-header-icon">🏦</span>
-            <span class="gc-header-lbl">GoTyme Payment</span>
-          </div>
-          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
-          <div class="pay-amount-toggle">
-            <div class="pat-btn on" id="gtPat50" onclick="setPayAmount('half')">
-              <div class="pat-icon">⚡</div>
-              <div>50% Downpayment</div>
-              <div class="pat-amt" id="gtPat50Amt"></div>
-            </div>
-            <div class="pat-btn" id="gtPat100" onclick="setPayAmount('full')">
-              <div class="pat-icon">✅</div>
-              <div>Full Payment</div>
-              <div class="pat-amt" id="gtPat100Amt"></div>
-            </div>
-          </div>
-          <div class="gc-amount-card">
-            <div class="gc-amount-lbl">You will send</div>
-            <div class="gc-amount-val" id="gtDownAmt">—</div>
-          </div>
-          <div class="gc-send-card">
-            <div class="gc-send-lbl">Send to</div>
-            <div class="gc-name" id="gtMerchantName" style="font-size:1rem;font-weight:700;color:var(--text);margin:4px 0 0">Smash Grove Bambulo Pickleyard</div>
-          </div>
-          <div class="gc-or"><span>scan QR code to pay</span></div>
-          <div class="qr-steps">
-            <span class="qr-step">1️⃣ Open GoTyme</span>
-            <span style="color:var(--muted)">→</span>
-            <span class="qr-step">2️⃣ Scan QR</span>
-            <span style="color:var(--muted)">→</span>
-            <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
-          </div>
-          <div class="qr-scan-wrap">
-            <img id="gotymeQrImg" class="qr-img" alt="GoTyme QR Code" style="display:none" />
-            <div id="gotymeQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-              <span style="font-size:2rem">🏦</span>
-              <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
-            </div>
-            <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
-          </div>
-          <div class="gc-note">After paying, scroll down and enter your GoTyme reference number below.</div>
-        </div>
-
-        <!-- GCash / GoTyme Reference Number proof -->
-        <div id="gcashRefWrap" style="display:none;margin-top:2px;">
-          <div style="background:rgba(74,154,74,.07);border:1.5px solid rgba(74,154,74,.3);border-radius:var(--r);padding:14px 16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <label style="font-size:.73rem;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700">
-                🔖 Reference Number <span id="refMethodLabel" style="color:var(--muted);text-transform:none;font-size:.72rem;font-weight:400;letter-spacing:0"></span>
-              </label>
-              <span id="gcRefCount" style="font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap">0 digits</span>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890123"
-                style="font-family:monospace;letter-spacing:1.5px;font-size:.93rem;flex:1;" maxlength="30" autocomplete="off"
-                oninput="updateRefCount()" inputmode="numeric" />
-              <button type="button" class="gc-copy-btn" onclick="pasteRef()" style="background:var(--input);color:var(--text);border:1px solid var(--border);flex-shrink:0;">📋 Paste</button>
-            </div>
-            <div style="font-size:.7rem;color:var(--muted);margin-top:7px;line-height:1.6">
-              Open your GCash/GoTyme receipt and copy the reference number here. The owner will verify this before confirming your slot.
-            </div>
+        <!-- ── STEP 1: PICK COURT ── -->
+        <div class="wiz-panel on" id="wizPanel1">
+          <div class="wiz-sec-title">🏟️ Select a Court</div>
+          <div class="wiz-court-list" id="wizCourtList">
+            <div style="color:var(--muted);font-size:.82rem;padding:12px 0">Loading courts…</div>
           </div>
         </div>
 
-        <!-- Cash downpayment note -->
-        <div class="cash-note" id="cashNote" style="display:none">
-          💵 <strong>Cash payment</strong> is only available for pre-arranged bookings — you must have already contacted the manager and received approval before selecting this option. Payment is due at the front desk upon arrival.
+        <!-- ── STEP 2: DATE & TIME ── -->
+        <div class="wiz-panel" id="wizPanel2">
+          <div class="wiz-sec-title">📅 Pick a Date &amp; Time</div>
+          <div class="wiz-date-row">
+            <label for="bDate">Date</label>
+            <input type="date" class="fi" id="bDate" onchange="renderSlots()" />
+          </div>
+          <div id="slotMsg" class="slot-msg">Select a date above to see real-time availability.</div>
+          <div id="slotsGrid"></div>
         </div>
 
-        <!-- Price Breakdown -->
-        <div class="divider"></div>
-        <div class="price-bx">
-          <div class="pr"><span>Duration</span><span id="pHrs">0 hrs</span></div>
-          <div class="pr"><span>Hourly Rate</span><span id="pRate">₱0/hr</span></div>
-          <div class="pr tot"><span>TOTAL</span><span id="pTot">₱0.00</span></div>
-          <div class="pr down-row"><span id="pDownLabel">⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
+        <!-- ── STEP 3: YOUR DETAILS ── -->
+        <div class="wiz-panel" id="wizPanel3">
+          <div class="wiz-sec-title">👤 Your Details</div>
+          <div class="frow">
+            <div class="fg" style="margin:0">
+              <label class="fl" for="bName">Full Name</label>
+              <input type="text" class="fi" id="bName" placeholder="First Name / Last Name" autocomplete="off" />
+            </div>
+            <div class="fg" style="margin:0">
+              <label class="fl" for="bPhone">Contact Number</label>
+              <input type="tel" class="fi" id="bPhone" placeholder="09XX XXX XXXX" autocomplete="off" />
+            </div>
+          </div>
+          <div class="fg">
+            <label class="fl" for="bEmail">Email Address</label>
+            <input type="email" class="fi" id="bEmail" placeholder="youremail@gmail.com" autocomplete="off" />
+          </div>
+          <div class="wiz-summary">
+            <div class="wiz-summary-lbl">Booking Summary</div>
+            <div id="wiz3Summary" style="font-size:.84rem;line-height:2"></div>
+          </div>
         </div>
-        <div class="down-note" id="downNote" style="margin-top:10px">
-          ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.
+
+        <!-- ── STEP 4: PAYMENT ── -->
+        <div class="wiz-panel" id="wizPanel4">
+          <div class="wiz-sec-title">💳 Payment</div>
+
+          <!-- Payment Method -->
+          <div class="fg">
+            <label class="fl">Downpayment Method</label>
+            <div class="pay-opts pay-opts-3">
+              <div class="pay-opt" id="payOptGcash" data-m="gcash" onclick="pickPay('gcash')">
+                <div class="pay-ic">📲</div>
+                <div class="pay-lb">GCash</div>
+                <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Secure checkout or QR</div>
+              </div>
+              <div class="pay-opt" id="payOptGotyme" data-m="gotyme" onclick="pickPay('gotyme')">
+                <div class="pay-ic">🏦</div>
+                <div class="pay-lb">GoTyme</div>
+                <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
+              </div>
+              <div class="pay-opt" id="payOptCash" data-m="cash" onclick="pickPay('cash')">
+                <div class="pay-ic">💵</div>
+                <div class="pay-lb">Cash</div>
+                <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Pay at front desk</div>
+              </div>
+            </div>
+            <div id="payMethodsHint" style="display:none;font-size:.74rem;color:var(--red);margin-top:8px"></div>
+            <input type="hidden" id="bPay" />
+          </div>
+
+          <!-- GCash QR section -->
+          <div class="gcash" id="gcashBox">
+            <div class="gc-header">
+              <span class="gc-header-icon">📲</span>
+              <span class="gc-header-lbl">GCash Payment</span>
+            </div>
+            <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
+            <div class="pay-amount-toggle">
+              <div class="pat-btn on" id="gcPat50" onclick="setPayAmount('half')">
+                <div class="pat-icon">⚡</div>
+                <div>50% Downpayment</div>
+                <div class="pat-amt" id="gcPat50Amt"></div>
+              </div>
+              <div class="pat-btn" id="gcPat100" onclick="setPayAmount('full')">
+                <div class="pat-icon">✅</div>
+                <div>Full Payment</div>
+                <div class="pat-amt" id="gcPat100Amt"></div>
+              </div>
+            </div>
+            <div class="gc-amount-card">
+              <div class="gc-amount-lbl">You will send</div>
+              <div class="gc-amount-val" id="gcDownAmt">—</div>
+            </div>
+            <div class="gc-send-card">
+              <div class="gc-send-lbl">Send to this GCash number</div>
+              <div class="gc-num-row">
+                <div class="gc-num" id="gcMerchantNumber">0935 935 5010</div>
+                <button type="button" class="gc-copy-btn" onclick="copyMerchantNum()">📋 Copy</button>
+              </div>
+              <div class="gc-name" id="gcMerchantName">Smash Grove Bambulo Pickleyard</div>
+            </div>
+            <div class="gc-or"><span>or scan QR code</span></div>
+            <div class="qr-steps">
+              <span class="qr-step">1️⃣ Open GCash</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="qr-step">2️⃣ Scan QR</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
+            </div>
+            <div class="qr-scan-wrap">
+              <img id="gcashQrImg" class="qr-img" alt="GCash QR Code" style="display:none" />
+              <div id="gcashQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+                <span style="font-size:2rem">📲</span>
+                <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
+              </div>
+              <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
+            </div>
+            <div class="gc-note">After paying, scroll down and enter your GCash reference number below.</div>
+          </div>
+
+          <!-- GoTyme QR section -->
+          <div class="gcash" id="gotymeBox">
+            <div class="gc-header">
+              <span class="gc-header-icon">🏦</span>
+              <span class="gc-header-lbl">GoTyme Payment</span>
+            </div>
+            <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
+            <div class="pay-amount-toggle">
+              <div class="pat-btn on" id="gtPat50" onclick="setPayAmount('half')">
+                <div class="pat-icon">⚡</div>
+                <div>50% Downpayment</div>
+                <div class="pat-amt" id="gtPat50Amt"></div>
+              </div>
+              <div class="pat-btn" id="gtPat100" onclick="setPayAmount('full')">
+                <div class="pat-icon">✅</div>
+                <div>Full Payment</div>
+                <div class="pat-amt" id="gtPat100Amt"></div>
+              </div>
+            </div>
+            <div class="gc-amount-card">
+              <div class="gc-amount-lbl">You will send</div>
+              <div class="gc-amount-val" id="gtDownAmt">—</div>
+            </div>
+            <div class="gc-send-card">
+              <div class="gc-send-lbl">Send to</div>
+              <div class="gc-name" id="gtMerchantName" style="font-size:1rem;font-weight:700;color:var(--text);margin:4px 0 0">Smash Grove Bambulo Pickleyard</div>
+            </div>
+            <div class="gc-or"><span>scan QR code to pay</span></div>
+            <div class="qr-steps">
+              <span class="qr-step">1️⃣ Open GoTyme</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="qr-step">2️⃣ Scan QR</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
+            </div>
+            <div class="qr-scan-wrap">
+              <img id="gotymeQrImg" class="qr-img" alt="GoTyme QR Code" style="display:none" />
+              <div id="gotymeQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+                <span style="font-size:2rem">🏦</span>
+                <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
+              </div>
+              <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
+            </div>
+            <div class="gc-note">After paying, scroll down and enter your GoTyme reference number below.</div>
+          </div>
+
+          <!-- GCash / GoTyme Reference Number -->
+          <div id="gcashRefWrap" style="display:none;margin-top:2px;">
+            <div style="background:rgba(74,154,74,.07);border:1.5px solid rgba(74,154,74,.3);border-radius:var(--r);padding:14px 16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <label style="font-size:.73rem;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700">
+                  🔖 Reference Number <span id="refMethodLabel" style="color:var(--muted);text-transform:none;font-size:.72rem;font-weight:400;letter-spacing:0"></span>
+                </label>
+                <span id="gcRefCount" style="font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap">0 digits</span>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <input type="text" class="fi" id="bGcashRef" placeholder="e.g. 1234567890123"
+                  style="font-family:monospace;letter-spacing:1.5px;font-size:.93rem;flex:1;" maxlength="30" autocomplete="off"
+                  oninput="updateRefCount()" inputmode="numeric" />
+                <button type="button" class="gc-copy-btn" onclick="pasteRef()" style="background:var(--input);color:var(--text);border:1px solid var(--border);flex-shrink:0;">📋 Paste</button>
+              </div>
+              <div style="font-size:.7rem;color:var(--muted);margin-top:7px;line-height:1.6">
+                Open your GCash/GoTyme receipt and copy the reference number here. The owner will verify this before confirming your slot.
+              </div>
+            </div>
+          </div>
+
+          <!-- Cash note -->
+          <div class="cash-note" id="cashNote" style="display:none">
+            💵 <strong>Cash payment</strong> is only available for pre-arranged bookings — you must have already contacted the manager and received approval before selecting this option. Payment is due at the front desk upon arrival.
+          </div>
+
+          <!-- Price Breakdown -->
+          <div class="divider"></div>
+          <div class="price-bx">
+            <div class="pr"><span>Duration</span><span id="pHrs">0 hrs</span></div>
+            <div class="pr"><span>Hourly Rate</span><span id="pRate">₱0/hr</span></div>
+            <div class="pr tot"><span>TOTAL</span><span id="pTot">₱0.00</span></div>
+            <div class="pr down-row"><span id="pDownLabel">⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
+          </div>
+          <div class="down-note" id="downNote" style="margin-top:10px">
+            ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.
+          </div>
         </div>
 
       </form>
     </div>
 
-    <!-- Footer buttons -->
+    <!-- Footer -->
     <div class="bk-modal-ft">
-      <button class="btn btn-g" onclick="closeBookModal()" type="button">Cancel</button>
-      <button type="submit" form="bookForm" class="btn btn-p">🎾 Confirm Booking</button>
+      <button class="btn btn-g" id="wizBackBtn" onclick="wizBack()" type="button">✕ Cancel</button>
+      <button class="btn btn-p" id="wizNextBtn" onclick="wizNext()" type="button">Next →</button>
     </div>
 
   </div>
@@ -1397,6 +1469,7 @@ body.light #splashScreen { background: var(--bg); }
    ============================================= */
 let court = null;
 let selSlots = [];
+let wizStep = 1, wizStartStep = 1;
 let openHour  = 6;
 let closeHour = 22;
 let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
@@ -1651,28 +1724,116 @@ async function proceedToBook(courtId) {
   if (!cardSel.courtId || cardSel.slots.length === 0) {
     toast('Please select at least one time slot.', 'inf'); return;
   }
-
-  // Set global state used by submitBooking
   selSlots = [...cardSel.slots];
   $('bDate').value = cardSel.date;
-
-  // Populate modal header
-  const mn  = Math.min(...selSlots);
-  const mx  = Math.max(...selSlots);
-  const hrs = selSlots.length;
-  const bookTotal = selSlots.reduce((s, h) => s + getRateForHour(h), 0);
-  $('bmCourtName').textContent = court ? court.name : courtId;
-  $('bmMeta').textContent = `📅 ${fmtD(cardSel.date)}  ·  ⏰ ${fmtT(mn)} – ${fmtT(mx + 1)}  ·  ${hrs} hr${hrs > 1 ? 's' : ''}  ·  ${fmt(bookTotal)}`;
-
   updatePrice();
-
+  wizStartStep = 3;
   $('bookModal').classList.add('active');
   document.body.style.overflow = 'hidden';
+  wizGoTo(3);
 }
 
 function closeBookModal() {
   $('bookModal').classList.remove('active');
   document.body.style.overflow = '';
+}
+
+/* ── BOOKING WIZARD ── */
+function wizGoTo(n) {
+  wizStep = n;
+  for (let i = 1; i <= 4; i++) {
+    const panel = $('wizPanel' + i);
+    if (panel) panel.classList.toggle('on', i === n);
+    const dot = $('wizStep' + i);
+    if (dot) {
+      dot.classList.toggle('active', i === n);
+      dot.classList.toggle('done', i < n);
+    }
+  }
+  $('wizBackBtn').textContent = n <= wizStartStep ? '✕ Cancel' : '← Back';
+  $('wizNextBtn').textContent = n === 4 ? '🎾 Confirm Booking' : 'Next →';
+  if (n === 2) { renderSlots(); }
+  if (n === 3) { updateWiz3Summary(); }
+  if (n === 4) { updatePrice(); }
+  const body = document.querySelector('.bk-modal-body');
+  if (body) body.scrollTop = 0;
+}
+
+function wizNext() {
+  if (wizStep === 1) {
+    if (!court) { toast('Please select a court.', 'inf'); return; }
+    wizGoTo(2);
+  } else if (wizStep === 2) {
+    if (!$('bDate').value) { toast('Please pick a date.', 'inf'); return; }
+    if (selSlots.length === 0) { toast('Please select at least one time slot.', 'inf'); return; }
+    wizGoTo(3);
+  } else if (wizStep === 3) {
+    const name  = ($('bName').value || '').trim();
+    const phone = ($('bPhone').value || '').trim();
+    const email = ($('bEmail').value || '').trim();
+    if (!name)  { toast('Please enter your full name.', 'inf'); return; }
+    if (!phone) { toast('Please enter your contact number.', 'inf'); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Please enter a valid email address.', 'inf'); return; }
+    wizGoTo(4);
+  } else if (wizStep === 4) {
+    submitBooking();
+  }
+}
+
+function wizBack() {
+  if (wizStep <= wizStartStep) { closeBookModal(); return; }
+  wizGoTo(wizStep - 1);
+}
+
+async function renderWizCourts() {
+  const courts = await DB.getCourts();
+  $('wizCourtList').innerHTML = courts.map(c => {
+    const rates = (c.rateSchedule && c.rateSchedule.length) ? c.rateSchedule.map(t => t.rate) : [c.rate];
+    const mn = Math.min(...rates), mx = Math.max(...rates);
+    const rateStr = mn !== mx ? `₱${mn}–₱${mx}/hr` : `₱${c.rate}/hr`;
+    const isBlk = !!c.blocked;
+    const isSel = court && court.id === c.id;
+    return `<div class="wiz-court-card${isBlk ? ' blk' : isSel ? ' sel' : ''}"
+      ${isBlk ? '' : `onclick="wizPickCourt('${c.id}')"`}>
+      <div class="wiz-court-icon">🏟️</div>
+      <div style="flex:1;min-width:0">
+        <div class="wiz-court-name">${c.name}</div>
+        <div class="wiz-court-meta">${rateStr}${c.desc ? ' · ' + c.desc : ''}</div>
+      </div>
+      <div class="wiz-court-badge ${isBlk ? 'mnt' : 'av'}">${isBlk ? 'Maintenance' : 'Available'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function wizPickCourt(id) {
+  await selectCourt(id);
+  document.querySelectorAll('.wiz-court-card').forEach(el => el.classList.remove('sel'));
+  event.currentTarget && event.currentTarget.classList.add('sel');
+  wizGoTo(2);
+}
+
+function updateWiz3Summary() {
+  const mn  = selSlots.length ? Math.min(...selSlots) : null;
+  const mx  = selSlots.length ? Math.max(...selSlots) : null;
+  const hrs = selSlots.length;
+  const total = selSlots.reduce((s, h) => s + getRateForHour(h), 0);
+  const dateStr = $('bDate').value ? fmtD($('bDate').value) : '—';
+  $('wiz3Summary').innerHTML = [
+    `🏟️ ${court ? court.name : '—'}`,
+    `📅 ${dateStr}`,
+    mn !== null ? `⏰ ${fmtT(mn)} – ${fmtT(mx + 1)} &nbsp;(${hrs} hr${hrs !== 1 ? 's' : ''})` : '',
+    `💰 Total: <strong style="color:var(--green)">${fmt(total)}</strong>`,
+  ].filter(Boolean).map(s => `<div>${s}</div>`).join('');
+}
+
+async function openWizard() {
+  selSlots = [];
+  court = null;
+  wizStartStep = 1;
+  $('bookModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  await renderWizCourts();
+  wizGoTo(1);
 }
 
 /* =============================================
@@ -2102,8 +2263,8 @@ function setPayAmount(mode) {
    SUBMIT
    ============================================= */
 async function submitBooking(e) {
-  e.preventDefault();
-  const submitBtn = document.querySelector('#bookModal .bk-modal-ft button[type="submit"]');
+  if (e) e.preventDefault();
+  const submitBtn = $('wizNextBtn');
   if (submitBtn?.disabled) return;
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -2267,6 +2428,7 @@ function resetForm() {
   document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('on'));
   closeBookModal();
   updatePrice();
+  wizGoTo(1);
   renderCourts();
 }
 
