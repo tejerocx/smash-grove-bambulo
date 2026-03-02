@@ -651,9 +651,29 @@ async function renderDash(){
 /* ==============================================
    BOOKINGS
    ============================================== */
+async function autoCompleteBookings(bks) {
+  const now = new Date();
+  const toComplete = bks.filter(b => {
+    if (b.status !== 'confirmed') return false;
+    const end = new Date(`${b.date}T${b.endTime.replace(' AM','').replace(' PM','')}:00`);
+    // Parse 12hr end time properly
+    const [time, period] = b.endTime.split(' ');
+    let [hh] = time.split(':').map(Number);
+    if (period === 'PM' && hh !== 12) hh += 12;
+    if (period === 'AM' && hh === 12) hh = 0;
+    const endDt = new Date(`${b.date}T${String(hh).padStart(2,'0')}:00:00`);
+    return endDt < now;
+  });
+  if (toComplete.length > 0) {
+    await Promise.all(toComplete.map(b => DB.updateBooking(b.ref, { status: 'completed' })));
+  }
+}
+
 async function renderBookings(){
   const isDev=sess.role==='developer';
   let bks=await DB.getBookings();
+  await autoCompleteBookings(bks);
+  bks=await DB.getBookings(); // reload after auto-complete
   const q=($('srch')||{}).value?.toLowerCase()||'';
   const fd=($('fDate')||{}).value||'';
   const fs=($('fStatus')||{}).value||'';
@@ -759,8 +779,11 @@ async function verifyAndConfirm() {
   const ref = $('verifyModal').dataset.ref;
   if (!ref) return;
   try {
-    // Update DB first — use 'paid' (safe known value) for paymentStatus
-    await DB.updateBooking(ref, { status: 'confirmed', paymentStatus: 'paid' });
+    // Set payment status based on whether downpayment or full payment was made
+    const bkForPay = await DB.getBookingByRef(ref);
+    const isFullyPaid = bkForPay && bkForPay.downpayment >= bkForPay.total;
+    const verifiedPayStatus = isFullyPaid ? 'paid' : 'downpayment_paid';
+    await DB.updateBooking(ref, { status: 'confirmed', paymentStatus: verifiedPayStatus });
 
     // Close modal and refresh table immediately — don't wait for email
     closeModal('verifyModal');
