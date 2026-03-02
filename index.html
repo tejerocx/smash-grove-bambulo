@@ -198,6 +198,8 @@ body.light .nav { background:rgba(242,237,229,.95); }
               box-shadow .18s ease,
               border-color .18s ease;
   will-change: transform;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 /* Available */
 .cc-slot-btn:not(.taken):not(.past-slot) {
@@ -689,6 +691,23 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 /* RESPONSIVE */
 @media(max-width:700px){ .frow{grid-template-columns:1fr;} .ft-g{grid-template-columns:1fr;gap:24px;} .ft-bot{flex-direction:column;text-align:center;} .pay-opts{grid-template-columns:1fr;} }
 @media(max-width:480px){ .nav{padding:0 14px;} .bk-modal-body{padding:16px;} .bk-modal-ft{padding:12px 16px;} .sec{padding:32px 14px;} }
+@media(max-width:480px){
+  .slots-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .slot {
+    padding: 13px 6px 11px;
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot-time { font-size: .82rem; }
+  .slot-end  { font-size: .72rem; }
+  .cc-slot-btn { padding: 13px 8px; min-height: 58px; }
+}
 
 
 /* ── REAL-TIME SLOTS ── */
@@ -709,6 +728,8 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
   user-select: none;
   position: relative;
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .slot-time { font-size: .78rem; font-weight: 700; line-height: 1.2; }
 .slot-end  { font-size: .67rem; color: var(--muted); margin-top: 1px; }
