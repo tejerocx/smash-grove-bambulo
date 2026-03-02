@@ -150,6 +150,33 @@ tr:hover td{background:rgba(0,200,83,.025);}
   .stat-cards{grid-template-columns:1fr 1fr;}
 }
 @media(max-width:480px){.content{padding:14px;}.frow{grid-template-columns:1fr;}}
+
+/* ── CALENDAR VIEW ── */
+.view-toggle{display:flex;gap:6px;}
+.view-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--muted);cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;font-family:inherit;}
+.view-btn.active{background:var(--green);border-color:var(--green);color:#000;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cal-title{font-size:1.05rem;font-weight:700;}
+.cal-nav-btn{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+.cal-nav-btn:hover{border-color:var(--green);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-dh{text-align:center;font-size:.72rem;font-weight:700;color:var(--muted);padding:6px 0;}
+.cal-cell{min-height:72px;border-radius:8px;border:1px solid var(--border);padding:7px 6px;cursor:pointer;transition:border-color .15s,background .15s;}
+.cal-cell:hover:not(.cal-other){border-color:var(--green);background:rgba(74,154,74,.06);}
+.cal-cell.cal-other{border-color:transparent;background:rgba(255,255,255,.02);cursor:default;opacity:.3;}
+.cal-cell.cal-today{border-color:var(--green);}
+.cal-cell.cal-today .cal-dn{color:var(--green);}
+.cal-dn{font-size:.78rem;font-weight:700;margin-bottom:5px;}
+.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;}
+.cal-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.cal-dot.pending{background:var(--yellow);}
+.cal-dot.confirmed{background:var(--green);}
+.cal-dot.completed{background:#4fc3f7;}
+.cal-dot.cancelled{background:var(--red);}
+.cal-count{font-size:.63rem;color:var(--muted);}
+.cal-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:.75rem;color:var(--muted);}
+.cal-legend span{display:flex;align-items:center;gap:5px;}
+@media(max-width:600px){.cal-cell{min-height:52px;padding:4px;}.cal-dn{font-size:.7rem;}.cal-dot{width:5px;height:5px;}.cal-dh{font-size:.65rem;}}
 </style>
 </head>
 <body>
@@ -253,28 +280,54 @@ tr:hover td{background:rgba(0,200,83,.025);}
     <div id="sec-bookings" class="adm-sec">
       <div class="toolbar">
         <h2>📋 ALL BOOKINGS</h2>
-        <button class="btn btn-p btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-      </div>
-      <div class="tbl-wrap">
-        <div class="tbl-hd">
-          <div class="filters">
-            <input type="text" id="srch" placeholder="🔍 Search name, ref, email…" oninput="renderBookings()"/>
-            <input type="date" id="fDate" onchange="renderBookings()"/>
-            <select id="fStatus" onchange="renderBookings()">
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <button class="btn btn-g btn-sm" onclick="clearFilters()">Clear</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="view-toggle">
+            <button id="viewBtnList" class="view-btn active" onclick="switchBookingView('list')">📋 List</button>
+            <button id="viewBtnCal" class="view-btn" onclick="switchBookingView('cal')">📅 Calendar</button>
           </div>
+          <button class="btn btn-p btn-sm" onclick="exportCSV()">📥 Export CSV</button>
         </div>
-        <div class="tbl-scroll">
-          <table>
-            <thead><tr><th>Ref</th><th>Customer</th><th>Court</th><th>Schedule</th><th>Amount</th><th>Payment</th><th>Pay State</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="bookBody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No bookings.</td></tr></tbody>
-          </table>
+      </div>
+
+      <!-- CALENDAR VIEW -->
+      <div id="calendarView" style="display:none">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+          <span id="calTitle" class="cal-title"></span>
+          <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend">
+          <span><span class="cal-dot pending"></span>Pending</span>
+          <span><span class="cal-dot confirmed"></span>Confirmed</span>
+          <span><span class="cal-dot completed"></span>Completed</span>
+          <span><span class="cal-dot cancelled"></span>Cancelled</span>
+        </div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <div id="tableView">
+        <div class="tbl-wrap">
+          <div class="tbl-hd">
+            <div class="filters">
+              <input type="text" id="srch" placeholder="🔍 Search name, ref, email…" oninput="renderBookings()"/>
+              <input type="date" id="fDate" onchange="renderBookings()"/>
+              <select id="fStatus" onchange="renderBookings()">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <button class="btn btn-g btn-sm" onclick="clearFilters()">Clear</button>
+            </div>
+          </div>
+          <div class="tbl-scroll">
+            <table>
+              <thead><tr><th>Ref</th><th>Customer</th><th>Court</th><th>Schedule</th><th>Amount</th><th>Payment</th><th>Pay State</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="bookBody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No bookings.</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -719,6 +772,80 @@ function clearFilters(){
   if($('srch')) $('srch').value='';
   if($('fDate')) $('fDate').value='';
   if($('fStatus')) $('fStatus').value='';
+  renderBookings();
+}
+
+/* ── CALENDAR VIEW ── */
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+
+function switchBookingView(mode){
+  const isCal = mode==='cal';
+  $('viewBtnCal').classList.toggle('active', isCal);
+  $('viewBtnList').classList.toggle('active', !isCal);
+  $('calendarView').style.display = isCal ? '' : 'none';
+  $('tableView').style.display    = isCal ? 'none' : '';
+  if(isCal) renderCalendar();
+}
+
+function calNav(dir){
+  calMonth += dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0) {calMonth=11;calYear--;}
+  renderCalendar();
+}
+
+async function renderCalendar(){
+  const bks = await DB.getBookings();
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  $('calTitle').textContent=`${MONTHS[calMonth]} ${calYear}`;
+
+  const today=new Date();
+  const firstDow=new Date(calYear,calMonth,1).getDay();
+  const daysInMon=new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev=new Date(calYear,calMonth,0).getDate();
+
+  // Build booking map: date → status counts
+  const bkMap={};
+  bks.forEach(b=>{
+    if(!bkMap[b.date]) bkMap[b.date]={pending:0,confirmed:0,completed:0,cancelled:0,total:0};
+    bkMap[b.date][b.status]=(bkMap[b.date][b.status]||0)+1;
+    bkMap[b.date].total++;
+  });
+
+  const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html=DAYS.map(d=>`<div class="cal-dh">${d}</div>`).join('');
+
+  // Prev month overflow
+  for(let i=0;i<firstDow;i++){
+    html+=`<div class="cal-cell cal-other"><div class="cal-dn">${daysInPrev-firstDow+1+i}</div></div>`;
+  }
+
+  // Current month
+  for(let d=1;d<=daysInMon;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const bk=bkMap[ds]||{};
+    const total=bk.total||0;
+    const dots=['pending','confirmed','completed','cancelled']
+      .filter(s=>bk[s])
+      .flatMap(s=>Array(Math.min(bk[s],4)).fill(`<div class="cal-dot ${s}"></div>`))
+      .join('');
+    html+=`<div class="cal-cell${isToday?' cal-today':''}" onclick="calDayClick('${ds}')">
+      <div class="cal-dn">${d}</div>
+      ${total?`<div class="cal-dots">${dots}</div><div class="cal-count">${total} bkg${total!==1?'s':''}</div>`:''}
+    </div>`;
+  }
+
+  // Next month overflow
+  const rem=(firstDow+daysInMon)%7;
+  if(rem) for(let i=1;i<=7-rem;i++) html+=`<div class="cal-cell cal-other"><div class="cal-dn">${i}</div></div>`;
+
+  $('calGrid').innerHTML=html;
+}
+
+function calDayClick(dateStr){
+  switchBookingView('list');
+  $('fDate').value=dateStr;
   renderBookings();
 }
 
