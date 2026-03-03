@@ -1367,19 +1367,6 @@ body.light #splashScreen { background: var(--bg); }
   </div>
 </div>
 
-<!-- CANCEL BOOKING -->
-<div class="sec" id="cancel-section">
-  <div class="sec-hd"><h2>CANCEL A BOOKING</h2></div>
-  <p style="text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:22px;">Have a booking reference? Enter it below to look up and cancel your booking.</p>
-  <div style="max-width:480px;margin:0 auto;">
-    <div style="display:flex;gap:10px;">
-      <input type="text" class="fi" id="cancelRefInput" placeholder="e.g. PB-ABC123-XY12" style="flex:1;margin-bottom:0;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" />
-      <button class="btn btn-g" onclick="lookupCancelRef()" style="flex-shrink:0;padding:11px 20px;">Look Up</button>
-    </div>
-    <div id="cancelResult" style="margin-top:16px;display:none;"></div>
-  </div>
-</div>
-
 <!-- FOOTER -->
 <footer>
   <div class="ft-g">
@@ -2540,72 +2527,6 @@ function copyInvRef() {
 
 function closeModal() {
   $('invModal').classList.remove('show');
-}
-
-/* =============================================
-   CUSTOMER CANCELLATION
-   ============================================= */
-async function lookupCancelRef() {
-  const ref = $('cancelRefInput').value.trim().toUpperCase();
-  const box = $('cancelResult');
-  if (!ref) { box.style.display = 'none'; return; }
-
-  box.style.display = 'block';
-  box.innerHTML = '<p style="color:var(--muted);font-size:.88rem;">🔍 Looking up booking...</p>';
-
-  const { data, error } = await _sb
-    .from('bookings')
-    .select('*')
-    .eq('booking_ref', ref)
-    .single();
-
-  if (error || !data) {
-    box.innerHTML = '<p style="color:var(--red);font-size:.88rem;">❌ No booking found with that reference. Please check and try again.</p>';
-    return;
-  }
-
-  if (data.status === 'cancelled') {
-    box.innerHTML = '<p style="color:var(--muted);font-size:.88rem;">ℹ️ This booking has already been cancelled.</p>';
-    return;
-  }
-
-  const statusColor = data.status === 'confirmed' ? 'var(--green)' : 'var(--yellow)';
-  box.innerHTML = `
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:1px;">${data.booking_ref}</span>
-        <span style="font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(74,154,74,.1);color:${statusColor};border:1px solid ${statusColor}33;">${data.status.toUpperCase()}</span>
-      </div>
-      <div style="font-size:.85rem;color:var(--muted);line-height:1.8;">
-        <div>👤 <strong style="color:var(--text)">${data.customer_name}</strong></div>
-        <div>📅 ${data.date} &nbsp;·&nbsp; ⏰ ${fmtT(Math.min(...data.slots))} – ${fmtT(Math.max(...data.slots)+1)}</div>
-        <div>💰 Total: <strong style="color:var(--green)">${fmt(data.total_price)}</strong></div>
-      </div>
-      <p style="font-size:.78rem;color:var(--muted);margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
-        ⚠️ Cancellations are subject to the facility's refund policy. Once cancelled this cannot be undone.
-      </p>
-      <button class="btn" style="margin-top:12px;background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.4);color:#f85149;font-weight:700;padding:10px;"
-        onclick="confirmCancelBooking('${data.id}', '${data.booking_ref}')">
-        Cancel This Booking
-      </button>
-    </div>`;
-}
-
-async function confirmCancelBooking(id, ref) {
-  if (!confirm(`Cancel booking ${ref}? This cannot be undone.`)) return;
-  const { error } = await _sb
-    .from('bookings')
-    .update({ status: 'cancelled' })
-    .eq('id', id);
-
-  const box = $('cancelResult');
-  if (error) {
-    box.innerHTML += '<p style="color:var(--red);margin-top:10px;font-size:.86rem;">❌ Failed to cancel. Please contact the facility directly.</p>';
-  } else {
-    box.innerHTML = '<p style="color:var(--green);font-size:.88rem;">✅ Your booking has been cancelled successfully.</p>';
-    $('cancelRefInput').value = '';
-    renderCourts();
-  }
 }
 
 /* =============================================
