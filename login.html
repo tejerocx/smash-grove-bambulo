@@ -64,9 +64,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 
   <!-- Login form -->
   <div id="loginPanel">
-    <form id="loginForm" onsubmit="doLogin(event)">
+    <form id="loginForm" onsubmit="doLogin(event)" autocomplete="on">
       <label class="fl" for="uname">✉️ Email</label>
-      <input type="email" class="fi" id="uname" placeholder="admin@yourdomain.com" autocomplete="email"/>
+      <input type="text" inputmode="email" class="fi" id="uname" placeholder="admin@yourdomain.com" autocomplete="username"/>
       <label class="fl" for="upass">🔒 Password</label>
       <input type="password" class="fi" id="upass" placeholder="Enter password" autocomplete="current-password"/>
       <span class="forgot-link" onclick="showForgot()">Forgot password?</span>
