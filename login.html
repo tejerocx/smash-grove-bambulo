@@ -32,6 +32,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .hint strong{color:var(--green);}
 .back{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;font-size:.86rem;color:var(--muted);transition:color .2s;text-decoration:none;}
 .back:hover{color:var(--green);}
+.forgot-link{display:block;text-align:right;font-size:.8rem;color:var(--muted);margin-top:-8px;margin-bottom:14px;cursor:pointer;transition:color .2s;}
+.forgot-link:hover{color:var(--green);}
+.reset-panel{display:none;margin-top:18px;}
+.reset-panel.show{display:block;}
+.ok-msg{background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.25);border-radius:8px;padding:12px 14px;font-size:.84rem;color:var(--green);margin-bottom:14px;display:none;}
+.ok-msg.show{display:block;}
+.new-pass-panel{display:none;margin-top:4px;}
+.new-pass-panel.show{display:block;}
 /* toast */
 .toasts{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;}
 .toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:240px;box-shadow:0 6px 24px rgba(0,0,0,.4);animation:tin .3s ease;font-size:.86rem;}
@@ -54,15 +62,36 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 
   <div class="err" id="errBox">❌ Invalid email or password.</div>
 
-  <form id="loginForm" onsubmit="doLogin(event)">
-    <label class="fl" for="uname">✉️ Email</label>
-    <input type="email" class="fi" id="uname" placeholder="admin@yourdomain.com" autocomplete="email"/>
-    <label class="fl" for="upass">🔒 Password</label>
-    <input type="password" class="fi" id="upass" placeholder="Enter password" autocomplete="current-password"/>
-    <button type="submit" class="btn btn-p">Login to Dashboard →</button>
-  </form>
+  <!-- Login form -->
+  <div id="loginPanel">
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <label class="fl" for="uname">✉️ Email</label>
+      <input type="email" class="fi" id="uname" placeholder="admin@yourdomain.com" autocomplete="email"/>
+      <label class="fl" for="upass">🔒 Password</label>
+      <input type="password" class="fi" id="upass" placeholder="Enter password" autocomplete="current-password"/>
+      <span class="forgot-link" onclick="showForgot()">Forgot password?</span>
+      <button type="submit" class="btn btn-p">Login to Dashboard →</button>
+    </form>
+  </div>
 
-  <!-- <div class="hint"><strong>Developer login:</strong> developer / dev123</div> -->
+  <!-- Forgot password panel -->
+  <div class="reset-panel" id="resetPanel">
+    <div class="ok-msg" id="resetOk">✅ Reset link sent! Check your email inbox.</div>
+    <label class="fl">✉️ Enter your admin email</label>
+    <input type="email" class="fi" id="resetEmail" placeholder="admin@yourdomain.com"/>
+    <button class="btn btn-p" onclick="doReset()">Send Reset Link</button>
+    <span class="forgot-link" style="text-align:center;margin-top:12px;" onclick="showLogin()">← Back to login</span>
+  </div>
+
+  <!-- New password panel (after clicking reset link) -->
+  <div class="new-pass-panel" id="newPassPanel">
+    <label class="fl">🔒 New Password</label>
+    <input type="password" class="fi" id="newPass" placeholder="Enter new password (min 8 chars)"/>
+    <label class="fl">🔒 Confirm Password</label>
+    <input type="password" class="fi" id="newPassConfirm" placeholder="Confirm new password"/>
+    <button class="btn btn-p" onclick="doSetPassword()">Set New Password</button>
+  </div>
+
   <a class="back" href="index.html">← Back to Booking Page</a>
 </div>
 
@@ -91,7 +120,52 @@ async function doLogin(e) {
 // Redirect if already logged in
 document.addEventListener('DOMContentLoaded', () => {
   if (Auth.getSession()) window.location.href = 'admin.html';
+  // Check if redirected here from a password reset email
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery')) {
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('newPassPanel').classList.add('show');
+  }
 });
+
+function showForgot() {
+  document.getElementById('loginPanel').style.display = 'none';
+  document.getElementById('resetPanel').classList.add('show');
+  document.getElementById('errBox').classList.remove('show');
+}
+
+function showLogin() {
+  document.getElementById('loginPanel').style.display = 'block';
+  document.getElementById('resetPanel').classList.remove('show');
+  document.getElementById('resetOk').classList.remove('show');
+}
+
+async function doReset() {
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!email) { alert('Please enter your email.'); return; }
+  const { error } = await _sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/login.html'
+  });
+  if (error) {
+    alert('Error: ' + error.message);
+  } else {
+    document.getElementById('resetOk').classList.add('show');
+  }
+}
+
+async function doSetPassword() {
+  const p1 = document.getElementById('newPass').value;
+  const p2 = document.getElementById('newPassConfirm').value;
+  if (p1.length < 8) { alert('Password must be at least 8 characters.'); return; }
+  if (p1 !== p2) { alert('Passwords do not match.'); return; }
+  const { error } = await _sb.auth.updateUser({ password: p1 });
+  if (error) {
+    alert('Error: ' + error.message);
+  } else {
+    alert('✅ Password updated! You can now log in.');
+    window.location.href = 'login.html';
+  }
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-config.js"></script>
