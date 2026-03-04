@@ -272,6 +272,7 @@ tr:hover td{background:rgba(0,200,83,.025);}
         <div class="panel">
           <h4>Quick Actions</h4>
           <div style="display:flex;flex-direction:column;gap:9px">
+            <button class="btn btn-p" onclick="openNewBookingModal()">➕ Book for Customer</button>
             <button class="btn btn-g" onclick="goto('bookings')">📋 View All Bookings</button>
             <button class="btn btn-g" onclick="exportCSV()">📥 Export CSV</button>
             <button class="btn btn-g" onclick="goto('courts')">🏟️ Manage Courts</button>
@@ -301,6 +302,7 @@ tr:hover td{background:rgba(0,200,83,.025);}
             <button id="viewBtnCal" class="view-btn" onclick="switchBookingView('cal')">📅 Calendar</button>
           </div>
           <button class="btn btn-p btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="btn btn-p btn-sm" onclick="openNewBookingModal()">➕ New Booking</button>
         </div>
       </div>
 
@@ -645,6 +647,87 @@ tr:hover td{background:rgba(0,200,83,.025);}
     <div class="m-foot">
       <button class="btn btn-d" onclick="rejectPayment()">❌ Not Received</button>
       <button class="btn btn-p" onclick="verifyAndConfirm()">✅ Received — Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW BOOKING MODAL -->
+<div class="overlay" id="newBookingModal">
+  <div class="modal" style="max-width:500px">
+    <div class="m-hd" style="background:linear-gradient(135deg,rgba(74,154,74,.1),transparent)">
+      <h2>➕ BOOK FOR CUSTOMER</h2>
+      <button class="m-x" onclick="closeModal('newBookingModal')">✕</button>
+    </div>
+    <div class="m-body">
+      <!-- Customer Info -->
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin-bottom:10px;">Customer Details</div>
+      <div class="frow">
+        <div class="fg" style="margin:0"><label class="fl">Full Name *</label><input type="text" class="fi" id="nbName" placeholder="e.g. Juan Dela Cruz"/></div>
+        <div class="fg" style="margin:0"><label class="fl">Contact Number *</label><input type="text" class="fi" id="nbPhone" placeholder="09XX XXX XXXX" inputmode="tel"/></div>
+      </div>
+      <div class="fg" style="margin-top:12px"><label class="fl">Email <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label><input type="text" class="fi" id="nbEmail" placeholder="customer@email.com" inputmode="email"/></div>
+
+      <!-- Booking Details -->
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin:18px 0 10px;">Booking Details</div>
+      <div class="fg"><label class="fl">Court *</label>
+        <select class="fi" id="nbCourt" onchange="nbUpdateTotal()">
+          <option value="">— Select Court —</option>
+        </select>
+      </div>
+      <div class="frow">
+        <div class="fg" style="margin:0"><label class="fl">Date *</label><input type="date" class="fi" id="nbDate"/></div>
+        <div class="fg" style="margin:0"><label class="fl">Start Time *</label><select class="fi" id="nbStart" onchange="nbUpdateEnd()"></select></div>
+      </div>
+      <div class="frow" style="margin-top:12px">
+        <div class="fg" style="margin:0"><label class="fl">Duration *</label>
+          <select class="fi" id="nbDur" onchange="nbUpdateEnd()">
+            <option value="1">1 hour</option>
+            <option value="2" selected>2 hours</option>
+            <option value="3">3 hours</option>
+            <option value="4">4 hours</option>
+            <option value="5">5 hours</option>
+          </select>
+        </div>
+        <div class="fg" style="margin:0"><label class="fl">End Time</label><input type="text" class="fi" id="nbEnd" readonly style="opacity:.6"/></div>
+      </div>
+
+      <!-- Payment -->
+      <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin:18px 0 10px;">Payment</div>
+      <div class="frow">
+        <div class="fg" style="margin:0"><label class="fl">Method *</label>
+          <select class="fi" id="nbMethod" onchange="nbToggleRef()">
+            <option value="cash">💵 Cash</option>
+            <option value="gcash">📲 GCash</option>
+            <option value="gotyme">🏦 GoTyme</option>
+          </select>
+        </div>
+        <div class="fg" style="margin:0"><label class="fl">Payment Status</label>
+          <select class="fi" id="nbPayStatus">
+            <option value="unpaid">Unpaid</option>
+            <option value="downpayment_paid">Downpayment Paid</option>
+            <option value="paid" selected>Fully Paid</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg" id="nbRefWrap" style="margin-top:12px;display:none">
+        <label class="fl">GCash / GoTyme Ref #</label>
+        <input type="text" class="fi" id="nbGcashRef" placeholder="e.g. 123456789012"/>
+      </div>
+      <div class="fg" style="margin-top:12px"><label class="fl">Total Amount (₱)</label>
+        <input type="number" class="fi" id="nbTotal" placeholder="0" min="0" step="50"/>
+      </div>
+
+      <!-- Status -->
+      <div class="fg" style="margin-top:4px"><label class="fl">Booking Status</label>
+        <select class="fi" id="nbStatus">
+          <option value="confirmed" selected>Confirmed</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn btn-g" onclick="closeModal('newBookingModal')">Cancel</button>
+      <button class="btn btn-p" id="nbSaveBtn" onclick="saveNewBooking()">➕ Create Booking</button>
     </div>
   </div>
 </div>
@@ -1024,6 +1107,157 @@ async function delBooking(ref){
   toast('Booking deleted.','inf');
   renderBookings();
   renderDash();
+}
+
+/* ==============================================
+   NEW BOOKING (BOOK FOR CUSTOMER)
+   ============================================== */
+const nbGenRef = () => 'PB-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
+
+let _nbCourts = [];
+
+async function openNewBookingModal() {
+  // Load courts
+  _nbCourts = (await DB.getCourts()).filter(c => !c.blocked);
+  const sel = $('nbCourt');
+  sel.innerHTML = '<option value="">— Select Court —</option>' +
+    _nbCourts.map(c => `<option value="${c.id}">${c.name} — ${fmt(c.rate)}/hr</option>`).join('');
+
+  // Set min date to today
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  $('nbDate').min = todayStr;
+  $('nbDate').value = todayStr;
+
+  // Populate start time
+  const startSel = $('nbStart');
+  startSel.innerHTML = '';
+  for (let h = 6; h <= 21; h++) {
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = fmtHour(h);
+    if (h === 8) opt.selected = true;
+    startSel.appendChild(opt);
+  }
+
+  // Clear fields
+  $('nbName').value = '';
+  $('nbPhone').value = '';
+  $('nbEmail').value = '';
+  $('nbGcashRef').value = '';
+  $('nbMethod').value = 'cash';
+  $('nbPayStatus').value = 'paid';
+  $('nbStatus').value = 'confirmed';
+  $('nbDur').value = '2';
+  $('nbRefWrap').style.display = 'none';
+
+  nbUpdateEnd();
+  $('newBookingModal').classList.add('show');
+}
+
+function nbUpdateEnd() {
+  const h = parseInt($('nbStart')?.value || 8);
+  const dur = parseInt($('nbDur')?.value || 1);
+  const endH = h + dur;
+  if ($('nbEnd')) $('nbEnd').value = fmtHour(endH);
+  nbUpdateTotal();
+}
+
+function nbUpdateTotal() {
+  const courtId = $('nbCourt')?.value;
+  const court = _nbCourts.find(c => String(c.id) === String(courtId));
+  const dur = parseInt($('nbDur')?.value || 1);
+  if (court) $('nbTotal').value = court.rate * dur;
+}
+
+function nbToggleRef() {
+  const m = $('nbMethod').value;
+  $('nbRefWrap').style.display = (m === 'gcash' || m === 'gotyme') ? '' : 'none';
+}
+
+async function saveNewBooking() {
+  const name = $('nbName').value.trim();
+  const phone = $('nbPhone').value.trim().replace(/\s|-/g,'');
+  const email = $('nbEmail').value.trim();
+  const courtId = $('nbCourt').value;
+  const date = $('nbDate').value;
+  const startH = parseInt($('nbStart').value);
+  const dur = parseInt($('nbDur').value);
+  const method = $('nbMethod').value;
+  const gcashRef = $('nbGcashRef').value.trim() || null;
+  const total = parseFloat($('nbTotal').value) || 0;
+  const payStatus = $('nbPayStatus').value;
+  const status = $('nbStatus').value;
+
+  // Validation
+  if (!name || name.length < 2) { toast('Enter a valid customer name.', 'err'); return; }
+  if (!/^(09|\+639)\d{9}$/.test(phone)) { toast('Enter a valid PH number (e.g. 09XX XXX XXXX).', 'err'); return; }
+  if (!courtId) { toast('Please select a court.', 'err'); return; }
+  if (!date) { toast('Please select a date.', 'err'); return; }
+  if (startH + dur > 22) { toast('Booking exceeds operating hours (closes 10 PM).', 'err'); return; }
+  if ((method === 'gcash' || method === 'gotyme') && !gcashRef) { toast('Please enter the GCash / GoTyme reference number.', 'err'); return; }
+
+  const court = _nbCourts.find(c => String(c.id) === String(courtId));
+  if (!court) { toast('Court not found.', 'err'); return; }
+
+  const endH = startH + dur;
+  const slots = Array.from({ length: dur }, (_, i) => startH + i);
+
+  const booking = {
+    ref: nbGenRef(),
+    fullName: name,
+    contactNumber: $('nbPhone').value.trim(),
+    email: email || '',
+    courtId: court.id,
+    courtName: court.name,
+    date,
+    slots,
+    startTime: fmtHour(startH),
+    endTime: fmtHour(endH),
+    duration: dur,
+    rate: court.rate,
+    total,
+    paymentMethod: method,
+    gcashRef,
+    downpayment: payStatus === 'paid' ? total : total / 2,
+    paymentStatus: payStatus,
+    paymentFlow: method,
+    status,
+    createdAt: new Date().toISOString(),
+  };
+
+  const btn = $('nbSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    await DB.addBooking(booking);
+    closeModal('newBookingModal');
+    toast(`Booking created! Ref: ${booking.ref}`);
+    await renderBookings();
+    renderDash();
+
+    // Send confirmation email if confirmed and email provided
+    if (status === 'confirmed' && email) {
+      fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          bookingRef: booking.ref, email: booking.email, fullName: booking.fullName,
+          courtName: booking.courtName, date: booking.date, startTime: booking.startTime,
+          endTime: booking.endTime, duration: booking.duration, total: booking.total,
+          downpayment: booking.downpayment, contactNumber: booking.contactNumber,
+        }),
+      }).then(r => r.json()).then(j => {
+        if (j?.ok) toast('📧 Confirmation email sent to customer!');
+      }).catch(() => {});
+    }
+  } catch(e) {
+    toast(e.message || 'Failed to create booking.', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '➕ Create Booking';
+  }
 }
 
 /* ==============================================
