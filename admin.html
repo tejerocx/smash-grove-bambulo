@@ -191,6 +191,11 @@ tr:hover td{background:rgba(0,200,83,.025);}
 .rp-trend-fill{height:100%;border-radius:5px;transition:width .5s ease;background:var(--green);display:flex;align-items:center;padding-left:8px;font-size:.7rem;font-weight:700;color:#0d2a00;white-space:nowrap;min-width:0;}
 .rp-trend-val{min-width:82px;text-align:right;font-size:.8rem;font-weight:700;}
 .rp-empty{font-size:.82rem;color:var(--muted);font-style:italic;padding:8px 0;}
+
+/* ── OPEN PLAY DAY CHIPS ── */
+.op-day{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--input);cursor:pointer;font-size:.81rem;font-weight:600;transition:all .15s;user-select:none;}
+.op-day input{display:none;}
+.op-day:has(input:checked){background:rgba(74,154,74,.18);border-color:var(--green);color:var(--green);}
 </style>
 </head>
 <body>
@@ -223,7 +228,7 @@ tr:hover td{background:rgba(0,200,83,.025);}
     <div class="nav-item" data-s="reports" onclick="goto('reports')">📈 Reports</div>
     <div class="nav-grp">Management</div>
     <div class="nav-item" data-s="courts" onclick="goto('courts')">🏟️ Courts</div>
-    <div class="nav-item" data-s="blocked" onclick="goto('blocked')">🔒 Blocked Dates</div>
+    <div class="nav-item" data-s="blocked" onclick="goto('blocked')">🎾 Open Play</div>
     <div class="nav-grp dev-only">Admin Only</div>
     <div class="nav-item dev-only" data-s="accounts" onclick="goto('accounts')">👥 Accounts</div>
   </nav>
@@ -276,7 +281,7 @@ tr:hover td{background:rgba(0,200,83,.025);}
             <button class="btn btn-g" onclick="goto('bookings')">📋 View All Bookings</button>
             <button class="btn btn-g" onclick="exportCSV()">📥 Export CSV</button>
             <button class="btn btn-g" onclick="goto('courts')">🏟️ Manage Courts</button>
-            <button class="btn btn-g" onclick="goto('blocked')">🔒 Blocked Dates</button>
+            <button class="btn btn-g" onclick="goto('blocked')">🎾 Open Play</button>
           </div>
         </div>
       </div>
@@ -536,15 +541,61 @@ tr:hover td{background:rgba(0,200,83,.025);}
 
     <!-- BLOCKED -->
     <div id="sec-blocked" class="adm-sec">
-      <h2 style="margin-bottom:18px">🔒 BLOCKED DATES</h2>
-      <div class="panel" style="max-width:520px">
-        <p style="color:var(--muted);font-size:.86rem;margin-bottom:16px">Block dates for maintenance. Users cannot book on these dates.</p>
+      <div class="toolbar"><h2>🎾 OPEN PLAY</h2></div>
+
+      <!-- OPEN PLAY HOURS -->
+      <div class="panel" style="max-width:580px;margin-bottom:20px">
+        <h4>⏰ Open Play Schedule</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 18px">Set the time window when open/drop-in play is available. Courts are open for walk-in players during these hours.</p>
+
+        <!-- Enable toggle -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+          <label class="sw"><input type="checkbox" id="opEnabled"><span class="sw-tr"></span></label>
+          <div>
+            <div style="font-weight:700;font-size:.9rem">Enable Open Play</div>
+            <div style="font-size:.76rem;color:var(--muted)">When off, open play is not available.</div>
+          </div>
+        </div>
+
+        <!-- Time range -->
+        <div class="frow" style="margin-bottom:16px">
+          <div>
+            <label class="fl">Start Time</label>
+            <select class="fi" id="opStart"></select>
+          </div>
+          <div>
+            <label class="fl">End Time</label>
+            <select class="fi" id="opEnd"></select>
+          </div>
+        </div>
+
+        <!-- Days of week -->
+        <div style="margin-bottom:18px">
+          <label class="fl" style="margin-bottom:10px">Active Days</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="opDays">
+            <label class="op-day"><input type="checkbox" value="0"> Sun</label>
+            <label class="op-day"><input type="checkbox" value="1" checked> Mon</label>
+            <label class="op-day"><input type="checkbox" value="2" checked> Tue</label>
+            <label class="op-day"><input type="checkbox" value="3" checked> Wed</label>
+            <label class="op-day"><input type="checkbox" value="4" checked> Thu</label>
+            <label class="op-day"><input type="checkbox" value="5" checked> Fri</label>
+            <label class="op-day"><input type="checkbox" value="6" checked> Sat</label>
+          </div>
+        </div>
+
+        <button class="btn btn-p" onclick="saveOpenPlay()">💾 Save Open Play Schedule</button>
+      </div>
+
+      <!-- BLOCKED DATES (kept for maintenance/holidays) -->
+      <div class="panel" style="max-width:580px">
+        <h4>🔒 Blocked Dates</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">Block specific dates for maintenance or holidays. Customers cannot book on these dates.</p>
         <div style="display:flex;gap:10px;margin-bottom:20px;align-items:flex-end">
           <div style="flex:1">
             <label class="fl">Select Date</label>
             <input type="date" class="fi" id="newBlk"/>
           </div>
-          <button class="btn btn-d" onclick="addBlocked()">🔒 Block</button>
+          <button class="btn btn-d" onclick="addBlocked()">🔒 Block Date</button>
         </div>
         <div id="blkList"><p style="color:var(--muted);font-style:italic">No blocked dates.</p></div>
       </div>
@@ -809,7 +860,7 @@ let sess;
 /* ==============================================
    NAVIGATION
    ============================================== */
-const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Blocked Dates'};
+const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Open Play'};
 async function goto(s){
   document.querySelectorAll('.adm-sec').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('on',el.dataset.s===s));
@@ -1931,12 +1982,55 @@ async function delAcc(id){
 }
 
 /* ==============================================
-   BLOCKED DATES
+   OPEN PLAY + BLOCKED DATES
    ============================================== */
+function opPopulateTimePickers() {
+  const labels = ['12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM','6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
+    '12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM','12:00 AM (midnight)'];
+  [$('opStart'), $('opEnd')].forEach((sel, si) => {
+    sel.innerHTML = '';
+    const max = si === 0 ? 23 : 24;
+    for (let h = 0; h <= max; h++) {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.textContent = labels[h];
+      sel.appendChild(opt);
+    }
+  });
+}
+
 async function renderBlocked(){
+  // Load open play settings
+  const settings = await DB.getSettings();
+  const cfg = settings.open_play_config ? JSON.parse(settings.open_play_config) : { enabled: true, start: 17, end: 24, days: [1,2,3,4,5,6] };
+
+  opPopulateTimePickers();
+  $('opEnabled').checked = cfg.enabled !== false;
+  $('opStart').value = cfg.start ?? 17;
+  $('opEnd').value   = cfg.end   ?? 24;
+
+  // Set day checkboxes
+  document.querySelectorAll('#opDays input[type=checkbox]').forEach(cb => {
+    cb.checked = (cfg.days ?? [1,2,3,4,5,6]).includes(Number(cb.value));
+  });
+
+  // Load blocked dates
   const dates=await DB.getBlockedDates();
   $('blkList').innerHTML=dates.length===0?'<p style="color:var(--muted);font-style:italic">No blocked dates.</p>':
     dates.map(d=>`<div class="blk-item"><span>📅 ${fmtD(d)}</span><button class="btn btn-d btn-sm" onclick="removeBlocked('${d}')">Remove</button></div>`).join('');
+}
+
+async function saveOpenPlay() {
+  const enabled = $('opEnabled').checked;
+  const start   = parseInt($('opStart').value);
+  const end     = parseInt($('opEnd').value);
+  const days    = [...document.querySelectorAll('#opDays input:checked')].map(cb => Number(cb.value));
+
+  if (end <= start) { toast('End time must be after start time.', 'err'); return; }
+  if (days.length === 0) { toast('Select at least one active day.', 'err'); return; }
+
+  await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days }));
+  toast('Open Play schedule saved!');
 }
 
 async function addBlocked(){
