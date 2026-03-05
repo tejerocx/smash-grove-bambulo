@@ -1661,13 +1661,24 @@ function startPaymentWatch(ref) {
 }
 
 function getRateForHour(h) {
-  for (const t of pricingTiers) {
+  return getRateForHourFromTiers(h, pricingTiers, 0);
+}
+
+function getRateForHourFromTiers(h, tiers, fallbackRate = 0) {
+  for (const t of (tiers || [])) {
     const inRange = t.from < t.to
       ? (h >= t.from && h < t.to)
       : (h >= t.from || h < t.to);
     if (inRange) return t.rate;
   }
-  return pricingTiers.length > 0 ? Math.min(...pricingTiers.map(t => t.rate)) : 0;
+  return (tiers && tiers.length > 0) ? Math.min(...tiers.map(t => t.rate)) : fallbackRate;
+}
+
+function getPricingTiersForCourt(c) {
+  if (!c) return [];
+  if (c.rateSchedule && c.rateSchedule.length) return c.rateSchedule;
+  if (_settingsTiers && _settingsTiers.length) return _settingsTiers;
+  return [{ from: openHour, to: closeHour, rate: c.rate }];
 }
 
 const fmtTs = h => h === 24 ? '12A' : `${h % 12 || 12}${h < 12 ? 'A' : 'P'}`;
@@ -1864,6 +1875,7 @@ async function onCardDate(courtId, date) {
     grid.innerHTML = `<span class="cc-slots-empty">🔧 Under maintenance</span>`;
     return;
   }
+  const cTiers = getPricingTiersForCourt(c);
 
   if (blockedDates.includes(date)) {
     grid.innerHTML = `<span class="cc-slots-empty" style="grid-column:span 2">🔒 This date is blocked</span>`;
@@ -1893,7 +1905,7 @@ async function onCardDate(courtId, date) {
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
-    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHour(h)}</div></div>`;
+    return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
 }
 
@@ -1902,6 +1914,7 @@ async function ensureCourt(courtId) {
   if (court && court.id === courtId) return;
   const courts = await DB.getCourts();
   court = courts.find(c => c.id === courtId) || null;
+  if (court) pricingTiers = getPricingTiersForCourt(court);
 }
 
 /* =============================================
@@ -1931,16 +1944,8 @@ async function renderCourts() {
     const availBadgeTxt = blk ? '🔧 Maintenance' : availToday > 0 ? `⚡ ${availToday} available` : '⛔ Fully booked';
 
     // Use this court's own rate schedule, fall back to global tiers, then flat rate
-    const _cTiers = (c.rateSchedule && c.rateSchedule.length)
-      ? c.rateSchedule
-      : (_settingsTiers && _settingsTiers.length ? _settingsTiers : [{ from: openHour, to: closeHour, rate: c.rate }]);
-    const _cRate = h => {
-      for (const t of _cTiers) {
-        const inRange = t.from < t.to ? (h >= t.from && h < t.to) : (h >= t.from || h < t.to);
-        if (inRange) return t.rate;
-      }
-      return _cTiers.length > 0 ? Math.min(..._cTiers.map(t => t.rate)) : c.rate;
-    };
+    const _cTiers = getPricingTiersForCourt(c);
+    const _cRate = h => getRateForHourFromTiers(h, _cTiers, c.rate);
 
     const rateRange = (() => {
       const r = _cTiers.map(t => t.rate);
@@ -2017,14 +2022,7 @@ async function selectCourt(id) {
   court = courts.find(c => c.id === id);
   if (!court) return;
   selSlots = [];
-  // Apply per-court rate schedule if set, else fall back to global settings tiers
-  if (court.rateSchedule && court.rateSchedule.length) {
-    pricingTiers = court.rateSchedule;
-  } else {
-    pricingTiers = _settingsTiers && _settingsTiers.length
-      ? _settingsTiers
-      : [{ from: openHour, to: closeHour, rate: court.rate }];
-  }
+  pricingTiers = getPricingTiersForCourt(court);
   document.querySelectorAll('.cc').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
   const d = $('courtDisp');
   const rates = pricingTiers.map(t => t.rate);
