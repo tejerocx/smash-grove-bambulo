@@ -760,6 +760,10 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .slot.now  { border-color: #4fc3f7; background: rgba(79,195,247,.07); }
 .slot.now .slot-time { color: #4fc3f7; }
 .slot.now .slot-tag { background: rgba(79,195,247,.18); color: #4fc3f7; }
+.slot.open-play { background: rgba(245,158,11,.06); border-color: rgba(245,158,11,.3); cursor: not-allowed; }
+.slot.open-play .slot-time { color: #f59e0b; }
+.slot.open-play .slot-end  { color: #f59e0b; opacity:.7; }
+.slot.open-play .slot-tag.op-tag { background: rgba(245,158,11,.18); color: #f59e0b; font-size:.62rem; letter-spacing:.3px; }
 
 /* Live note banner */
 .slots-live-note {
@@ -1474,6 +1478,7 @@ let wizStep = 1, wizStartStep = 1;
 let _lastSubmitAt = 0; // rate limiting — ms timestamp of last submission attempt
 let openHour  = 6;
 let closeHour = 22;
+let openPlayConfig = null; // { enabled, start, end, days[] }
 let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
 let payFull = false; // false = 50% downpayment, true = 100% full payment
 let cardSel   = { courtId: null, date: null, slots: [], rate: 0 };
@@ -1543,6 +1548,9 @@ async function loadOperatingHours() {
     try { pricingTiers = JSON.parse(settings.pricing_tiers); } catch(e) {}
   }
   _settingsTiers = pricingTiers.length ? [...pricingTiers] : null;
+  if (settings.open_play_config) {
+    try { openPlayConfig = JSON.parse(settings.open_play_config); } catch(e) {}
+  }
   applyPaymentSettings(settings);
   const note = $('slotHoursNote');
   if (note) note.textContent = `(${fmtT(openHour)} – ${fmtT(closeHour)} · select consecutive hours)`;
@@ -2072,26 +2080,36 @@ async function renderSlots() {
   const todayFlag = isToday(date);
   const curHour = nowHour();
 
+  // Determine if Open Play is active on the selected date
+  const dateDow = new Date(date + 'T00:00:00').getDay();
+  const opActive = openPlayConfig &&
+    openPlayConfig.enabled &&
+    (openPlayConfig.days ?? []).includes(dateDow);
+
   let availCount = 0;
+  let hasOpenPlay = false;
   let slotHtml = '';
 
   for (let h = openHour; h < closeHour; h++) {
-    const isPast    = todayFlag && h < curHour;
-    const isNow     = todayFlag && h === curHour;
-    const isBooked  = booked.has(h);
-    const isSel     = selSlots.includes(h);
-    const isUnavail = isPast || isBooked;
+    const isPast      = todayFlag && h < curHour;
+    const isNow       = todayFlag && h === curHour;
+    const isBooked    = booked.has(h);
+    const isSel       = selSlots.includes(h);
+    const isOpenPlay  = opActive && h >= openPlayConfig.start && h < openPlayConfig.end;
+    const isUnavail   = isPast || isBooked || isOpenPlay;
 
     if (!isUnavail && !isNow) availCount++;
+    if (isOpenPlay && !isBooked && !isPast) hasOpenPlay = true;
 
     let cls = 'slot';
     let tag = '';
 
-    if (isSel)          { cls += ' sel'; }
-    else if (isPast)    { cls += ' past'; tag = `<span class="slot-tag past-tag">DONE</span>`; }
-    else if (isNow)     { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
-    else if (isBooked)  { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
-    else                { cls += ' free'; }
+    if (isSel)             { cls += ' sel'; }
+    else if (isPast)       { cls += ' past'; tag = `<span class="slot-tag past-tag">DONE</span>`; }
+    else if (isNow)        { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
+    else if (isBooked)     { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
+    else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">OPEN PLAY</span>`; }
+    else                   { cls += ' free'; }
 
     slotHtml += `
       <div class="${cls}" data-h="${h}" onclick="toggleSlot(${h})">
@@ -2110,6 +2128,7 @@ async function renderSlots() {
       <span class="leg">⬜ Available</span>
       <span class="leg" style="color:var(--green)">🟩 Selected</span>
       <span class="leg" style="color:var(--red)">🟥 Booked</span>
+      ${hasOpenPlay ? '<span class="leg" style="color:#f59e0b">🟧 Open Play</span>' : ''}
       ${todayFlag ? '<span class="leg" style="color:var(--muted)">⬛ Past</span><span class="leg" style="color:#4fc3f7">🔵 Now</span>' : ''}
     </div>`;
 
@@ -2127,6 +2146,10 @@ function toggleSlot(h) {
   if (cachedBookedSlots.has(h)) { toast('This slot is already booked.', 'err'); return; }
   if (todayFlag && h < curHour) { toast('This time slot has already passed.', 'err'); return; }
   if (todayFlag && h === curHour) { toast('This hour is currently in progress — book the next available slot.', 'inf'); return; }
+  const _dow = new Date(date + 'T00:00:00').getDay();
+  if (openPlayConfig && openPlayConfig.enabled && (openPlayConfig.days??[]).includes(_dow) && h >= openPlayConfig.start && h < openPlayConfig.end) {
+    toast('This slot is reserved for Open Play (walk-in only — no pre-booking needed).', 'inf'); return;
+  }
 
   const i = selSlots.indexOf(h);
   if (i === -1) {
