@@ -1930,8 +1930,20 @@ async function renderCourts() {
     const availBadgeCls = blk ? 'mnt' : availToday > 0 ? 'av' : 'full';
     const availBadgeTxt = blk ? '🔧 Maintenance' : availToday > 0 ? `⚡ ${availToday} available` : '⛔ Fully booked';
 
+    // Use this court's own rate schedule, fall back to global tiers, then flat rate
+    const _cTiers = (c.rateSchedule && c.rateSchedule.length)
+      ? c.rateSchedule
+      : (_settingsTiers && _settingsTiers.length ? _settingsTiers : [{ from: openHour, to: closeHour, rate: c.rate }]);
+    const _cRate = h => {
+      for (const t of _cTiers) {
+        const inRange = t.from < t.to ? (h >= t.from && h < t.to) : (h >= t.from || h < t.to);
+        if (inRange) return t.rate;
+      }
+      return _cTiers.length > 0 ? Math.min(..._cTiers.map(t => t.rate)) : c.rate;
+    };
+
     const rateRange = (() => {
-      const r = pricingTiers.map(t => t.rate);
+      const r = _cTiers.map(t => t.rate);
       return r.length ? (Math.min(...r) === Math.max(...r) ? `₱${Math.min(...r)}/hr` : `₱${Math.min(...r)}–₱${Math.max(...r)}/hr`) : `${fmt(c.rate)}/hr`;
     })();
 
@@ -1947,7 +1959,7 @@ async function renderCourts() {
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
-          return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHour(h)}</div></div>`;
+          return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
 
     return `
@@ -2077,6 +2089,10 @@ async function renderSlots() {
 
   // Always fetch fresh settings so Open Play config is current
   await loadOperatingHours();
+  // Re-apply this court's rate schedule after loadOperatingHours resets pricingTiers
+  if (court.rateSchedule && court.rateSchedule.length) {
+    pricingTiers = court.rateSchedule;
+  }
   cachedBookedSlots = await getBookedSlots(court.id, date);
   const booked = cachedBookedSlots;
   const todayFlag = isToday(date);
