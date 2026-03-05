@@ -2075,6 +2075,8 @@ async function renderSlots() {
 
   m.style.display = 'none';
 
+  // Always fetch fresh settings so Open Play config is current
+  await loadOperatingHours();
   cachedBookedSlots = await getBookedSlots(court.id, date);
   const booked = cachedBookedSlots;
   const todayFlag = isToday(date);
