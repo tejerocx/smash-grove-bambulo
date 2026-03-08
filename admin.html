@@ -459,6 +459,10 @@ tr:hover td { background: var(--bg2); }
 /* Open Play — yellow */
 .nb-slot.open-play { opacity: .55; cursor: not-allowed; background: var(--yellow-bg); border: 1.5px solid var(--yellow); }
 .nb-slot.open-play .nb-slot-tag { background: var(--yellow-bg); color: var(--yellow); }
+/* Maintenance — orange */
+.nb-slot.maintenance { opacity: .55; cursor: not-allowed; background: rgba(255,152,0,.1); border: 1.5px solid #ff9800; }
+.nb-slot.maintenance .nb-slot-time { color: #ff9800; }
+.nb-slot.maintenance .nb-slot-tag { background: rgba(255,152,0,.15); color: #ff9800; }
 .nb-slots-msg { font-size: 13px; color: var(--text3); padding: 16px 0; text-align: center; }
 .nb-slots-legend {
   display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 4px;
@@ -866,6 +870,78 @@ tr:hover td { background: var(--bg2); }
         </div>
 
         <button class="btn btn-p" onclick="saveOpenPlay()">💾 Save Open Play Schedule</button>
+      </div>
+
+      <!-- MAINTENANCE PERIOD -->
+      <div class="panel" style="max-width:580px;margin-bottom:20px">
+        <h4>🔧 Maintenance Schedule</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 18px">Block time slots for scheduled maintenance. Customers cannot book during these hours.</p>
+
+        <!-- Enable toggle -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+          <label class="sw"><input type="checkbox" id="mtEnabled"><span class="sw-tr"></span></label>
+          <div>
+            <div style="font-weight:700;font-size:.9rem">Enable Maintenance Period</div>
+            <div style="font-size:.76rem;color:var(--muted)">When off, maintenance blocking is inactive.</div>
+          </div>
+        </div>
+
+        <!-- Time range -->
+        <div class="frow" style="margin-bottom:16px">
+          <div>
+            <label class="fl">Start Time</label>
+            <select class="fi" id="mtStart"></select>
+          </div>
+          <div>
+            <label class="fl">End Time</label>
+            <select class="fi" id="mtEnd"></select>
+          </div>
+        </div>
+
+        <!-- Recurrence mode -->
+        <div style="margin-bottom:16px">
+          <label class="fl" style="margin-bottom:10px">Schedule Type</label>
+          <select class="fi" id="mtMode" onchange="mtModeChanged()">
+            <option value="specific">Specific Dates</option>
+            <option value="monthly">Monthly (same day each month)</option>
+            <option value="weekly">Weekly (rest of year)</option>
+          </select>
+        </div>
+
+        <!-- Specific dates (mode=specific) -->
+        <div id="mtSpecificWrap" style="margin-bottom:16px">
+          <label class="fl" style="margin-bottom:10px">Maintenance Dates</label>
+          <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-end">
+            <div style="flex:1">
+              <input type="date" class="fi" id="mtNewDate"/>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="mtAddDate()">+ Add Date</button>
+          </div>
+          <div id="mtDateList"><p style="color:var(--muted);font-style:italic">No dates added.</p></div>
+        </div>
+
+        <!-- Monthly day (mode=monthly) -->
+        <div id="mtMonthlyWrap" style="margin-bottom:16px;display:none">
+          <label class="fl" style="margin-bottom:10px">Day of Month</label>
+          <select class="fi" id="mtMonthDay"></select>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Maintenance will apply on this day every month.</div>
+        </div>
+
+        <!-- Weekly days (mode=weekly) -->
+        <div id="mtWeeklyWrap" style="margin-bottom:16px;display:none">
+          <label class="fl" style="margin-bottom:10px">Active Days (rest of year)</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="mtDays">
+            <label class="op-day"><input type="checkbox" value="0"> Sun</label>
+            <label class="op-day"><input type="checkbox" value="1"> Mon</label>
+            <label class="op-day"><input type="checkbox" value="2"> Tue</label>
+            <label class="op-day"><input type="checkbox" value="3"> Wed</label>
+            <label class="op-day"><input type="checkbox" value="4"> Thu</label>
+            <label class="op-day"><input type="checkbox" value="5"> Fri</label>
+            <label class="op-day"><input type="checkbox" value="6"> Sat</label>
+          </div>
+        </div>
+
+        <button class="btn btn-p" onclick="saveMaintenance()">💾 Save Maintenance Schedule</button>
       </div>
 
       <!-- BLOCKED DATES (kept for maintenance/holidays) -->
@@ -1443,6 +1519,7 @@ let _nbCourts = [];
 let _nbSelSlots = [];
 let _nbOpenHour = 6, _nbCloseHour = 22;
 let _nbOpenPlayCfg = null;
+let _nbMaintenanceCfg = null;
 let _nbBookedSlots = new Set();
 
 async function openNewBookingModal() {
@@ -1457,6 +1534,7 @@ async function openNewBookingModal() {
   _nbOpenHour = parseInt(settings.open_hour || '6');
   _nbCloseHour = parseInt(settings.close_hour || '22');
   try { _nbOpenPlayCfg = settings.open_play_config ? JSON.parse(settings.open_play_config) : null; } catch(e) { _nbOpenPlayCfg = null; }
+  try { _nbMaintenanceCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : null; } catch(e) { _nbMaintenanceCfg = null; }
 
   // Set min date to today
   const today = new Date();
@@ -1489,6 +1567,16 @@ function _nbIsOpenPlayHour(dateStr, h) {
   const dow = new Date(dateStr + 'T00:00:00').getDay();
   if (!(_nbOpenPlayCfg.days || []).includes(dow)) return false;
   return h >= _nbOpenPlayCfg.start && h < _nbOpenPlayCfg.end;
+}
+
+function _nbIsMaintenanceHour(dateStr, h) {
+  if (!_nbMaintenanceCfg || !_nbMaintenanceCfg.enabled) return false;
+  if (h < _nbMaintenanceCfg.start || h >= _nbMaintenanceCfg.end) return false;
+  const mode = _nbMaintenanceCfg.mode || 'specific';
+  if (mode === 'specific') return (_nbMaintenanceCfg.dates || []).includes(dateStr);
+  if (mode === 'monthly') return new Date(dateStr + 'T00:00:00').getDate() === (_nbMaintenanceCfg.recurring?.day ?? -1);
+  if (mode === 'weekly') return (_nbMaintenanceCfg.recurring?.days || []).includes(new Date(dateStr + 'T00:00:00').getDay());
+  return false;
 }
 
 function _nbGetRateForHour(court, h) {
@@ -1530,11 +1618,12 @@ async function nbRenderSlots() {
 
   // Remove stale selections
   _nbSelSlots = _nbSelSlots.filter(h =>
-    !_nbBookedSlots.has(h) && !(isToday && h <= curHour) && !_nbIsOpenPlayHour(date, h)
+    !_nbBookedSlots.has(h) && !(isToday && h <= curHour) && !_nbIsOpenPlayHour(date, h) && !_nbIsMaintenanceHour(date, h)
   );
 
   let availCount = 0;
   let hasOpenPlay = false;
+  let hasMaint = false;
   let html = '';
 
   for (let h = _nbOpenHour; h < _nbCloseHour; h++) {
@@ -1543,10 +1632,12 @@ async function nbRenderSlots() {
     const isBooked = _nbBookedSlots.has(h);
     const isSel = _nbSelSlots.includes(h);
     const isOP = _nbIsOpenPlayHour(date, h);
-    const isUnavail = isPast || isBooked || isOP || isNow;
+    const isMT = _nbIsMaintenanceHour(date, h);
+    const isUnavail = isPast || isBooked || isOP || isMT || isNow;
 
     if (!isUnavail) availCount++;
     if (isOP && !isBooked && !isPast) hasOpenPlay = true;
+    if (isMT && !isBooked && !isPast) hasMaint = true;
 
     let cls = 'nb-slot';
     let tag = '';
@@ -1554,6 +1645,7 @@ async function nbRenderSlots() {
     else if (isPast)     { cls += ' past'; tag = '<span class="nb-slot-tag">PAST</span>'; }
     else if (isNow)      { cls += ' now'; tag = '<span class="nb-slot-tag">NOW</span>'; }
     else if (isBooked)   { cls += ' booked'; tag = '<span class="nb-slot-tag">TAKEN</span>'; }
+    else if (isMT)       { cls += ' maintenance'; tag = '<span class="nb-slot-tag">MAINTENANCE</span>'; }
     else if (isOP)       { cls += ' open-play'; tag = '<span class="nb-slot-tag">OPEN PLAY</span>'; }
     else                 { cls += ' free'; }
 
@@ -1575,6 +1667,7 @@ async function nbRenderSlots() {
     <span style="color:var(--green)">&#9724; Selected</span>
     <span style="color:var(--red)">&#9724; Taken</span>
     ${hasOpenPlay ? '<span style="color:var(--yellow)">&#9724; Open Play</span>' : ''}
+    ${hasMaint ? '<span style="color:#ff9800">&#9724; Maintenance</span>' : ''}
   </div>`;
 
   grid.innerHTML = liveNote + legend + `<div class="nb-slots-grid">${html}</div><div id="nbSlotSummary"></div>`;
@@ -1596,6 +1689,7 @@ function nbToggleSlot(h) {
   if (isToday && h < curHour) { toast('This time has passed.', 'err'); return; }
   if (isToday && h === curHour) { toast('This hour is in progress.', 'inf'); return; }
   if (_nbIsOpenPlayHour(date, h)) { toast('Reserved for Open Play.', 'inf'); return; }
+  if (_nbIsMaintenanceHour(date, h)) { toast('Reserved for maintenance.', 'inf'); return; }
 
   const i = _nbSelSlots.indexOf(h);
   if (i === -1) {
@@ -2443,6 +2537,25 @@ async function renderBlocked(){
     cb.checked = (cfg.days ?? [1,2,3,4,5,6]).includes(Number(cb.value));
   });
 
+  // Load maintenance settings
+  const mtCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : { enabled: false, start: 6, end: 12, mode: 'specific', dates: [], recurring: null };
+  mtPopulateTimePickers();
+  $('mtEnabled').checked = mtCfg.enabled === true;
+  $('mtStart').value = mtCfg.start ?? 6;
+  $('mtEnd').value = mtCfg.end ?? 12;
+  $('mtMode').value = mtCfg.mode || 'specific';
+  mtModeChanged();
+  _mtDates = mtCfg.dates || [];
+  mtRenderDateList();
+  // Monthly day options
+  const mdSel = $('mtMonthDay');
+  mdSel.innerHTML = '';
+  for (let d = 1; d <= 31; d++) mdSel.innerHTML += `<option value="${d}"${d === (mtCfg.recurring?.day ?? 1) ? ' selected' : ''}>${d}</option>`;
+  // Weekly days
+  document.querySelectorAll('#mtDays input[type=checkbox]').forEach(cb => {
+    cb.checked = (mtCfg.recurring?.days || []).includes(Number(cb.value));
+  });
+
   // Load blocked dates
   const dates=await DB.getBlockedDates();
   $('blkList').innerHTML=dates.length===0?'<p style="color:var(--muted);font-style:italic">No blocked dates.</p>':
@@ -2460,6 +2573,81 @@ async function saveOpenPlay() {
 
   await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days }));
   toast('Open Play schedule saved!');
+}
+
+/* ==============================================
+   MAINTENANCE SCHEDULE
+   ============================================== */
+let _mtDates = [];
+
+function mtPopulateTimePickers() {
+  const labels = ['12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM','6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
+    '12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM','12:00 AM (midnight)'];
+  [$('mtStart'), $('mtEnd')].forEach((sel, si) => {
+    sel.innerHTML = '';
+    const max = si === 0 ? 23 : 24;
+    for (let h = 0; h <= max; h++) {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.textContent = labels[h];
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function mtModeChanged() {
+  const mode = $('mtMode').value;
+  $('mtSpecificWrap').style.display = mode === 'specific' ? '' : 'none';
+  $('mtMonthlyWrap').style.display = mode === 'monthly' ? '' : 'none';
+  $('mtWeeklyWrap').style.display = mode === 'weekly' ? '' : 'none';
+}
+
+function mtAddDate() {
+  const v = $('mtNewDate').value;
+  if (!v) { toast('Pick a date.', 'err'); return; }
+  if (_mtDates.includes(v)) { toast('Already added.', 'inf'); return; }
+  _mtDates.push(v);
+  _mtDates.sort();
+  mtRenderDateList();
+  $('mtNewDate').value = '';
+}
+
+function mtRemoveDate(d) {
+  _mtDates = _mtDates.filter(x => x !== d);
+  mtRenderDateList();
+}
+
+function mtRenderDateList() {
+  $('mtDateList').innerHTML = _mtDates.length === 0
+    ? '<p style="color:var(--muted);font-style:italic">No dates added.</p>'
+    : _mtDates.map(d =>
+        `<div class="blk-item"><span>🔧 ${fmtD(d)}</span><button class="btn btn-d btn-sm" onclick="mtRemoveDate('${d}')">Remove</button></div>`
+      ).join('');
+}
+
+async function saveMaintenance() {
+  const enabled = $('mtEnabled').checked;
+  const start = parseInt($('mtStart').value);
+  const end = parseInt($('mtEnd').value);
+  const mode = $('mtMode').value;
+
+  if (end <= start) { toast('End time must be after start time.', 'err'); return; }
+
+  let recurring = null;
+  if (mode === 'monthly') {
+    recurring = { type: 'monthly', day: parseInt($('mtMonthDay').value) };
+  } else if (mode === 'weekly') {
+    const days = [...document.querySelectorAll('#mtDays input:checked')].map(cb => Number(cb.value));
+    if (days.length === 0 && enabled) { toast('Select at least one day.', 'err'); return; }
+    recurring = { type: 'weekly', days };
+  } else {
+    if (_mtDates.length === 0 && enabled) { toast('Add at least one maintenance date.', 'err'); return; }
+  }
+
+  await DB.saveSetting('maintenance_config', JSON.stringify({
+    enabled, start, end, mode, dates: _mtDates, recurring
+  }));
+  toast('Maintenance schedule saved!');
 }
 
 async function addBlocked(){

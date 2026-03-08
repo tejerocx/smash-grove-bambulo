@@ -230,6 +230,14 @@ body.light .nav { background:rgba(242,237,229,.95); }
 }
 .cc-slot-btn.open-play:hover { transform:none; box-shadow:none; }
 .cc-slot-btn.open-play .csl-price { color:rgba(255,255,255,.9); }
+/* Maintenance */
+.cc-slot-btn.maintenance {
+  background:linear-gradient(135deg,#ff9800,#e65100);
+  border:2px solid #bf360c;
+  color:#fff;
+  cursor:not-allowed;
+}
+.cc-slot-btn.maintenance:hover { transform:none; box-shadow:none; }
 /* Past */
 .cc-slot-btn.past-slot {
   background:rgba(255,255,255,.04); border:2px solid var(--border);
@@ -772,6 +780,10 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .slot.open-play .slot-time { color: #ff6b6b; }
 .slot.open-play .slot-end  { color: #ff6b6b; opacity:.75; }
 .slot.open-play .slot-tag.op-tag { background: rgba(248,81,73,.26); color: #ffb3b3; font-size:.62rem; letter-spacing:.3px; }
+.slot.maintenance { background: rgba(255,152,0,.12); border-color: rgba(255,152,0,.45); cursor: not-allowed; }
+.slot.maintenance .slot-time { color: #ff9800; }
+.slot.maintenance .slot-end  { color: #ff9800; opacity:.75; }
+.slot.maintenance .slot-tag.mt-tag { background: rgba(255,152,0,.26); color: #ffcc80; font-size:.62rem; letter-spacing:.3px; }
 
 /* Live note banner */
 .slots-live-note {
@@ -1487,6 +1499,7 @@ let _lastSubmitAt = 0; // rate limiting — ms timestamp of last submission atte
 let openHour  = 6;
 let closeHour = 22;
 let openPlayConfig = null; // { enabled, start, end, days[] }
+let maintenanceConfig = null; // { enabled, start, end, mode, dates[], recurring }
 let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
 let payFull = false; // false = 50% downpayment, true = 100% full payment
 let cardSel   = { courtId: null, date: null, slots: [], rate: 0 };
@@ -1531,6 +1544,18 @@ function isOpenPlayHour(date, h) {
   return start < end ? (h >= start && h < end) : (h >= start || h < end);
 }
 
+function isMaintenanceHour(date, h) {
+  if (!maintenanceConfig || !maintenanceConfig.enabled) return false;
+  const start = Number(maintenanceConfig.start);
+  const end = Number(maintenanceConfig.end);
+  if (h < start || h >= end) return false;
+  const mode = maintenanceConfig.mode || 'specific';
+  if (mode === 'specific') return (maintenanceConfig.dates || []).includes(date);
+  if (mode === 'monthly') return new Date(date + 'T00:00:00').getDate() === (maintenanceConfig.recurring?.day ?? -1);
+  if (mode === 'weekly') return (maintenanceConfig.recurring?.days || []).includes(dayOfWeek(date));
+  return false;
+}
+
 function toast(msg, type='ok') {
   const icons = {ok:'✅', err:'❌', inf:'ℹ️'};
   const el = document.createElement('div');
@@ -1569,6 +1594,9 @@ async function loadOperatingHours() {
   _settingsTiers = pricingTiers.length ? [...pricingTiers] : null;
   if (settings.open_play_config) {
     try { openPlayConfig = JSON.parse(settings.open_play_config); } catch(e) {}
+  }
+  if (settings.maintenance_config) {
+    try { maintenanceConfig = JSON.parse(settings.maintenance_config); } catch(e) {}
   }
   applyPaymentSettings(settings);
   const note = $('slotHoursNote');
@@ -1711,6 +1739,10 @@ async function toggleCardSlot(courtId, date, h) {
     toast('This slot is reserved for Open Play.', 'inf');
     return;
   }
+  if (isMaintenanceHour(date, h)) {
+    toast('This slot is under maintenance.', 'inf');
+    return;
+  }
   // Reset if switching court or date
   if (cardSel.courtId !== courtId || cardSel.date !== date) {
     cardSel = { courtId, date, slots: [], rate: 0 };
@@ -1768,8 +1800,8 @@ async function proceedToBook(courtId) {
   if (!cardSel.courtId || cardSel.slots.length === 0) {
     toast('Please select at least one time slot.', 'inf'); return;
   }
-  if (cardSel.slots.some(h => isOpenPlayHour(cardSel.date, h))) {
-    toast('Open Play slots cannot be booked. Please choose another time.', 'err');
+  if (cardSel.slots.some(h => isOpenPlayHour(cardSel.date, h) || isMaintenanceHour(cardSel.date, h))) {
+    toast('Some selected slots are unavailable. Please choose another time.', 'err');
     if (cardSel.date) await onCardDate(courtId, cardSel.date);
     return;
   }
@@ -1931,9 +1963,11 @@ async function onCardDate(courtId, date) {
     const isPast_   = isToday_ && h <= curHour;
     const isBooked_ = bookedHrs.has(h);
     const isOpenPlay_ = isOpenPlayHour(date, h);
+    const isMaint_ = isMaintenanceHour(date, h);
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
+    if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">MAINTENANCE</div></div>`;
     if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">OPEN PLAY</div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
@@ -1969,7 +2003,7 @@ async function renderCourts() {
             }));
     const bookedHours = new Set(Object.keys(slotNameMap).map(Number));
 
-    const availToday = blk ? 0 : allSlots.filter(h => h > curHour && !bookedHours.has(h) && !isOpenPlayHour(today, h)).length;
+    const availToday = blk ? 0 : allSlots.filter(h => h > curHour && !bookedHours.has(h) && !isOpenPlayHour(today, h) && !isMaintenanceHour(today, h)).length;
     const availBadgeCls = blk ? 'mnt' : availToday > 0 ? 'av' : 'full';
     const availBadgeTxt = blk ? '🔧 Maintenance' : availToday > 0 ? `⚡ ${availToday} available` : '⛔ Fully booked';
 
@@ -1992,9 +2026,11 @@ async function renderCourts() {
           const isPast_   = h <= curHour;
           const isBooked_ = bookedHours.has(h);
           const isOpenPlay_ = isOpenPlayHour(today, h);
+          const isMaint_ = isMaintenanceHour(today, h);
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
+          if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">MAINTENANCE</div></div>`;
           if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">OPEN PLAY</div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
@@ -2132,11 +2168,12 @@ async function renderSlots() {
   selSlots = selSlots.filter(h => {
     const isPast = todayFlag && h < curHour;
     const isNow = todayFlag && h === curHour;
-    return !booked.has(h) && !isPast && !isNow && !isOpenPlayHour(date, h);
+    return !booked.has(h) && !isPast && !isNow && !isOpenPlayHour(date, h) && !isMaintenanceHour(date, h);
   });
 
   let availCount = 0;
   let hasOpenPlay = false;
+  let hasMaint = false;
   let slotHtml = '';
 
   for (let h = openHour; h < closeHour; h++) {
@@ -2145,10 +2182,12 @@ async function renderSlots() {
     const isBooked    = booked.has(h);
     const isSel       = selSlots.includes(h);
     const isOpenPlay  = isOpenPlayHour(date, h);
-    const isUnavail   = isPast || isBooked || isOpenPlay;
+    const isMaint     = isMaintenanceHour(date, h);
+    const isUnavail   = isPast || isBooked || isOpenPlay || isMaint;
 
     if (!isUnavail && !isNow) availCount++;
     if (isOpenPlay && !isBooked && !isPast) hasOpenPlay = true;
+    if (isMaint && !isBooked && !isPast) hasMaint = true;
 
     let cls = 'slot';
     let tag = '';
@@ -2157,6 +2196,7 @@ async function renderSlots() {
     else if (isPast)       { cls += ' past'; tag = `<span class="slot-tag past-tag">DONE</span>`; }
     else if (isNow)        { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
     else if (isBooked)     { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
+    else if (isMaint)      { cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">MAINTENANCE</span>`; }
     else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">OPEN PLAY</span>`; }
     else                   { cls += ' free'; }
 
@@ -2178,6 +2218,7 @@ async function renderSlots() {
       <span class="leg" style="color:var(--green)">🟩 Selected</span>
       <span class="leg" style="color:var(--red)">🟥 Booked</span>
       ${hasOpenPlay ? '<span class="leg" style="color:#ff6b6b">🟥 Open Play</span>' : ''}
+      ${hasMaint ? '<span class="leg" style="color:#ff9800">🟧 Maintenance</span>' : ''}
       ${todayFlag ? '<span class="leg" style="color:var(--muted)">⬛ Past</span><span class="leg" style="color:#4fc3f7">🔵 Now</span>' : ''}
     </div>`;
 
@@ -2197,6 +2238,9 @@ function toggleSlot(h) {
   if (todayFlag && h === curHour) { toast('This hour is currently in progress — book the next available slot.', 'inf'); return; }
   if (isOpenPlayHour(date, h)) {
     toast('This slot is reserved for Open Play (walk-in only — no pre-booking needed).', 'inf'); return;
+  }
+  if (isMaintenanceHour(date, h)) {
+    toast('This slot is under maintenance.', 'inf'); return;
   }
 
   const i = selSlots.indexOf(h);
