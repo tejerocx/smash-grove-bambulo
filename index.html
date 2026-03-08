@@ -232,10 +232,17 @@ body.light .nav { background:rgba(242,237,229,.95); }
 .cc-slot-btn.open-play .csl-price { color:rgba(255,255,255,.9); }
 /* Maintenance */
 .cc-slot-btn.maintenance {
-  background:linear-gradient(135deg,#ff9800,#e65100);
-  border:2px solid #bf360c;
-  color:#fff;
+  background:repeating-linear-gradient(135deg,rgba(255,152,0,.08),rgba(255,152,0,.08) 6px,rgba(255,152,0,.18) 6px,rgba(255,152,0,.18) 12px);
+  border:2px dashed #ff9800;
+  color:#ffb74d;
   cursor:not-allowed;
+  position:relative;
+}
+.cc-slot-btn.maintenance::before {
+  content:'🔧'; position:absolute; top:3px; right:5px; font-size:.65rem; opacity:.8;
+}
+.cc-slot-btn.maintenance .csl-tag {
+  background:rgba(255,152,0,.25); color:#ffcc80; font-size:.58rem; font-weight:700; letter-spacing:.4px;
 }
 .cc-slot-btn.maintenance:hover { transform:none; box-shadow:none; }
 /* Past */
@@ -780,7 +787,13 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .slot.open-play .slot-time { color: #ff6b6b; }
 .slot.open-play .slot-end  { color: #ff6b6b; opacity:.75; }
 .slot.open-play .slot-tag.op-tag { background: rgba(248,81,73,.26); color: #ffb3b3; font-size:.62rem; letter-spacing:.3px; }
-.slot.maintenance { background: rgba(255,152,0,.12); border-color: rgba(255,152,0,.45); cursor: not-allowed; }
+.slot.maintenance {
+  background: repeating-linear-gradient(135deg,rgba(255,152,0,.06),rgba(255,152,0,.06) 6px,rgba(255,152,0,.14) 6px,rgba(255,152,0,.14) 12px);
+  border:2px dashed rgba(255,152,0,.6); cursor: not-allowed; position:relative;
+}
+.slot.maintenance::after {
+  content:'🔧'; position:absolute; top:6px; right:8px; font-size:.7rem; opacity:.75;
+}
 .slot.maintenance .slot-time { color: #ff9800; }
 .slot.maintenance .slot-end  { color: #ff9800; opacity:.75; }
 .slot.maintenance .slot-tag.mt-tag { background: rgba(255,152,0,.26); color: #ffcc80; font-size:.62rem; letter-spacing:.3px; }
