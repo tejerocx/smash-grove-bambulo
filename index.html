@@ -223,13 +223,17 @@ body.light .nav { background:rgba(242,237,229,.95); }
 }
 .cc-slot-btn.taken:hover { transform:none; box-shadow:none; }
 .cc-slot-btn.open-play {
-  background:linear-gradient(135deg,#ff4d4f,#c1121f);
-  border:2px solid #b00020;
-  color:#fff;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  color:var(--muted);
   cursor:not-allowed;
+  opacity:.55;
+}
+.cc-slot-btn.open-play .csl-time { color:var(--muted); }
+.cc-slot-btn.open-play .csl-tag {
+  background:none; color:#f4a825; font-size:.56rem; font-weight:700; letter-spacing:.3px;
 }
 .cc-slot-btn.open-play:hover { transform:none; box-shadow:none; }
-.cc-slot-btn.open-play .csl-price { color:rgba(255,255,255,.9); }
 /* Maintenance */
 .cc-slot-btn.maintenance {
   background:rgba(255,255,255,.03);
@@ -781,10 +785,10 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .slot.now  { border-color: #4fc3f7; background: rgba(79,195,247,.07); }
 .slot.now .slot-time { color: #4fc3f7; }
 .slot.now .slot-tag { background: rgba(79,195,247,.18); color: #4fc3f7; }
-.slot.open-play { background: rgba(248,81,73,.12); border-color: rgba(248,81,73,.45); cursor: not-allowed; }
-.slot.open-play .slot-time { color: #ff6b6b; }
-.slot.open-play .slot-end  { color: #ff6b6b; opacity:.75; }
-.slot.open-play .slot-tag.op-tag { background: rgba(248,81,73,.26); color: #ffb3b3; font-size:.62rem; letter-spacing:.3px; }
+.slot.open-play { background: rgba(255,255,255,.02); border-color: var(--border); cursor: not-allowed; opacity:.55; }
+.slot.open-play .slot-time { color: var(--muted); }
+.slot.open-play .slot-end  { color: var(--muted); opacity:.7; }
+.slot.open-play .slot-tag.op-tag { background: none; color: #f4a825; font-size:.62rem; font-weight:700; letter-spacing:.3px; }
 .slot.maintenance {
   background: rgba(255,255,255,.02); border-color: var(--border); cursor: not-allowed; opacity:.55;
 }
@@ -1975,7 +1979,7 @@ async function onCardDate(courtId, date) {
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
     if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
-    if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">OPEN PLAY</div></div>`;
+    if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
 }
@@ -2038,7 +2042,7 @@ async function renderCourts() {
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
           if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
-          if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">OPEN PLAY</div></div>`;
+          if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
 
@@ -2204,7 +2208,7 @@ async function renderSlots() {
     else if (isNow)        { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
     else if (isBooked)     { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
     else if (isMaint)      { cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">🔧 Maintenance</span>`; }
-    else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">OPEN PLAY</span>`; }
+    else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">🏓 Open Play</span>`; }
     else                   { cls += ' free'; }
 
     slotHtml += `
