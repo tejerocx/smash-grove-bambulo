@@ -763,6 +763,7 @@ tr:hover td { background: var(--bg2); }
             <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
               <div id="gcashQrPreviewWrap" style="display:none">
                 <img id="gcashQrPreview" src="" alt="GCash QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+                <button type="button" onclick="removeQr('gcash')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
               </div>
               <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
                 📷 Upload GCash QR image
@@ -784,6 +785,7 @@ tr:hover td { background: var(--bg2); }
             <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
               <div id="gotymeQrPreviewWrap" style="display:none">
                 <img id="gotymeQrPreview" src="" alt="GoTyme QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+                <button type="button" onclick="removeQr('gotyme')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
               </div>
               <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)'">
                 📷 Upload GoTyme QR image
@@ -2394,6 +2396,22 @@ async function renderPaymentSettings() {
   $('paySettingsSummary').textContent = summaryParts.join(' • ');
 }
 
+async function removeQr(type) {
+  const key = type === 'gcash' ? 'gcash_qr_image' : 'gotyme_qr_image';
+  const previewId = type === 'gcash' ? 'gcashQrPreview' : 'gotymeQrPreview';
+  const wrapId = type === 'gcash' ? 'gcashQrPreviewWrap' : 'gotymeQrPreviewWrap';
+  const fileId = type === 'gcash' ? 'gcashQrFile' : 'gotymeQrFile';
+  try {
+    await DB.saveSetting(key, '');
+    $(previewId).src = '';
+    $(wrapId).style.display = 'none';
+    if ($(fileId)) $(fileId).value = '';
+    toast('QR code removed.');
+  } catch(e) {
+    toast('Failed to remove QR code.', 'err');
+  }
+}
+
 function handleQrUpload(type, e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -2433,11 +2451,11 @@ async function savePaymentSettings() {
     if (gcashName) await DB.saveSetting('gcash_merchant_name', gcashName);
     if (gotymeName) await DB.saveSetting('gotyme_merchant_name', gotymeName);
 
-    // Save QR images (base64 data URLs)
+    // Save QR images (base64 data URLs) — save empty string if removed
     const gcashQrSrc = $('gcashQrPreview')?.src || '';
     const gotymeQrSrc = $('gotymeQrPreview')?.src || '';
-    if (gcashQrSrc && gcashQrSrc.startsWith('data:')) await DB.saveSetting('gcash_qr_image', gcashQrSrc);
-    if (gotymeQrSrc && gotymeQrSrc.startsWith('data:')) await DB.saveSetting('gotyme_qr_image', gotymeQrSrc);
+    if (gcashQrSrc.startsWith('data:')) await DB.saveSetting('gcash_qr_image', gcashQrSrc);
+    if (gotymeQrSrc.startsWith('data:')) await DB.saveSetting('gotyme_qr_image', gotymeQrSrc);
 
     await renderPaymentSettings();
     toast('✅ Payment settings saved!');
