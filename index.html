@@ -232,17 +232,15 @@ body.light .nav { background:rgba(242,237,229,.95); }
 .cc-slot-btn.open-play .csl-price { color:rgba(255,255,255,.9); }
 /* Maintenance */
 .cc-slot-btn.maintenance {
-  background:repeating-linear-gradient(135deg,rgba(255,152,0,.08),rgba(255,152,0,.08) 6px,rgba(255,152,0,.18) 6px,rgba(255,152,0,.18) 12px);
-  border:2px dashed #ff9800;
-  color:#ffb74d;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  color:var(--muted);
   cursor:not-allowed;
-  position:relative;
+  opacity:.55;
 }
-.cc-slot-btn.maintenance::before {
-  content:'🔧'; position:absolute; top:3px; right:5px; font-size:.65rem; opacity:.8;
-}
+.cc-slot-btn.maintenance .csl-time { color:var(--muted); }
 .cc-slot-btn.maintenance .csl-tag {
-  background:rgba(255,152,0,.25); color:#ffcc80; font-size:.58rem; font-weight:700; letter-spacing:.4px;
+  background:none; color:#e53935; font-size:.56rem; font-weight:700; letter-spacing:.3px;
 }
 .cc-slot-btn.maintenance:hover { transform:none; box-shadow:none; }
 /* Past */
@@ -788,15 +786,11 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .slot.open-play .slot-end  { color: #ff6b6b; opacity:.75; }
 .slot.open-play .slot-tag.op-tag { background: rgba(248,81,73,.26); color: #ffb3b3; font-size:.62rem; letter-spacing:.3px; }
 .slot.maintenance {
-  background: repeating-linear-gradient(135deg,rgba(255,152,0,.06),rgba(255,152,0,.06) 6px,rgba(255,152,0,.14) 6px,rgba(255,152,0,.14) 12px);
-  border:2px dashed rgba(255,152,0,.6); cursor: not-allowed; position:relative;
+  background: rgba(255,255,255,.02); border-color: var(--border); cursor: not-allowed; opacity:.55;
 }
-.slot.maintenance::after {
-  content:'🔧'; position:absolute; top:6px; right:8px; font-size:.7rem; opacity:.75;
-}
-.slot.maintenance .slot-time { color: #ff9800; }
-.slot.maintenance .slot-end  { color: #ff9800; opacity:.75; }
-.slot.maintenance .slot-tag.mt-tag { background: rgba(255,152,0,.26); color: #ffcc80; font-size:.62rem; letter-spacing:.3px; }
+.slot.maintenance .slot-time { color: var(--muted); }
+.slot.maintenance .slot-end  { color: var(--muted); opacity:.7; }
+.slot.maintenance .slot-tag.mt-tag { background: none; color: #e53935; font-size:.62rem; font-weight:700; letter-spacing:.3px; }
 
 /* Live note banner */
 .slots-live-note {
@@ -1980,7 +1974,7 @@ async function onCardDate(courtId, date) {
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
-    if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">MAINTENANCE</div></div>`;
+    if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
     if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">OPEN PLAY</div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
@@ -2043,7 +2037,7 @@ async function renderCourts() {
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
-          if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">MAINTENANCE</div></div>`;
+          if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
           if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">OPEN PLAY</div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
@@ -2209,7 +2203,7 @@ async function renderSlots() {
     else if (isPast)       { cls += ' past'; tag = `<span class="slot-tag past-tag">DONE</span>`; }
     else if (isNow)        { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
     else if (isBooked)     { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
-    else if (isMaint)      { cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">MAINTENANCE</span>`; }
+    else if (isMaint)      { cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">🔧 Maintenance</span>`; }
     else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">OPEN PLAY</span>`; }
     else                   { cls += ' free'; }
 
