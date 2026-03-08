@@ -417,6 +417,51 @@ tr:hover td { background: var(--bg2); }
 .op-day:hover { border-color: var(--green); color: var(--text); }
 .op-day:has(input:checked) { background: var(--green); border-color: var(--green); color: #fff; }
 
+/* ── ADMIN SLOT GRID ───────────────────────────────────── */
+.nb-slots-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 6px; margin-top: 10px;
+}
+.nb-slot {
+  padding: 10px 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface);
+  text-align: center; cursor: pointer;
+  transition: all 0.15s ease; user-select: none;
+}
+.nb-slot .nb-slot-time { font-size: 13px; font-weight: 600; }
+.nb-slot .nb-slot-end { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.nb-slot .nb-slot-rate { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 3px; }
+.nb-slot .nb-slot-tag {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  margin-top: 4px; padding: 1px 6px; border-radius: 100px; display: inline-block;
+}
+.nb-slot.free:hover { border-color: var(--green); background: var(--green-bg); transform: translateY(-1px); }
+.nb-slot.sel { background: var(--green); border-color: var(--green); color: #fff; }
+.nb-slot.sel .nb-slot-end, .nb-slot.sel .nb-slot-rate { color: rgba(255,255,255,.7); }
+.nb-slot.booked { opacity: .55; cursor: not-allowed; background: var(--red-bg); border-color: var(--red); }
+.nb-slot.booked .nb-slot-tag { background: var(--red-bg); color: var(--red); }
+.nb-slot.past { opacity: .35; cursor: not-allowed; }
+.nb-slot.past .nb-slot-tag { color: var(--text3); }
+.nb-slot.now { opacity: .5; cursor: not-allowed; border-color: #4fc3f7; }
+.nb-slot.now .nb-slot-tag { background: rgba(79,195,247,.12); color: #4fc3f7; }
+.nb-slot.open-play { opacity: .55; cursor: not-allowed; background: var(--yellow-bg); border-color: var(--yellow); }
+.nb-slot.open-play .nb-slot-tag { background: var(--yellow-bg); color: var(--yellow); }
+.nb-slots-msg { font-size: 13px; color: var(--text3); padding: 16px 0; text-align: center; }
+.nb-slots-legend {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 4px;
+  font-size: 11px; color: var(--text3);
+}
+.nb-slots-legend span { display: flex; align-items: center; gap: 4px; }
+.nb-slots-summary {
+  margin-top: 12px; padding: 12px 14px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.nb-slots-summary .nb-sum-row { display: flex; justify-content: space-between; padding: 3px 0; color: var(--text2); }
+.nb-slots-summary .nb-sum-total { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; font-weight: 700; color: var(--text); }
+.nb-slots-summary .nb-sum-total span { color: var(--green); font-family: 'DM Mono', monospace; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
 /* ── SWITCH ────────────────────────────────────────────── */
 .sw { position: relative; width: 42px; height: 23px; }
 .sw input { opacity: 0; width: 0; height: 0; }
@@ -945,26 +990,17 @@ tr:hover td { background: var(--bg2); }
 
       <!-- Booking Details -->
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin:18px 0 10px;">Booking Details</div>
-      <div class="fg"><label class="fl">Court *</label>
-        <select class="fi" id="nbCourt" onchange="nbUpdateTotal()">
-          <option value="">— Select Court —</option>
-        </select>
-      </div>
       <div class="frow">
-        <div class="fg" style="margin:0"><label class="fl">Date *</label><input type="date" class="fi" id="nbDate"/></div>
-        <div class="fg" style="margin:0"><label class="fl">Start Time *</label><select class="fi" id="nbStart" onchange="nbUpdateEnd()"></select></div>
-      </div>
-      <div class="frow" style="margin-top:12px">
-        <div class="fg" style="margin:0"><label class="fl">Duration *</label>
-          <select class="fi" id="nbDur" onchange="nbUpdateEnd()">
-            <option value="1">1 hour</option>
-            <option value="2" selected>2 hours</option>
-            <option value="3">3 hours</option>
-            <option value="4">4 hours</option>
-            <option value="5">5 hours</option>
+        <div class="fg" style="margin:0"><label class="fl">Court *</label>
+          <select class="fi" id="nbCourt" onchange="nbRenderSlots()">
+            <option value="">— Select Court —</option>
           </select>
         </div>
-        <div class="fg" style="margin:0"><label class="fl">End Time</label><input type="text" class="fi" id="nbEnd" readonly style="opacity:.6"/></div>
+        <div class="fg" style="margin:0"><label class="fl">Date *</label><input type="date" class="fi" id="nbDate" onchange="nbRenderSlots()"/></div>
+      </div>
+      <div id="nbSlotArea">
+        <div class="nb-slots-msg" id="nbSlotMsg">Select a court and date above to see real-time availability.</div>
+        <div id="nbSlotGrid"></div>
       </div>
 
       <!-- Payment -->
@@ -1391,6 +1427,10 @@ async function delBooking(ref){
 const nbGenRef = () => 'PB-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
 
 let _nbCourts = [];
+let _nbSelSlots = [];
+let _nbOpenHour = 6, _nbCloseHour = 22;
+let _nbOpenPlayCfg = null;
+let _nbBookedSlots = new Set();
 
 async function openNewBookingModal() {
   // Load courts
@@ -1399,22 +1439,17 @@ async function openNewBookingModal() {
   sel.innerHTML = '<option value="">— Select Court —</option>' +
     _nbCourts.map(c => `<option value="${c.id}">${c.name} — ${fmt(c.rate)}/hr</option>`).join('');
 
+  // Load operating hours + open play config
+  const settings = await DB.getSettings();
+  _nbOpenHour = parseInt(settings.open_hour || '6');
+  _nbCloseHour = parseInt(settings.close_hour || '22');
+  try { _nbOpenPlayCfg = settings.open_play_config ? JSON.parse(settings.open_play_config) : null; } catch(e) { _nbOpenPlayCfg = null; }
+
   // Set min date to today
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   $('nbDate').min = todayStr;
   $('nbDate').value = todayStr;
-
-  // Populate start time
-  const startSel = $('nbStart');
-  startSel.innerHTML = '';
-  for (let h = 6; h <= 21; h++) {
-    const opt = document.createElement('option');
-    opt.value = h;
-    opt.textContent = fmtHour(h);
-    if (h === 8) opt.selected = true;
-    startSel.appendChild(opt);
-  }
 
   // Clear fields
   $('nbName').value = '';
@@ -1424,26 +1459,182 @@ async function openNewBookingModal() {
   $('nbMethod').value = 'cash';
   $('nbPayStatus').value = 'paid';
   $('nbStatus').value = 'confirmed';
-  $('nbDur').value = '2';
   $('nbRefWrap').style.display = 'none';
+  _nbSelSlots = [];
 
-  nbUpdateEnd();
+  // Reset slot area
+  $('nbSlotGrid').innerHTML = '';
+  $('nbSlotMsg').style.display = '';
+  $('nbSlotMsg').textContent = 'Select a court and date above to see real-time availability.';
+  nbUpdateTotal();
+
   $('newBookingModal').classList.add('show');
 }
 
-function nbUpdateEnd() {
-  const h = parseInt($('nbStart')?.value || 8);
-  const dur = parseInt($('nbDur')?.value || 1);
-  const endH = h + dur;
-  if ($('nbEnd')) $('nbEnd').value = fmtHour(endH);
+function _nbIsOpenPlayHour(dateStr, h) {
+  if (!_nbOpenPlayCfg || !_nbOpenPlayCfg.enabled) return false;
+  const dow = new Date(dateStr + 'T00:00:00').getDay();
+  if (!(_nbOpenPlayCfg.days || []).includes(dow)) return false;
+  return h >= _nbOpenPlayCfg.start && h < _nbOpenPlayCfg.end;
+}
+
+function _nbGetRateForHour(court, h) {
+  const tiers = court.rateSchedule && court.rateSchedule.length ? court.rateSchedule : [];
+  for (const t of tiers) {
+    const inRange = t.from < t.to ? (h >= t.from && h < t.to) : (h >= t.from || h < t.to);
+    if (inRange) return t.rate;
+  }
+  return court.rate || 0;
+}
+
+async function nbRenderSlots() {
+  const courtId = $('nbCourt').value;
+  const date = $('nbDate').value;
+  const grid = $('nbSlotGrid');
+  const msg = $('nbSlotMsg');
+  const court = _nbCourts.find(c => String(c.id) === String(courtId));
+
+  if (!court || !date) {
+    grid.innerHTML = '';
+    msg.style.display = '';
+    msg.textContent = court ? 'Now pick a date to see available slots.' : 'Select a court and date above.';
+    _nbSelSlots = [];
+    nbUpdateTotal();
+    return;
+  }
+  msg.style.display = 'none';
+
+  // Fetch booked slots for this court + date
+  const allBks = await DB.getBookings();
+  _nbBookedSlots = new Set();
+  allBks.filter(b => String(b.courtId) === String(court.id) && b.date === date && b.status !== 'cancelled')
+    .forEach(b => (b.slots || []).forEach(s => _nbBookedSlots.add(s)));
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const isToday = date === todayStr;
+  const curHour = now.getHours();
+
+  // Remove stale selections
+  _nbSelSlots = _nbSelSlots.filter(h =>
+    !_nbBookedSlots.has(h) && !(isToday && h <= curHour) && !_nbIsOpenPlayHour(date, h)
+  );
+
+  let availCount = 0;
+  let hasOpenPlay = false;
+  let html = '';
+
+  for (let h = _nbOpenHour; h < _nbCloseHour; h++) {
+    const isPast = isToday && h < curHour;
+    const isNow = isToday && h === curHour;
+    const isBooked = _nbBookedSlots.has(h);
+    const isSel = _nbSelSlots.includes(h);
+    const isOP = _nbIsOpenPlayHour(date, h);
+    const isUnavail = isPast || isBooked || isOP || isNow;
+
+    if (!isUnavail) availCount++;
+    if (isOP && !isBooked && !isPast) hasOpenPlay = true;
+
+    let cls = 'nb-slot';
+    let tag = '';
+    if (isSel)           { cls += ' sel'; }
+    else if (isPast)     { cls += ' past'; tag = '<span class="nb-slot-tag">PAST</span>'; }
+    else if (isNow)      { cls += ' now'; tag = '<span class="nb-slot-tag">NOW</span>'; }
+    else if (isBooked)   { cls += ' booked'; tag = '<span class="nb-slot-tag">TAKEN</span>'; }
+    else if (isOP)       { cls += ' open-play'; tag = '<span class="nb-slot-tag">OPEN PLAY</span>'; }
+    else                 { cls += ' free'; }
+
+    const rate = _nbGetRateForHour(court, h);
+    html += `<div class="${cls}" data-h="${h}" onclick="nbToggleSlot(${h})">
+      <div class="nb-slot-time">${fmtHour(h)}</div>
+      <div class="nb-slot-end">to ${fmtHour(h+1)}</div>
+      <div class="nb-slot-rate">${fmt(rate)}</div>
+      ${tag}
+    </div>`;
+  }
+
+  const liveNote = isToday
+    ? `<div style="font-size:12px;color:var(--green);margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;background:var(--green);border-radius:50%;display:inline-block;animation:pulse 1.5s infinite"></span> Live · ${availCount} slot${availCount!==1?'s':''} available</div>`
+    : `<div style="font-size:12px;color:#4fc3f7;margin-bottom:8px">${availCount} slot${availCount!==1?'s':''} available on this date</div>`;
+
+  const legend = `<div class="nb-slots-legend">
+    <span>&#9723; Available</span>
+    <span style="color:var(--green)">&#9724; Selected</span>
+    <span style="color:var(--red)">&#9724; Taken</span>
+    ${hasOpenPlay ? '<span style="color:var(--yellow)">&#9724; Open Play</span>' : ''}
+  </div>`;
+
+  grid.innerHTML = liveNote + legend + `<div class="nb-slots-grid">${html}</div><div id="nbSlotSummary"></div>`;
+  nbUpdateTotal();
+}
+
+function nbToggleSlot(h) {
+  const courtId = $('nbCourt').value;
+  const date = $('nbDate').value;
+  const court = _nbCourts.find(c => String(c.id) === String(courtId));
+  if (!court || !date) return;
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const isToday = date === todayStr;
+  const curHour = now.getHours();
+
+  if (_nbBookedSlots.has(h)) { toast('This slot is already booked.', 'err'); return; }
+  if (isToday && h < curHour) { toast('This time has passed.', 'err'); return; }
+  if (isToday && h === curHour) { toast('This hour is in progress.', 'inf'); return; }
+  if (_nbIsOpenPlayHour(date, h)) { toast('Reserved for Open Play.', 'inf'); return; }
+
+  const i = _nbSelSlots.indexOf(h);
+  if (i === -1) {
+    if (_nbSelSlots.length === 0) {
+      _nbSelSlots.push(h);
+    } else {
+      const mn = Math.min(..._nbSelSlots), mx = Math.max(..._nbSelSlots);
+      if (h === mn - 1 || h === mx + 1) {
+        _nbSelSlots.push(h); _nbSelSlots.sort((a,b) => a - b);
+      } else {
+        toast('Select consecutive time slots.', 'inf'); return;
+      }
+    }
+  } else {
+    const mn = Math.min(..._nbSelSlots), mx = Math.max(..._nbSelSlots);
+    if (h === mn || h === mx) _nbSelSlots.splice(i, 1);
+    else { toast('Deselect from start or end only.', 'inf'); return; }
+  }
+
+  // Instant DOM update
+  document.querySelectorAll('#nbSlotGrid .nb-slot').forEach(el => {
+    const elH = parseInt(el.dataset.h);
+    el.classList.toggle('sel', _nbSelSlots.includes(elH));
+    if (_nbSelSlots.includes(elH)) {
+      el.classList.remove('free');
+      const tagEl = el.querySelector('.nb-slot-tag');
+      if (tagEl) tagEl.remove();
+    } else if (!el.classList.contains('booked') && !el.classList.contains('past') && !el.classList.contains('now') && !el.classList.contains('open-play')) {
+      el.classList.add('free');
+    }
+  });
   nbUpdateTotal();
 }
 
 function nbUpdateTotal() {
   const courtId = $('nbCourt')?.value;
   const court = _nbCourts.find(c => String(c.id) === String(courtId));
-  const dur = parseInt($('nbDur')?.value || 1);
-  if (court) $('nbTotal').value = court.rate * dur;
+  const hrs = _nbSelSlots.length;
+  const total = court ? _nbSelSlots.reduce((s, h) => s + _nbGetRateForHour(court, h), 0) : 0;
+  $('nbTotal').value = total || '';
+
+  // Update summary
+  const sum = $('nbSlotSummary');
+  if (!sum) return;
+  if (hrs === 0) { sum.innerHTML = ''; return; }
+  const startH = Math.min(..._nbSelSlots);
+  const endH = Math.max(..._nbSelSlots) + 1;
+  sum.innerHTML = `<div class="nb-slots-summary">
+    <div class="nb-sum-row"><span>Time</span><strong>${fmtHour(startH)} – ${fmtHour(endH)}</strong></div>
+    <div class="nb-sum-row"><span>Duration</span><strong>${hrs} hr${hrs!==1?'s':''}</strong></div>
+    <div class="nb-sum-row nb-sum-total"><span>Total</span><span>${fmt(total)}</span></div>
+  </div>`;
 }
 
 function nbToggleRef() {
@@ -1457,8 +1648,6 @@ async function saveNewBooking() {
   const email = $('nbEmail').value.trim();
   const courtId = $('nbCourt').value;
   const date = $('nbDate').value;
-  const startH = parseInt($('nbStart').value);
-  const dur = parseInt($('nbDur').value);
   const method = $('nbMethod').value;
   const gcashRef = $('nbGcashRef').value.trim() || null;
   const total = parseFloat($('nbTotal').value) || 0;
@@ -1470,14 +1659,16 @@ async function saveNewBooking() {
   if (!/^(09|\+639)\d{9}$/.test(phone)) { toast('Enter a valid PH number (e.g. 09XX XXX XXXX).', 'err'); return; }
   if (!courtId) { toast('Please select a court.', 'err'); return; }
   if (!date) { toast('Please select a date.', 'err'); return; }
-  if (startH + dur > 22) { toast('Booking exceeds operating hours (closes 10 PM).', 'err'); return; }
+  if (_nbSelSlots.length === 0) { toast('Please select at least one time slot.', 'err'); return; }
   if ((method === 'gcash' || method === 'gotyme') && !gcashRef) { toast('Please enter the GCash / GoTyme reference number.', 'err'); return; }
 
   const court = _nbCourts.find(c => String(c.id) === String(courtId));
   if (!court) { toast('Court not found.', 'err'); return; }
 
-  const endH = startH + dur;
-  const slots = Array.from({ length: dur }, (_, i) => startH + i);
+  const slots = [..._nbSelSlots].sort((a,b) => a - b);
+  const startH = Math.min(...slots);
+  const endH = Math.max(...slots) + 1;
+  const dur = slots.length;
 
   const booking = {
     ref: nbGenRef(),
