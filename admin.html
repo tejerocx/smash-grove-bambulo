@@ -435,16 +435,29 @@ tr:hover td { background: var(--bg2); }
   font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
   margin-top: 4px; padding: 1px 6px; border-radius: 100px; display: inline-block;
 }
-.nb-slot.free:hover { border-color: var(--green); background: var(--green-bg); transform: translateY(-1px); }
-.nb-slot.sel { background: var(--green); border-color: var(--green); color: #fff; }
+/* Available — bright border so it pops */
+.nb-slot.free { border: 1.5px solid var(--green); background: var(--green-bg); }
+.nb-slot.free .nb-slot-time { color: var(--green); }
+.nb-slot.free:hover { background: var(--green); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px var(--glow); }
+.nb-slot.free:hover .nb-slot-time { color: #fff; }
+.nb-slot.free:hover .nb-slot-end, .nb-slot.free:hover .nb-slot-rate { color: rgba(255,255,255,.7); }
+/* Selected */
+.nb-slot.sel { background: var(--green); border: 1.5px solid var(--green); color: #fff; }
+.nb-slot.sel .nb-slot-time { color: #fff; }
 .nb-slot.sel .nb-slot-end, .nb-slot.sel .nb-slot-rate { color: rgba(255,255,255,.7); }
-.nb-slot.booked { opacity: .55; cursor: not-allowed; background: var(--red-bg); border-color: var(--red); }
+/* Taken — red outline, muted */
+.nb-slot.booked { opacity: .5; cursor: not-allowed; background: var(--red-bg); border: 1.5px solid var(--red); }
+.nb-slot.booked .nb-slot-time { color: var(--red); text-decoration: line-through; }
 .nb-slot.booked .nb-slot-tag { background: var(--red-bg); color: var(--red); }
-.nb-slot.past { opacity: .35; cursor: not-allowed; }
-.nb-slot.past .nb-slot-tag { color: var(--text3); }
-.nb-slot.now { opacity: .5; cursor: not-allowed; border-color: #4fc3f7; }
+/* Past — red outline, very dim */
+.nb-slot.past { opacity: .35; cursor: not-allowed; border: 1.5px solid var(--red); background: var(--red-bg); }
+.nb-slot.past .nb-slot-time { text-decoration: line-through; color: var(--red); }
+.nb-slot.past .nb-slot-tag { color: var(--red); }
+/* Now — blue accent */
+.nb-slot.now { opacity: .5; cursor: not-allowed; border: 1.5px solid #4fc3f7; background: rgba(79,195,247,.08); }
 .nb-slot.now .nb-slot-tag { background: rgba(79,195,247,.12); color: #4fc3f7; }
-.nb-slot.open-play { opacity: .55; cursor: not-allowed; background: var(--yellow-bg); border-color: var(--yellow); }
+/* Open Play — yellow */
+.nb-slot.open-play { opacity: .55; cursor: not-allowed; background: var(--yellow-bg); border: 1.5px solid var(--yellow); }
 .nb-slot.open-play .nb-slot-tag { background: var(--yellow-bg); color: var(--yellow); }
 .nb-slots-msg { font-size: 13px; color: var(--text3); padding: 16px 0; text-align: center; }
 .nb-slots-legend {
