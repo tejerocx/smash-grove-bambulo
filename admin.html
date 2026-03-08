@@ -344,10 +344,40 @@ tr:hover td { background: var(--bg2); }
   .rev-grid { grid-template-columns: 1fr; }
   .stat-cards { grid-template-columns: 1fr 1fr; }
   .content { padding: 16px; }
-  table { font-size: 12px; }
-  th, td { padding: 8px 10px; }
 }
-@media (max-width: 480px) { .content { padding: 14px; } .frow { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .content { padding: 14px; } .frow { grid-template-columns: 1fr; } .stat-cards { grid-template-columns: 1fr; } }
+
+/* ── MOBILE CARD TABLES ────────────────────────────────── */
+@media (max-width: 700px) {
+  .tbl-scroll table thead { display: none; }
+  .tbl-scroll table, .tbl-scroll tbody, .tbl-scroll tr, .tbl-scroll td { display: block; width: 100%; }
+  .tbl-scroll tr {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 10px; padding: 12px 14px; position: relative;
+  }
+  .tbl-scroll tr:hover td { background: none; }
+  .tbl-scroll tr:last-child { margin-bottom: 0; }
+  .tbl-scroll td {
+    padding: 4px 0; border-bottom: none; font-size: .82rem;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .tbl-scroll td::before {
+    content: attr(data-label);
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--text3); min-width: 80px; flex-shrink: 0;
+    padding-top: 2px;
+  }
+  .tbl-scroll td:empty { display: none; }
+  .tbl-scroll td[data-label="Actions"] { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .filters { flex-direction: column; }
+  .filters input, .filters select { width: 100%; }
+  .topnav { padding: 0 12px; gap: 8px; }
+  .nav-brand span { display: none; }
+  .nav-user .u-name { display: none; }
+  .modal { border-radius: 12px; }
+  .m-hd { padding: 14px 16px; }
+  .m-body { padding: 14px 16px; }
+}
 
 /* ── CALENDAR VIEW ─────────────────────────────────────── */
 .view-toggle { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; width: fit-content; }
@@ -1246,7 +1276,7 @@ async function renderDash(){
   $('cBar').style.width=(tot>0?Math.round(ca/tot*100):0)+'%';
   const recent=[...bks].slice(0,5);
   $('recentBody').innerHTML=recent.length===0?'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No bookings yet.</td></tr>':
-    recent.map(b=>`<tr><td><code style="color:var(--green);font-size:.78rem">${b.ref}</code></td><td>${b.fullName}</td><td>${b.courtName}</td><td>${fmtD(b.date)}</td><td>${statusBdg(b.status)}</td></tr>`).join('');
+    recent.map(b=>`<tr><td data-label="Ref"><code style="color:var(--green);font-size:.78rem">${b.ref}</code></td><td data-label="Name">${b.fullName}</td><td data-label="Court">${b.courtName}</td><td data-label="Date">${fmtD(b.date)}</td><td data-label="Status">${statusBdg(b.status)}</td></tr>`).join('');
 }
 
 /* ==============================================
@@ -1283,17 +1313,17 @@ async function renderBookings(){
   if(fs) bks=bks.filter(b=>b.status===fs);
   $('bookBody').innerHTML=bks.length===0?'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">No bookings found.</td></tr>':
     bks.map(b=>`<tr>
-      <td><code style="color:var(--green);font-size:.76rem">${b.ref}</code></td>
-      <td><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--muted)">${b.email}</div></td>
-      <td>${b.courtName}</td>
-      <td>${fmtD(b.date)}<div style="font-size:.75rem;color:var(--muted)">${b.startTime}–${b.endTime}</div></td>
-      <td>
+      <td data-label="Ref"><code style="color:var(--green);font-size:.76rem">${b.ref}</code></td>
+      <td data-label="Customer"><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--muted)">${b.email}</div></td>
+      <td data-label="Court">${b.courtName}</td>
+      <td data-label="Schedule">${fmtD(b.date)}<div style="font-size:.75rem;color:var(--muted)">${b.startTime}–${b.endTime}</div></td>
+      <td data-label="Amount">
         <div>${fmt(b.total)}</div>
         <div style="font-size:.73rem;color:var(--yellow);margin-top:2px">⚡ ${fmt(b.downpayment||b.total/2)} down</div>
         ${b.gcashRef?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px">Ref: <code style="color:var(--green)">${b.gcashRef}</code></div>`:''}
       </td>
-      <td><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase()}</span></td>
-      <td>
+      <td data-label="Payment"><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase()}</span></td>
+      <td data-label="Pay State">
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updatePaymentStatus('${b.ref}',this.value)">
           <option value="unpaid" ${(!b.paymentStatus||b.paymentStatus==='unpaid')?'selected':''}>Unpaid</option>
           <option value="downpayment_paid" ${b.paymentStatus==='downpayment_paid'?'selected':''}>Downpayment Paid</option>
@@ -1301,8 +1331,8 @@ async function renderBookings(){
           <option value="for_verification" ${b.paymentStatus==='for_verification'?'selected':''}>For Verification</option>
         </select>
       </td>
-      <td>${statusBdg(b.status)}</td>
-      <td><div style="display:flex;gap:5px;flex-wrap:wrap">
+      <td data-label="Status">${statusBdg(b.status)}</td>
+      <td data-label="Actions"><div style="display:flex;gap:5px;flex-wrap:wrap">
         ${b.gcashRef && b.status==='pending' && (b.paymentMethod==='gcash'||b.paymentMethod==='gotyme')?`<button class="btn btn-sm" style="background:rgba(200,160,96,.15);color:var(--yellow);border:1px solid rgba(200,160,96,.35);font-weight:700" onclick="openVerifyModal('${b.ref}')">🔍 Verify</button>`:''}
         ${b.status!=='cancelled'?`<button class="btn btn-sm" style="background:rgba(74,154,220,.12);color:#5a9ad4;border:1px solid rgba(74,154,220,.3)" onclick="openRescheduleModal('${b.ref}')">📅 Reschedule</button>`:''}
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updateStatus('${b.ref}',this.value)">
@@ -2095,15 +2125,15 @@ async function renderCourts(){
   await renderPaymentSettings();
   const courts=await DB.getCourts();
   $('courtBody').innerHTML=courts.map(c=>`<tr>
-    <td>
+    <td data-label="Name">
       ${c.photo?`<img src="${c.photo}" alt="${c.name}" style="width:60px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);vertical-align:middle;margin-right:8px;display:inline-block;"/>`:
         `<span style="display:inline-block;width:44px;height:44px;background:var(--input);border:1px solid var(--border);border-radius:6px;text-align:center;line-height:44px;font-size:1.2rem;vertical-align:middle;margin-right:8px;">🏟️</span>`}
       <strong style="vertical-align:middle">${c.name}</strong>
     </td>
-    <td style="font-size:.82rem;color:var(--muted)">${c.desc}</td>
-    <td>${fmt(c.rate)}/hr</td>
-    <td>${c.blocked?'<span class="bdg bdg-x">Maintenance</span>':'<span class="bdg bdg-c">Available</span>'}</td>
-    <td><div style="display:flex;gap:6px">
+    <td data-label="Description" style="font-size:.82rem;color:var(--muted)">${c.desc}</td>
+    <td data-label="Rate">${fmt(c.rate)}/hr</td>
+    <td data-label="Status">${c.blocked?'<span class="bdg bdg-x">Maintenance</span>':'<span class="bdg bdg-c">Available</span>'}</td>
+    <td data-label="Actions"><div style="display:flex;gap:6px">
       <button class="btn btn-g btn-sm" onclick="openCourtModal('${c.id}')">✏️ Edit</button>
       <button class="btn btn-sm" style="background:${c.blocked?'rgba(0,200,83,.12);color:var(--green)':'rgba(255,214,0,.12);color:var(--yellow)'}" onclick="toggleBlock('${c.id}')">${c.blocked?'✅ Unblock':'🔒 Block'}</button>
       <button class="btn btn-d btn-sm" onclick="delCourt('${c.id}')">🗑️</button>
@@ -2471,11 +2501,11 @@ async function renderAccounts(){
   const accs=(await Auth.getAll()).filter(a=>a.id!==sess.id);
   $('accBody').innerHTML=accs.length===0?'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No other accounts.</td></tr>':
     accs.map(a=>`<tr>
-      <td><strong>${a.fullName}</strong></td>
-      <td>${a.username}</td>
-      <td>${a.email}</td>
-      <td><span class="bdg ${a.role==='developer'?'bdg-c':'bdg-p'}">${a.role}</span></td>
-      <td><div style="display:flex;gap:6px">
+      <td data-label="Full Name"><strong>${a.fullName}</strong></td>
+      <td data-label="Username">${a.username}</td>
+      <td data-label="Email">${a.email}</td>
+      <td data-label="Role"><span class="bdg ${a.role==='developer'?'bdg-c':'bdg-p'}">${a.role}</span></td>
+      <td data-label="Actions"><div style="display:flex;gap:6px">
         <button class="btn btn-g btn-sm" onclick="openAccModal('${a.id}')">✏️ Edit</button>
         <button class="btn btn-d btn-sm" onclick="delAcc('${a.id}')">🗑️</button>
       </div></td>
