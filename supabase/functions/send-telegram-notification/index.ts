@@ -70,15 +70,17 @@ Deno.serve(async (req) => {
 
   try {
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
-    const chatId = Deno.env.get("TELEGRAM_CHAT_ID") || "";
+    const chatIdRaw = Deno.env.get("TELEGRAM_CHAT_ID") || "";
 
-    if (!botToken || !chatId) {
-      // Silently succeed if Telegram is not configured — don't break the booking flow
+    if (!botToken || !chatIdRaw) {
       return new Response(JSON.stringify({ ok: true, skipped: true, reason: "Telegram not configured" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Support multiple chat IDs (comma-separated)
+    const chatIds = chatIdRaw.split(",").map((id) => id.trim()).filter(Boolean);
 
     const body = (await req.json()) as Payload;
     if (!body.bookingRef || !body.fullName) {
@@ -90,20 +92,30 @@ Deno.serve(async (req) => {
 
     const message = buildMessage(body);
 
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: "HTML",
-      }),
-    });
+    // Send to all chat IDs in parallel
+    const results = await Promise.allSettled(
+      chatIds.map(async (chatId) => {
+        const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: "HTML",
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(`Chat ${chatId}: ${res.status} ${JSON.stringify(json)}`);
+        return { chatId, ok: true };
+      })
+    );
 
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`Telegram error ${res.status}: ${JSON.stringify(json)}`);
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length > 0) {
+      console.error("Some Telegram sends failed:", failed.map((r) => (r as PromiseRejectedResult).reason));
+    }
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, sent: chatIds.length, failed: failed.length }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
