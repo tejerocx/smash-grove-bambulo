@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Smash Grove — Admin Dashboard</title>
 <link rel="icon" type="image/jpeg" href="f6b5eb3c-a6b6-49ce-981e-d9b127b67ba3.jpg">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -580,6 +581,17 @@ tr:hover td { background: var(--bg2); }
         <div class="sc"><div class="sc-lbl">Today's Bookings</div><div class="sc-val" id="dToday">0</div><div class="sc-ic">📅</div></div>
         <div class="sc"><div class="sc-lbl">Total Revenue</div><div class="sc-val" id="dRev">₱0</div><div class="sc-ic">💰</div></div>
         <div class="sc"><div class="sc-lbl">Most Booked</div><div class="sc-val" style="font-size:1rem;margin-top:4px" id="dMost">—</div><div class="sc-ic">🏆</div></div>
+      </div>
+
+      <div class="rev-grid">
+        <div class="panel" style="min-height:260px">
+          <h4>Monthly Bookings</h4>
+          <canvas id="chartBookings" height="200"></canvas>
+        </div>
+        <div class="panel" style="min-height:260px">
+          <h4>Revenue Trend</h4>
+          <canvas id="chartRevenue" height="200"></canvas>
+        </div>
       </div>
 
       <div class="rev-grid">
@@ -1277,6 +1289,71 @@ async function renderDash(){
   const recent=[...bks].slice(0,5);
   $('recentBody').innerHTML=recent.length===0?'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No bookings yet.</td></tr>':
     recent.map(b=>`<tr><td data-label="Ref"><code style="color:var(--green);font-size:.78rem">${b.ref}</code></td><td data-label="Name">${b.fullName}</td><td data-label="Court">${b.courtName}</td><td data-label="Date">${fmtD(b.date)}</td><td data-label="Status">${statusBdg(b.status)}</td></tr>`).join('');
+
+  // ── Charts ──
+  renderDashCharts(active);
+}
+
+let _chartBookings = null, _chartRevenue = null;
+function renderDashCharts(bookings) {
+  const months = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: d.toISOString().slice(0,7), label: d.toLocaleString('default',{month:'short',year:'2-digit'}) });
+  }
+  const countByMonth = {}, revByMonth = {};
+  months.forEach(m => { countByMonth[m.key] = 0; revByMonth[m.key] = 0; });
+  bookings.forEach(b => {
+    const mk = b.date?.slice(0,7);
+    if (mk && countByMonth[mk] !== undefined) { countByMonth[mk]++; revByMonth[mk] += b.total || 0; }
+  });
+
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)';
+  const textColor = isDark ? '#a09d98' : '#6b6860';
+  const green = isDark ? '#3ab871' : '#2a8a4a';
+  const yellow = isDark ? '#f0a820' : '#b87e00';
+
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: textColor, font: { family: 'DM Sans', size: 11 } }, grid: { display: false }, border: { display: false } },
+      y: { beginAtZero: true, ticks: { color: textColor, font: { family: 'DM Sans', size: 11 } }, grid: { color: gridColor }, border: { display: false } }
+    }
+  };
+
+  if (_chartBookings) _chartBookings.destroy();
+  if (_chartRevenue) _chartRevenue.destroy();
+
+  _chartBookings = new Chart($('chartBookings'), {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [{
+        data: months.map(m => countByMonth[m.key]),
+        backgroundColor: green + '33',
+        borderColor: green,
+        borderWidth: 2, borderRadius: 6, barPercentage: 0.6
+      }]
+    },
+    options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, stepSize: 1 } } } }
+  });
+
+  _chartRevenue = new Chart($('chartRevenue'), {
+    type: 'line',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [{
+        data: months.map(m => revByMonth[m.key]),
+        borderColor: yellow, backgroundColor: yellow + '1a',
+        borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: yellow,
+        tension: 0.3, fill: true
+      }]
+    },
+    options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { ...baseOpts.scales.y.ticks, callback: v => '₱' + v.toLocaleString() } } } }
+  });
 }
 
 /* ==============================================
@@ -2726,6 +2803,7 @@ function toggleTheme() {
   document.body.setAttribute('data-theme', next);
   localStorage.setItem('pb_dark', next);
   updateThemeBtn();
+  renderDash();
   setTimeout(() => {
     document.documentElement.classList.remove('theme-switching');
     document.body.classList.remove('theme-switching');
