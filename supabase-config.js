@@ -248,7 +248,7 @@ window.DB = {
     if (updates.duration !== undefined) row.duration = updates.duration;
     if (updates.slots !== undefined) row.slots = updates.slots;
     const { error } = await _sb.from('bookings').update(row).eq('ref', ref);
-    if (error) console.error('updateBooking:', error);
+    if (error) { console.error('updateBooking:', error); throw error; }
   },
 
   async deleteBooking(ref) {

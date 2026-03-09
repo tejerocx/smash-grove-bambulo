@@ -1505,9 +1505,14 @@ function calDayClick(dateStr){
 }
 
 async function updatePaymentStatus(ref, status) {
-  await DB.updateBooking(ref, { paymentStatus: status });
-  const labels = { unpaid: 'Unpaid', downpayment_paid: 'Downpayment Paid', paid: 'Fully Paid', for_verification: 'For Verification' };
-  toast(`Payment marked as: ${labels[status] || status}.`);
+  try {
+    await DB.updateBooking(ref, { paymentStatus: status });
+    const labels = { unpaid: 'Unpaid', downpayment_paid: 'Downpayment Paid', paid: 'Fully Paid', for_verification: 'For Verification' };
+    toast(`Payment marked as: ${labels[status] || status}.`);
+  } catch(e) {
+    toast('Failed to update payment status.', 'err');
+    console.error('updatePaymentStatus error:', e);
+  }
   await renderBookings();
   renderDash();
 }
