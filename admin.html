@@ -559,6 +559,7 @@ tr:hover td { background: var(--bg2); }
       <div class="nav-grp">Management</div>
       <div class="nav-item" data-s="courts" onclick="goto('courts')"><span>&#127967;</span> Courts</div>
       <div class="nav-item" data-s="blocked" onclick="goto('blocked')"><span>&#127934;</span> Open Play</div>
+      <div class="nav-item" data-s="maintenance" onclick="goto('maintenance')"><span>&#128295;</span> Maintenance</div>
     </div>
     <div class="sb-section dev-only">
       <div class="nav-grp">Admin Only</div>
@@ -917,12 +918,28 @@ tr:hover td { background: var(--bg2); }
         <button class="btn btn-p" onclick="saveOpenPlay()">💾 Save Open Play Schedule</button>
       </div>
 
-      <!-- MAINTENANCE PERIOD -->
+      <!-- BLOCKED DATES (kept for maintenance/holidays) -->
+      <div class="panel" style="max-width:580px">
+        <h4>🔒 Blocked Dates</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">Block specific dates for maintenance or holidays. Customers cannot book on these dates.</p>
+        <div style="display:flex;gap:10px;margin-bottom:20px;align-items:flex-end">
+          <div style="flex:1">
+            <label class="fl">Select Date</label>
+            <input type="date" class="fi" id="newBlk"/>
+          </div>
+          <button class="btn btn-d" onclick="addBlocked()">🔒 Block Date</button>
+        </div>
+        <div id="blkList"><p style="color:var(--muted);font-style:italic">No blocked dates.</p></div>
+      </div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div id="sec-maintenance" class="adm-sec">
+      <div class="toolbar"><h2>🔧 MAINTENANCE</h2></div>
       <div class="panel" style="max-width:580px;margin-bottom:20px">
         <h4>🔧 Maintenance Schedule</h4>
         <p style="color:var(--muted);font-size:.84rem;margin:8px 0 18px">Block time slots for scheduled maintenance. Customers cannot book during these hours.</p>
 
-        <!-- Enable toggle -->
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
           <label class="sw"><input type="checkbox" id="mtEnabled"><span class="sw-tr"></span></label>
           <div>
@@ -931,7 +948,6 @@ tr:hover td { background: var(--bg2); }
           </div>
         </div>
 
-        <!-- Time range -->
         <div class="frow" style="margin-bottom:16px">
           <div>
             <label class="fl">Start Time</label>
@@ -943,7 +959,6 @@ tr:hover td { background: var(--bg2); }
           </div>
         </div>
 
-        <!-- Recurrence mode -->
         <div style="margin-bottom:16px">
           <label class="fl" style="margin-bottom:10px">Schedule Type</label>
           <select class="fi" id="mtMode" onchange="mtModeChanged()">
@@ -953,7 +968,6 @@ tr:hover td { background: var(--bg2); }
           </select>
         </div>
 
-        <!-- Specific dates (mode=specific) -->
         <div id="mtSpecificWrap" style="margin-bottom:16px">
           <label class="fl" style="margin-bottom:10px">Maintenance Dates</label>
           <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-end">
@@ -965,14 +979,12 @@ tr:hover td { background: var(--bg2); }
           <div id="mtDateList"><p style="color:var(--muted);font-style:italic">No dates added.</p></div>
         </div>
 
-        <!-- Monthly day (mode=monthly) -->
         <div id="mtMonthlyWrap" style="margin-bottom:16px;display:none">
           <label class="fl" style="margin-bottom:10px">Day of Month</label>
           <select class="fi" id="mtMonthDay"></select>
           <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Maintenance will apply on this day every month.</div>
         </div>
 
-        <!-- Weekly days (mode=weekly) -->
         <div id="mtWeeklyWrap" style="margin-bottom:16px;display:none">
           <label class="fl" style="margin-bottom:10px">Active Days (rest of year)</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap" id="mtDays">
@@ -987,20 +999,6 @@ tr:hover td { background: var(--bg2); }
         </div>
 
         <button class="btn btn-p" onclick="saveMaintenance()">💾 Save Maintenance Schedule</button>
-      </div>
-
-      <!-- BLOCKED DATES (kept for maintenance/holidays) -->
-      <div class="panel" style="max-width:580px">
-        <h4>🔒 Blocked Dates</h4>
-        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">Block specific dates for maintenance or holidays. Customers cannot book on these dates.</p>
-        <div style="display:flex;gap:10px;margin-bottom:20px;align-items:flex-end">
-          <div style="flex:1">
-            <label class="fl">Select Date</label>
-            <input type="date" class="fi" id="newBlk"/>
-          </div>
-          <button class="btn btn-d" onclick="addBlocked()">🔒 Block Date</button>
-        </div>
-        <div id="blkList"><p style="color:var(--muted);font-style:italic">No blocked dates.</p></div>
       </div>
     </div>
 
@@ -1255,14 +1253,14 @@ let sess;
 /* ==============================================
    NAVIGATION
    ============================================== */
-const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Open Play'};
+const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Open Play',maintenance:'Maintenance'};
 async function goto(s){
   document.querySelectorAll('.adm-sec').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('on',el.dataset.s===s));
   $('sec-'+s).classList.add('on');
   $('topTitle').textContent=titles[s]||s;
   document.getElementById('sidebar').classList.remove('open');
-  const loaders={dash:renderDash,bookings:renderBookings,reports:renderReport,courts:renderCourts,accounts:renderAccounts,blocked:renderBlocked};
+  const loaders={dash:renderDash,bookings:renderBookings,reports:renderReport,courts:renderCourts,accounts:renderAccounts,blocked:renderBlocked,maintenance:renderMaintenance};
   if(loaders[s]) await loaders[s]();
 }
 
@@ -2668,25 +2666,6 @@ async function renderBlocked(){
     cb.checked = (cfg.days ?? [1,2,3,4,5,6]).includes(Number(cb.value));
   });
 
-  // Load maintenance settings
-  const mtCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : { enabled: false, start: 6, end: 12, mode: 'specific', dates: [], recurring: null };
-  mtPopulateTimePickers();
-  $('mtEnabled').checked = mtCfg.enabled === true;
-  $('mtStart').value = mtCfg.start ?? 6;
-  $('mtEnd').value = mtCfg.end ?? 12;
-  $('mtMode').value = mtCfg.mode || 'specific';
-  mtModeChanged();
-  _mtDates = mtCfg.dates || [];
-  mtRenderDateList();
-  // Monthly day options
-  const mdSel = $('mtMonthDay');
-  mdSel.innerHTML = '';
-  for (let d = 1; d <= 31; d++) mdSel.innerHTML += `<option value="${d}"${d === (mtCfg.recurring?.day ?? 1) ? ' selected' : ''}>${d}</option>`;
-  // Weekly days
-  document.querySelectorAll('#mtDays input[type=checkbox]').forEach(cb => {
-    cb.checked = (mtCfg.recurring?.days || []).includes(Number(cb.value));
-  });
-
   // Load blocked dates
   const dates=await DB.getBlockedDates();
   $('blkList').innerHTML=dates.length===0?'<p style="color:var(--muted);font-style:italic">No blocked dates.</p>':
@@ -2710,6 +2689,25 @@ async function saveOpenPlay() {
    MAINTENANCE SCHEDULE
    ============================================== */
 let _mtDates = [];
+
+async function renderMaintenance() {
+  const settings = await DB.getSettings();
+  const mtCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : { enabled: false, start: 6, end: 12, mode: 'specific', dates: [], recurring: null };
+  mtPopulateTimePickers();
+  $('mtEnabled').checked = mtCfg.enabled === true;
+  $('mtStart').value = mtCfg.start ?? 6;
+  $('mtEnd').value = mtCfg.end ?? 12;
+  $('mtMode').value = mtCfg.mode || 'specific';
+  mtModeChanged();
+  _mtDates = mtCfg.dates || [];
+  mtRenderDateList();
+  const mdSel = $('mtMonthDay');
+  mdSel.innerHTML = '';
+  for (let d = 1; d <= 31; d++) mdSel.innerHTML += `<option value="${d}"${d === (mtCfg.recurring?.day ?? 1) ? ' selected' : ''}>${d}</option>`;
+  document.querySelectorAll('#mtDays input[type=checkbox]').forEach(cb => {
+    cb.checked = (mtCfg.recurring?.days || []).includes(Number(cb.value));
+  });
+}
 
 function mtPopulateTimePickers() {
   const labels = ['12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM','6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
