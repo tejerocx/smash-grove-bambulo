@@ -560,6 +560,7 @@ tr:hover td { background: var(--bg2); }
       <div class="nav-item" data-s="courts" onclick="goto('courts')"><span>&#127967;</span> Courts</div>
       <div class="nav-item" data-s="blocked" onclick="goto('blocked')"><span>&#127934;</span> Open Play</div>
       <div class="nav-item" data-s="maintenance" onclick="goto('maintenance')"><span>&#128295;</span> Maintenance</div>
+      <div class="nav-item" data-s="payments" onclick="goto('payments')"><span>&#128179;</span> Payments</div>
     </div>
     <div class="sb-section dev-only">
       <div class="nav-grp">Admin Only</div>
@@ -767,84 +768,6 @@ tr:hover td { background: var(--bg2); }
         </div>
       </div>
 
-      <!-- PAYMENT SETTINGS PANEL -->
-      <div class="panel" style="margin-bottom:20px;border:1px solid var(--border);">
-        <h4>📲 Payment QR Settings</h4>
-        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">
-          Update QR codes and merchant details. Changes reflect immediately on the booking form.
-        </p>
-
-        <div class="fg">
-          <label class="fl">Enabled Payment Methods</label>
-          <div style="display:flex;gap:14px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-              <input type="checkbox" id="payMethodCashOn" /> Cash
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-              <input type="checkbox" id="payMethodGcashOn" /> GCash
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-              <input type="checkbox" id="payMethodGotymeOn" /> GoTyme
-            </label>
-          </div>
-        </div>
-
-        <!-- GCash Section -->
-        <div style="margin-top:16px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
-          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:10px;">📲 GCash</div>
-          <div class="frow" style="gap:10px;margin-bottom:10px;">
-            <div class="fg" style="margin:0;flex:1">
-              <label class="fl">GCash Number</label>
-              <input type="text" class="fi" id="gcashNumInput" placeholder="e.g. 0935 935 5010" />
-            </div>
-            <div class="fg" style="margin:0;flex:1">
-              <label class="fl">Account Name</label>
-              <input type="text" class="fi" id="gcashNameInput" placeholder="e.g. Smash Grove Bambulo" />
-            </div>
-          </div>
-          <div class="fg" style="margin:0">
-            <label class="fl">GCash QR Code Image</label>
-            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
-              <div id="gcashQrPreviewWrap" style="display:none">
-                <img id="gcashQrPreview" src="" alt="GCash QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
-                <button type="button" onclick="removeQr('gcash')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
-              </div>
-              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
-                📷 Upload GCash QR image
-                <input type="file" accept="image/*" id="gcashQrFile" style="display:none" onchange="handleQrUpload('gcash',event)"/>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- GoTyme Section -->
-        <div style="margin-top:12px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
-          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--yellow);margin-bottom:10px;">🏦 GoTyme</div>
-          <div class="fg" style="margin-bottom:10px">
-            <label class="fl">Account Name</label>
-            <input type="text" class="fi" id="gotymeNameInput" placeholder="e.g. Smash Grove Bambulo" />
-          </div>
-          <div class="fg" style="margin:0">
-            <label class="fl">GoTyme QR Code Image</label>
-            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
-              <div id="gotymeQrPreviewWrap" style="display:none">
-                <img id="gotymeQrPreview" src="" alt="GoTyme QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
-                <button type="button" onclick="removeQr('gotyme')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
-              </div>
-              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)'">
-                📷 Upload GoTyme QR image
-                <input type="file" accept="image/*" id="gotymeQrFile" style="display:none" onchange="handleQrUpload('gotyme',event)"/>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px">
-          <button class="btn btn-p btn-sm" onclick="savePaymentSettings()">💾 Save Payment Settings</button>
-          <span id="paySettingsSummary" style="font-size:.78rem;color:var(--muted)"></span>
-        </div>
-      </div>
-
       <div class="tbl-wrap">
         <div class="tbl-scroll">
           <table>
@@ -930,6 +853,87 @@ tr:hover td { background: var(--bg2); }
           <button class="btn btn-d" onclick="addBlocked()">🔒 Block Date</button>
         </div>
         <div id="blkList"><p style="color:var(--muted);font-style:italic">No blocked dates.</p></div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div id="sec-payments" class="adm-sec">
+      <div class="toolbar"><h2>💳 PAYMENT SETTINGS</h2></div>
+      <div class="panel" style="max-width:680px;margin-bottom:20px;border:1px solid var(--border);">
+        <h4>📲 Payment QR Settings</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 16px">
+          Update QR codes and merchant details. Changes reflect immediately on the booking form.
+        </p>
+
+        <div class="fg">
+          <label class="fl">Enabled Payment Methods</label>
+          <div style="display:flex;gap:14px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodCashOn" /> Cash
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodGcashOn" /> GCash
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodGotymeOn" /> GoTyme
+            </label>
+          </div>
+        </div>
+
+        <!-- GCash Section -->
+        <div style="margin-top:16px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:10px;">📲 GCash</div>
+          <div class="frow" style="gap:10px;margin-bottom:10px;">
+            <div class="fg" style="margin:0;flex:1">
+              <label class="fl">GCash Number</label>
+              <input type="text" class="fi" id="gcashNumInput" placeholder="e.g. 0935 935 5010" />
+            </div>
+            <div class="fg" style="margin:0;flex:1">
+              <label class="fl">Account Name</label>
+              <input type="text" class="fi" id="gcashNameInput" placeholder="e.g. Smash Grove Bambulo" />
+            </div>
+          </div>
+          <div class="fg" style="margin:0">
+            <label class="fl">GCash QR Code Image</label>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div id="gcashQrPreviewWrap" style="display:none">
+                <img id="gcashQrPreview" src="" alt="GCash QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+                <button type="button" onclick="removeQr('gcash')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
+              </div>
+              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'">
+                📷 Upload GCash QR image
+                <input type="file" accept="image/*" id="gcashQrFile" style="display:none" onchange="handleQrUpload('gcash',event)"/>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- GoTyme Section -->
+        <div style="margin-top:12px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--yellow);margin-bottom:10px;">🏦 GoTyme</div>
+          <div class="fg" style="margin-bottom:10px">
+            <label class="fl">Account Name</label>
+            <input type="text" class="fi" id="gotymeNameInput" placeholder="e.g. Smash Grove Bambulo" />
+          </div>
+          <div class="fg" style="margin:0">
+            <label class="fl">GoTyme QR Code Image</label>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div id="gotymeQrPreviewWrap" style="display:none">
+                <img id="gotymeQrPreview" src="" alt="GoTyme QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+                <button type="button" onclick="removeQr('gotyme')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
+              </div>
+              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)'">
+                📷 Upload GoTyme QR image
+                <input type="file" accept="image/*" id="gotymeQrFile" style="display:none" onchange="handleQrUpload('gotyme',event)"/>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px">
+          <button class="btn btn-p btn-sm" onclick="savePaymentSettings()">💾 Save Payment Settings</button>
+          <span id="paySettingsSummary" style="font-size:.78rem;color:var(--muted)"></span>
+        </div>
       </div>
     </div>
 
@@ -1253,14 +1257,14 @@ let sess;
 /* ==============================================
    NAVIGATION
    ============================================== */
-const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Open Play',maintenance:'Maintenance'};
+const titles={dash:'Dashboard',bookings:'Bookings',reports:'Reports',courts:'Courts',accounts:'Accounts',blocked:'Open Play',maintenance:'Maintenance',payments:'Payments'};
 async function goto(s){
   document.querySelectorAll('.adm-sec').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('on',el.dataset.s===s));
   $('sec-'+s).classList.add('on');
   $('topTitle').textContent=titles[s]||s;
   document.getElementById('sidebar').classList.remove('open');
-  const loaders={dash:renderDash,bookings:renderBookings,reports:renderReport,courts:renderCourts,accounts:renderAccounts,blocked:renderBlocked,maintenance:renderMaintenance};
+  const loaders={dash:renderDash,bookings:renderBookings,reports:renderReport,courts:renderCourts,accounts:renderAccounts,blocked:renderBlocked,maintenance:renderMaintenance,payments:renderPaymentSettings};
   if(loaders[s]) await loaders[s]();
 }
 
