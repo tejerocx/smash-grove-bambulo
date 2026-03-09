@@ -1938,7 +1938,7 @@ async function onCardDate(courtId, date) {
   grid.innerHTML = `<div class="cc-slots-empty">⏳ Loading...</div>`;
 
   const [courts, bookings, blockedDates] = await Promise.all([
-    DB.getCourts(), DB.getBookings(), DB.getBlockedDates()
+    DB.getCourts(), DB.getBookings(), DB.getBlockedDates(), loadOperatingHours()
   ]);
 
   const c = courts.find(x => x.id === courtId);
@@ -1996,7 +1996,7 @@ async function ensureCourt(courtId) {
    COURTS
    ============================================= */
 async function renderCourts() {
-  const [courts, bookings] = await Promise.all([DB.getCourts(), DB.getBookings()]);
+  const [courts, bookings] = await Promise.all([DB.getCourts(), DB.getBookings(), loadOperatingHours()]);
   const today = todayStr();
   const curHour = nowHour();
   const courtsGrid = $('courtsGrid');
