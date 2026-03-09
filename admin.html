@@ -1396,7 +1396,7 @@ async function renderBookings(){
       <td data-label="Schedule">${fmtD(b.date)}<div style="font-size:.75rem;color:var(--muted)">${b.startTime}–${b.endTime}</div></td>
       <td data-label="Amount">
         <div>${fmt(b.total)}</div>
-        <div style="font-size:.73rem;color:var(--yellow);margin-top:2px">⚡ ${fmt(b.downpayment||b.total/2)} down</div>
+        ${(()=>{ const dp=b.downpayment||b.total/2; return dp>=b.total ? `<div style="font-size:.73rem;color:var(--green);margin-top:2px">✅ Full payment</div>` : `<div style="font-size:.73rem;color:var(--yellow);margin-top:2px">⚡ ${fmt(dp)} down</div>`; })()}
         ${b.gcashRef?`<div style="font-size:.7rem;color:var(--muted);margin-top:1px">Ref: <code style="color:var(--green)">${b.gcashRef}</code></div>`:''}
       </td>
       <td data-label="Payment"><span style="font-size:.76rem;background:var(--input);border-radius:4px;padding:2px 7px">${b.paymentMethod==='gotyme'?'GoTyme':b.paymentMethod.toUpperCase()}</span></td>
