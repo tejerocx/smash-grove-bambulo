@@ -1547,7 +1547,8 @@ const dayOfWeek = d => new Date(`${d}T00:00:00`).getDay();
 function isOpenPlayHour(date, h) {
   if (!openPlayConfig || !openPlayConfig.enabled) return false;
   const days = Array.isArray(openPlayConfig.days) ? openPlayConfig.days : [];
-  if (!days.includes(dayOfWeek(date))) return false;
+  const specificDates = Array.isArray(openPlayConfig.specificDates) ? openPlayConfig.specificDates : [];
+  if (!days.includes(dayOfWeek(date)) && !specificDates.includes(date)) return false;
   const start = Number(openPlayConfig.start);
   const end = Number(openPlayConfig.end);
   if (!Number.isFinite(start) || !Number.isFinite(end) || start === end) return false;

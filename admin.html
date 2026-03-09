@@ -826,7 +826,7 @@ tr:hover td { background: var(--bg2); }
 
         <!-- Days of week -->
         <div style="margin-bottom:18px">
-          <label class="fl" style="margin-bottom:10px">Active Days</label>
+          <label class="fl" style="margin-bottom:10px">Active Days (recurring weekly)</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap" id="opDays">
             <label class="op-day"><input type="checkbox" value="0"> Sun</label>
             <label class="op-day"><input type="checkbox" value="1" checked> Mon</label>
@@ -836,6 +836,18 @@ tr:hover td { background: var(--bg2); }
             <label class="op-day"><input type="checkbox" value="5" checked> Fri</label>
             <label class="op-day"><input type="checkbox" value="6" checked> Sat</label>
           </div>
+        </div>
+
+        <!-- Specific dates -->
+        <div style="margin-bottom:18px;padding-top:16px;border-top:1px solid var(--border)">
+          <label class="fl" style="margin-bottom:10px">Specific Dates (one-off open play)</label>
+          <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-end">
+            <div style="flex:1">
+              <input type="date" class="fi" id="opNewDate"/>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="opAddDate()">+ Add Date</button>
+          </div>
+          <div id="opDateList"><p style="color:var(--muted);font-style:italic">No specific dates added.</p></div>
         </div>
 
         <button class="btn btn-p" onclick="saveOpenPlay()">💾 Save Open Play Schedule</button>
@@ -1682,7 +1694,8 @@ async function openNewBookingModal() {
 function _nbIsOpenPlayHour(dateStr, h) {
   if (!_nbOpenPlayCfg || !_nbOpenPlayCfg.enabled) return false;
   const dow = new Date(dateStr + 'T00:00:00').getDay();
-  if (!(_nbOpenPlayCfg.days || []).includes(dow)) return false;
+  const specificDates = Array.isArray(_nbOpenPlayCfg.specificDates) ? _nbOpenPlayCfg.specificDates : [];
+  if (!(_nbOpenPlayCfg.days || []).includes(dow) && !specificDates.includes(dateStr)) return false;
   return h >= _nbOpenPlayCfg.start && h < _nbOpenPlayCfg.end;
 }
 
@@ -2655,6 +2668,29 @@ function opPopulateTimePickers() {
   });
 }
 
+let _opDates = [];
+
+function opAddDate() {
+  const v = $('opNewDate').value;
+  if (!v) { toast('Select a date.', 'err'); return; }
+  if (_opDates.includes(v)) { toast('Date already added.', 'err'); return; }
+  _opDates.push(v);
+  _opDates.sort();
+  opRenderDateList();
+  $('opNewDate').value = '';
+}
+
+function opRemoveDate(d) {
+  _opDates = _opDates.filter(x => x !== d);
+  opRenderDateList();
+}
+
+function opRenderDateList() {
+  $('opDateList').innerHTML = _opDates.length === 0
+    ? '<p style="color:var(--muted);font-style:italic">No specific dates added.</p>'
+    : _opDates.map(d => `<div class="blk-item"><span>📅 ${fmtD(d)}</span><button class="btn btn-d btn-sm" onclick="opRemoveDate('${d}')">Remove</button></div>`).join('');
+}
+
 async function renderBlocked(){
   // Load open play settings
   const settings = await DB.getSettings();
@@ -2670,6 +2706,10 @@ async function renderBlocked(){
     cb.checked = (cfg.days ?? [1,2,3,4,5,6]).includes(Number(cb.value));
   });
 
+  // Specific dates
+  _opDates = cfg.specificDates || [];
+  opRenderDateList();
+
   // Load blocked dates
   const dates=await DB.getBlockedDates();
   $('blkList').innerHTML=dates.length===0?'<p style="color:var(--muted);font-style:italic">No blocked dates.</p>':
@@ -2683,9 +2723,9 @@ async function saveOpenPlay() {
   const days    = [...document.querySelectorAll('#opDays input:checked')].map(cb => Number(cb.value));
 
   if (end <= start) { toast('End time must be after start time.', 'err'); return; }
-  if (days.length === 0) { toast('Select at least one active day.', 'err'); return; }
+  if (days.length === 0 && _opDates.length === 0) { toast('Select at least one active day or add a specific date.', 'err'); return; }
 
-  await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days }));
+  await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days, specificDates: _opDates }));
   toast('Open Play schedule saved!');
 }
 
