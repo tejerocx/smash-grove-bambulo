@@ -2722,8 +2722,8 @@ async function saveOpenPlay() {
   const end     = parseInt($('opEnd').value);
   const days    = [...document.querySelectorAll('#opDays input:checked')].map(cb => Number(cb.value));
 
-  if (end <= start) { toast('End time must be after start time.', 'err'); return; }
-  if (days.length === 0 && _opDates.length === 0) { toast('Select at least one active day or add a specific date.', 'err'); return; }
+  if (enabled && end <= start) { toast('End time must be after start time.', 'err'); return; }
+  if (enabled && days.length === 0 && _opDates.length === 0) { toast('Select at least one active day or add a specific date.', 'err'); return; }
 
   await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days, specificDates: _opDates }));
   toast('Open Play schedule saved!');
