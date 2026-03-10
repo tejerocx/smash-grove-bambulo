@@ -218,7 +218,7 @@ body.light .nav { background:rgba(242,237,229,.95); }
 .cc-slot-btn.selected:hover { background:#175f00; }
 /* Taken */
 .cc-slot-btn.taken {
-  background:#d94040; border:2px solid #b52a2a; color:#fff;
+  background:#a83232; border:2px solid #8a2525; color:#e0d0d0;
   cursor:not-allowed;
 }
 .cc-slot-btn.taken:hover { transform:none; box-shadow:none; }
@@ -1977,7 +1977,7 @@ async function onCardDate(courtId, date) {
     const isMaint_ = isMaintenanceHour(date, h);
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
-    if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
+    if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
     if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
     if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
@@ -2040,7 +2040,7 @@ async function renderCourts() {
           const isMaint_ = isMaintenanceHour(today, h);
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
-          if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">👤 ${slotNameMap[h]}</div></div>`;
+          if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
           if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
           if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
