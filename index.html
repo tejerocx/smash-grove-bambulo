@@ -2471,7 +2471,7 @@ async function submitBooking(e) {
     // Notify owner via Telegram (fire-and-forget — never blocks booking flow)
     fetch('https://ikeujqaqmwmvkyhjqdmv.functions.supabase.co/send-telegram-notification', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'apikey': SUPABASE_ANON_KEY },
       body: JSON.stringify({
         bookingRef:    booking.ref,
         fullName:      booking.fullName,
