@@ -1877,9 +1877,11 @@ function nbSetDp(full) {
   if (full) {
     btn100.style.background = 'var(--green)'; btn100.style.color = '#fff'; btn100.style.borderColor = 'var(--green)';
     btn50.style.background = 'transparent'; btn50.style.color = 'var(--text2)'; btn50.style.borderColor = 'var(--border)';
+    $('nbStatus').value = 'confirmed';
   } else {
     btn50.style.background = 'var(--green)'; btn50.style.color = '#fff'; btn50.style.borderColor = 'var(--green)';
     btn100.style.background = 'transparent'; btn100.style.color = 'var(--text2)'; btn100.style.borderColor = 'var(--border)';
+    $('nbStatus').value = 'pending';
   }
 }
 
