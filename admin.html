@@ -1172,28 +1172,22 @@ tr:hover td { background: var(--bg2); }
 
       <!-- Payment -->
       <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);font-weight:700;margin:18px 0 10px;">Payment</div>
-      <div class="frow">
-        <div class="fg" style="margin:0"><label class="fl">Method *</label>
-          <select class="fi" id="nbMethod" onchange="nbToggleRef()">
-            <option value="cash">💵 Cash</option>
-            <option value="gcash">📲 GCash</option>
-            <option value="gotyme">🏦 GoTyme</option>
-          </select>
-        </div>
-        <div class="fg" style="margin:0"><label class="fl">Payment Status</label>
-          <select class="fi" id="nbPayStatus">
-            <option value="unpaid">Unpaid</option>
-            <option value="downpayment_paid">Downpayment Paid</option>
-            <option value="paid" selected>Fully Paid</option>
-          </select>
-        </div>
+      <div class="fg" style="margin:0"><label class="fl">Method *</label>
+        <select class="fi" id="nbMethod" onchange="nbToggleRef()">
+          <option value="cash">💵 Cash</option>
+          <option value="gcash">📲 GCash</option>
+        </select>
       </div>
       <div class="fg" id="nbRefWrap" style="margin-top:12px;display:none">
-        <label class="fl">GCash / GoTyme Ref #</label>
+        <label class="fl">GCash Ref #</label>
         <input type="text" class="fi" id="nbGcashRef" placeholder="e.g. 123456789012"/>
       </div>
-      <div class="fg" style="margin-top:12px"><label class="fl">Total Amount (₱)</label>
-        <input type="number" class="fi" id="nbTotal" placeholder="0" min="0" step="50"/>
+      <div style="margin-top:12px">
+        <label class="fl">Downpayment</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button type="button" class="btn btn-sm" id="nbDp50Btn" style="flex:1;padding:10px;font-weight:700;border:2px solid var(--green);background:var(--green);color:#fff" onclick="nbSetDp(false)">50% — <span id="nbDp50Amt">₱0</span></button>
+          <button type="button" class="btn btn-sm" id="nbDp100Btn" style="flex:1;padding:10px;font-weight:700;border:2px solid var(--border);background:transparent;color:var(--text2)" onclick="nbSetDp(true)">100% — <span id="nbDp100Amt">₱0</span></button>
+        </div>
       </div>
 
       <!-- Status -->
@@ -1697,9 +1691,9 @@ async function openNewBookingModal() {
   $('nbEmail').value = '';
   $('nbGcashRef').value = '';
   $('nbMethod').value = 'cash';
-  $('nbPayStatus').value = 'paid';
   $('nbStatus').value = 'confirmed';
   $('nbRefWrap').style.display = 'none';
+  _nbDpFull = false;
   _nbSelSlots = [];
 
   // Reset slot area
@@ -1874,12 +1868,30 @@ function nbToggleSlot(h) {
   nbUpdateTotal();
 }
 
+let _nbDpFull = false;
+
+function nbSetDp(full) {
+  _nbDpFull = full;
+  const btn50 = $('nbDp50Btn');
+  const btn100 = $('nbDp100Btn');
+  if (full) {
+    btn100.style.background = 'var(--green)'; btn100.style.color = '#fff'; btn100.style.borderColor = 'var(--green)';
+    btn50.style.background = 'transparent'; btn50.style.color = 'var(--text2)'; btn50.style.borderColor = 'var(--border)';
+  } else {
+    btn50.style.background = 'var(--green)'; btn50.style.color = '#fff'; btn50.style.borderColor = 'var(--green)';
+    btn100.style.background = 'transparent'; btn100.style.color = 'var(--text2)'; btn100.style.borderColor = 'var(--border)';
+  }
+}
+
 function nbUpdateTotal() {
   const courtId = $('nbCourt')?.value;
   const court = _nbCourts.find(c => String(c.id) === String(courtId));
   const hrs = _nbSelSlots.length;
   const total = court ? _nbSelSlots.reduce((s, h) => s + _nbGetRateForHour(court, h), 0) : 0;
-  $('nbTotal').value = total || '';
+  const half = Math.round(total / 2);
+
+  $('nbDp50Amt').textContent = fmt(half);
+  $('nbDp100Amt').textContent = fmt(total);
 
   // Update summary
   const sum = $('nbSlotSummary');
@@ -1896,7 +1908,7 @@ function nbUpdateTotal() {
 
 function nbToggleRef() {
   const m = $('nbMethod').value;
-  $('nbRefWrap').style.display = (m === 'gcash' || m === 'gotyme') ? '' : 'none';
+  $('nbRefWrap').style.display = m === 'gcash' ? '' : 'none';
 }
 
 async function saveNewBooking() {
@@ -1907,9 +1919,12 @@ async function saveNewBooking() {
   const date = $('nbDate').value;
   const method = $('nbMethod').value;
   const gcashRef = $('nbGcashRef').value.trim() || null;
-  const total = parseFloat($('nbTotal').value) || 0;
-  const payStatus = $('nbPayStatus').value;
   const status = $('nbStatus').value;
+
+  const court_ = _nbCourts.find(c => String(c.id) === String(courtId));
+  const total = court_ ? _nbSelSlots.reduce((s, h) => s + _nbGetRateForHour(court_, h), 0) : 0;
+  const dpAmount = _nbDpFull ? total : Math.round(total / 2);
+  const payStatus = _nbDpFull ? 'paid' : 'downpayment_paid';
 
   // Validation
   if (!name || name.length < 2) { toast('Enter a valid customer name.', 'err'); return; }
@@ -1917,7 +1932,7 @@ async function saveNewBooking() {
   if (!courtId) { toast('Please select a court.', 'err'); return; }
   if (!date) { toast('Please select a date.', 'err'); return; }
   if (_nbSelSlots.length === 0) { toast('Please select at least one time slot.', 'err'); return; }
-  if ((method === 'gcash' || method === 'gotyme') && !gcashRef) { toast('Please enter the GCash / GoTyme reference number.', 'err'); return; }
+  if (method === 'gcash' && !gcashRef) { toast('Please enter the GCash reference number.', 'err'); return; }
 
   const court = _nbCourts.find(c => String(c.id) === String(courtId));
   if (!court) { toast('Court not found.', 'err'); return; }
@@ -1943,7 +1958,7 @@ async function saveNewBooking() {
     total,
     paymentMethod: method,
     gcashRef,
-    downpayment: payStatus === 'paid' ? total : total / 2,
+    downpayment: dpAmount,
     paymentStatus: payStatus,
     paymentFlow: method,
     status,
