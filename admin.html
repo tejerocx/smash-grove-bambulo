@@ -1420,9 +1420,9 @@ async function renderBookings(){
   $('bookBody').innerHTML=bks.length===0?'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">No bookings found.</td></tr>':
     bks.map(b=>`<tr>
       <td data-label="Ref"><code style="color:var(--green);font-size:.76rem">${b.ref}</code></td>
-      <td data-label="Customer"><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--muted)">${b.email}</div></td>
+      <td data-label="Customer"><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--text)">${b.email}</div></td>
       <td data-label="Court">${b.courtName}</td>
-      <td data-label="Schedule">${fmtD(b.date)}<div style="font-size:.75rem;color:var(--muted)">${b.startTime}–${b.endTime}</div></td>
+      <td data-label="Schedule">${fmtD(b.date)}<div style="font-size:.75rem;color:var(--text);font-weight:600">${b.startTime}–${b.endTime}</div></td>
       <td data-label="Amount">
         <div>${fmt(b.total)}</div>
         ${(()=>{ const dp=b.downpayment||b.total/2; return dp>=b.total ? `<div style="font-size:.73rem;color:var(--text);margin-top:2px;font-weight:700">✅ Full payment</div>` : `<div style="font-size:.73rem;color:var(--text);margin-top:2px;font-weight:700">⚡ ${fmt(dp)} down</div>`; })()}
