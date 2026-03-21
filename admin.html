@@ -524,6 +524,25 @@ tr:hover td { background: var(--bg2); }
 }
 .sw input:checked + .sw-tr { background: var(--green); }
 .sw input:checked + .sw-tr::before { transform: translateX(19px); }
+
+/* ── Print styles (thermal printer friendly) ── */
+@media print {
+  * { color: #000 !important; background: #fff !important; border-color: #999 !important; box-shadow: none !important; text-shadow: none !important; }
+  body { font-size: 11pt; }
+  .sidebar, .nav-bar, .btn, .btn-sm, .btn-p, .btn-d, select.fi, button, .sw, .nb-slot,
+  .cal-wrapper, .chart-card, .modal-bg, .stats-grid, #filterBar input[type="text"],
+  [onclick], canvas { display: none !important; }
+  #filterBar { display: flex !important; border: none !important; padding: 0 !important; margin-bottom: 8px !important; }
+  #filterBar select, #filterBar input[type="date"] { display: inline-block !important; border: 1px solid #999 !important; font-size: 10pt !important; }
+  .main { margin: 0 !important; padding: 0 !important; }
+  table { width: 100% !important; border-collapse: collapse !important; font-size: 10pt !important; }
+  th, td { border: 1px solid #999 !important; padding: 4px 6px !important; text-align: left !important; }
+  th { font-weight: 700 !important; background: #eee !important; }
+  tr { page-break-inside: avoid; }
+  code { font-family: inherit !important; font-size: inherit !important; }
+  .bdg-p, .bdg-c, .bdg-d, .r-mgr { border: 1px solid #000 !important; padding: 1px 5px !important; font-weight: 700 !important; }
+  @page { margin: 5mm; }
+}
 </style>
 </head>
 <body data-theme="dark">
