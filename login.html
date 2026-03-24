@@ -69,7 +69,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <input type="text" inputmode="email" class="fi" id="uname" placeholder="admin@yourdomain.com" autocomplete="username"/>
       <label class="fl" for="upass">🔒 Password</label>
       <input type="password" class="fi" id="upass" placeholder="Enter password" autocomplete="current-password"/>
-      <span class="forgot-link" onclick="showForgot()">Forgot password?</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:-4px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.84rem;color:var(--muted)">
+          <input type="checkbox" id="rememberMe" style="width:15px;height:15px;accent-color:var(--green);cursor:pointer"/>
+          Keep me logged in
+        </label>
+        <span class="forgot-link" style="margin:0" onclick="showForgot()">Forgot password?</span>
+      </div>
       <button type="submit" class="btn btn-p">Login to Dashboard →</button>
     </form>
   </div>
@@ -107,7 +113,8 @@ async function doLogin(e) {
   const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true;
   btn.textContent = 'Logging in…';
-  const r = await Auth.login(u, p);
+  const remember = document.getElementById('rememberMe').checked;
+  const r = await Auth.login(u, p, remember);
   if (r.ok) {
     window.location.href = 'admin.html';
   } else {

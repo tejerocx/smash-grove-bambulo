@@ -379,7 +379,7 @@ window.DB = {
 // =============================================
 window.Auth = {
 
-  async login(email, password) {
+  async login(email, password, remember = false) {
     // Sign in via Supabase Auth — establishes a verified JWT session
     const { data, error } = await _sb.auth.signInWithPassword({ email, password });
     if (error || !data.user) return { ok: false };
@@ -389,12 +389,17 @@ window.Auth = {
     const session = acc
       ? { ...rowToAccount(acc), loginAt: new Date().toISOString() }
       : { id: data.user.id, email: data.user.email, role: 'admin', fullName: 'Admin', loginAt: new Date().toISOString() };
-    sessionStorage.setItem('pb_session', JSON.stringify(session));
+
+    // Use localStorage when "remember me" is checked so session survives browser close
+    const store = remember ? localStorage : sessionStorage;
+    store.setItem('pb_session', JSON.stringify(session));
+    if (remember) localStorage.setItem('pb_remember', '1');
     return { ok: true };
   },
 
   getSession() {
-    const s = sessionStorage.getItem('pb_session');
+    // Check localStorage first (remembered), then sessionStorage (tab-only)
+    const s = localStorage.getItem('pb_session') || sessionStorage.getItem('pb_session');
     return s ? JSON.parse(s) : null;
   },
 
@@ -407,6 +412,8 @@ window.Auth = {
   async logout() {
     await _sb.auth.signOut();
     sessionStorage.removeItem('pb_session');
+    localStorage.removeItem('pb_session');
+    localStorage.removeItem('pb_remember');
     window.location.href = 'login.html';
   },
 
