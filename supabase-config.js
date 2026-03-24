@@ -256,6 +256,33 @@ window.DB = {
     if (error) console.error('deleteBooking:', error);
   },
 
+  // ---- OPEN PLAY REGISTRATIONS ----
+  async getOpenPlayRegistrations() {
+    const { data, error } = await _sb.from('open_play_registrations').select('*').order('created_at', { ascending: false });
+    if (error) { console.error('getOpenPlayRegistrations:', error); return []; }
+    return data;
+  },
+
+  async addOpenPlayRegistration(reg) {
+    const { error } = await _sb.from('open_play_registrations').insert({
+      full_name: reg.fullName,
+      court_id: String(reg.courtId),
+      court_name: reg.courtName,
+      date: reg.date,
+      hour: reg.hour,
+      time_label: reg.timeLabel,
+      payment_type: reg.paymentType,
+      amount: reg.amount,
+      created_at: new Date().toISOString(),
+    });
+    if (error) { console.error('addOpenPlayRegistration:', error); throw error; }
+  },
+
+  async deleteOpenPlayRegistration(id) {
+    const { error } = await _sb.from('open_play_registrations').delete().eq('id', id);
+    if (error) console.error('deleteOpenPlayRegistration:', error);
+  },
+
   // ---- BLOCKED DATES ----
   async getBlockedDates() {
     const { data, error } = await _sb.from('blocked_dates').select('date').order('date');

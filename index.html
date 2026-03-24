@@ -223,17 +223,17 @@ body.light .nav { background:rgba(242,237,229,.95); }
 }
 .cc-slot-btn.taken:hover { transform:none; box-shadow:none; }
 .cc-slot-btn.open-play {
-  background:rgba(255,255,255,.03);
-  border:1px solid var(--border);
+  background:rgba(244,168,37,.06);
+  border:1px solid rgba(244,168,37,.3);
   color:var(--muted);
-  cursor:not-allowed;
-  opacity:.55;
+  cursor:pointer;
+  opacity:.85;
 }
-.cc-slot-btn.open-play .csl-time { color:var(--muted); }
+.cc-slot-btn.open-play .csl-time { color:var(--text); }
 .cc-slot-btn.open-play .csl-tag {
   background:none; color:#f4a825; font-size:.56rem; font-weight:700; letter-spacing:.3px;
 }
-.cc-slot-btn.open-play:hover { transform:none; box-shadow:none; }
+.cc-slot-btn.open-play:hover { border-color:#f4a825; box-shadow:0 0 0 2px rgba(244,168,37,.2); transform:translateY(-1px); }
 /* Maintenance */
 .cc-slot-btn.maintenance {
   background:rgba(255,255,255,.03);
@@ -1498,6 +1498,24 @@ body.light #splashScreen { background: var(--bg); }
   </div>
 </div>
 
+<!-- OPEN PLAY SIGN-UP MODAL -->
+<div class="bk-modal-overlay" id="opModal">
+  <div class="bk-modal" style="max-width:420px">
+    <div class="bk-modal-hd" style="background:linear-gradient(135deg,rgba(244,168,37,.1),transparent)">
+      <div>
+        <div class="bk-modal-court" style="color:#f4a825">🏓 Join Open Play</div>
+        <div class="bk-modal-meta" id="opModalMeta">—</div>
+      </div>
+      <div class="bk-modal-x" onclick="closeOpModal()">✕</div>
+    </div>
+    <div class="bk-modal-body" id="opModalBody"></div>
+    <div class="bk-modal-ft" id="opModalFt">
+      <button class="btn" style="border:1.5px solid var(--border);color:var(--muted);background:transparent" onclick="closeOpModal()">Cancel</button>
+      <button class="btn btn-g" id="opSubmitBtn" onclick="submitOpenPlay()">🏓 Join Open Play</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =============================================
    STATE
@@ -1508,7 +1526,8 @@ let wizStep = 1, wizStartStep = 1;
 let _lastSubmitAt = 0; // rate limiting — ms timestamp of last submission attempt
 let openHour  = 6;
 let closeHour = 22;
-let openPlayConfig = null; // { enabled, start, end, days[] }
+let openPlayConfig = null; // { enabled, start, end, days[], fee }
+let openPlayFee = 100; // default ₱100, overridden by settings
 let maintenanceConfig = null; // { enabled, start, end, mode, dates[], recurring }
 let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
 let payFull = false; // false = 50% downpayment, true = 100% full payment
@@ -1604,7 +1623,10 @@ async function loadOperatingHours() {
   }
   _settingsTiers = pricingTiers.length ? [...pricingTiers] : null;
   if (settings.open_play_config) {
-    try { openPlayConfig = JSON.parse(settings.open_play_config); } catch(e) {}
+    try {
+      openPlayConfig = JSON.parse(settings.open_play_config);
+      if (openPlayConfig?.fee) openPlayFee = parseFloat(openPlayConfig.fee) || 100;
+    } catch(e) {}
   }
   if (settings.maintenance_config) {
     try { maintenanceConfig = JSON.parse(settings.maintenance_config); } catch(e) {}
@@ -1747,7 +1769,7 @@ const fmtTs = h => h === 24 ? '12A' : `${h % 12 || 12}${h < 12 ? 'A' : 'P'}`;
 async function toggleCardSlot(courtId, date, h) {
   await ensureCourt(courtId);
   if (isOpenPlayHour(date, h)) {
-    toast('This slot is reserved for Open Play.', 'inf');
+    openPlaySignup(courtId, date, h, court ? court.name : '');
     return;
   }
   if (isMaintenanceHour(date, h)) {
@@ -1979,7 +2001,7 @@ async function onCardDate(courtId, date) {
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
     if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
-    if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
+    if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${courtId}','${date}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
 }
@@ -2042,7 +2064,7 @@ async function renderCourts() {
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
           if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
-          if (isOpenPlay_) return `<div class="cc-slot-btn open-play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
+          if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${c.id}','${today}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
 
@@ -2248,7 +2270,8 @@ function toggleSlot(h) {
   if (todayFlag && h < curHour) { toast('This time slot has already passed.', 'err'); return; }
   if (todayFlag && h === curHour) { toast('This hour is currently in progress — book the next available slot.', 'inf'); return; }
   if (isOpenPlayHour(date, h)) {
-    toast('This slot is reserved for Open Play (walk-in only — no pre-booking needed).', 'inf'); return;
+    openPlaySignup(court ? court.id : '', date, h, court ? court.name : '');
+    return;
   }
   if (isMaintenanceHour(date, h)) {
     toast('This slot is under maintenance.', 'inf'); return;
@@ -2751,9 +2774,114 @@ document.addEventListener('DOMContentLoaded', async () => {
   startRealtime();
   $('bDate').min = todayStr();
   $('invModal').addEventListener('click', e => { if (e.target === $('invModal')) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBookModal(); });
+  $('opModal').addEventListener('click', e => { if (e.target === $('opModal')) closeOpModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeBookModal(); closeOpModal(); } });
   initScrollReveal();
 });
+
+/* =============================================
+   OPEN PLAY SIGN-UP
+   ============================================= */
+let _opSignupData = { courtId: null, courtName: '', date: '', hour: 0, fullPay: false };
+
+function openPlaySignup(courtId, date, h, courtName) {
+  _opSignupData = { courtId, courtName, date, hour: h, fullPay: false };
+  const half = openPlayFee / 2;
+  $('opModalMeta').textContent = `${courtName || 'Court'} · ${fmtD(date)} · ${fmtT(h)} – ${fmtT(h + 1)}`;
+  $('opModalBody').innerHTML = `
+    <div style="margin-bottom:18px">
+      <label class="fl">Full Name *</label>
+      <input type="text" class="fi" id="opFullName" placeholder="Enter your full name" autocomplete="name" oninput="this.style.borderColor=''"/>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="fl">Payment Method</label>
+      <div style="background:var(--input);border:1.5px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:.9rem;display:flex;align-items:center;gap:8px;color:var(--muted)">
+        📱 GCash
+      </div>
+    </div>
+    <div style="margin-bottom:18px">
+      <label class="fl" style="margin-bottom:10px">Downpayment</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="pat-btn on" id="opDp50" onclick="opSetDP(false)" style="cursor:pointer">
+          <div class="pat-icon">⚡</div>
+          <div style="font-size:.78rem;font-weight:700;margin:2px 0">50%</div>
+          <div class="pat-amt">₱${fmt(half)}</div>
+        </div>
+        <div class="pat-btn" id="opDp100" onclick="opSetDP(true)" style="cursor:pointer">
+          <div class="pat-icon">✅</div>
+          <div style="font-size:.78rem;font-weight:700;margin:2px 0">100%</div>
+          <div class="pat-amt">₱${fmt(openPlayFee)}</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+      <div style="display:flex;justify-content:space-between;font-size:.84rem">
+        <span style="color:var(--muted)">Open Play Fee</span>
+        <span>₱${fmt(openPlayFee)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <span style="font-weight:700">Amount Due</span>
+        <span style="font-weight:700;color:var(--green);font-size:1.05rem" id="opAmtDue">₱${fmt(half)}</span>
+      </div>
+    </div>`;
+  const ft = $('opModalFt');
+  ft.innerHTML = `
+    <button class="btn" style="border:1.5px solid var(--border);color:var(--muted);background:transparent" onclick="closeOpModal()">Cancel</button>
+    <button class="btn btn-g" id="opSubmitBtn" onclick="submitOpenPlay()">🏓 Join Open Play</button>`;
+  $('opModal').classList.add('active');
+  setTimeout(() => $('opFullName')?.focus(), 80);
+}
+
+function opSetDP(full) {
+  _opSignupData.fullPay = full;
+  $('opDp50')?.classList.toggle('on', !full);
+  $('opDp100')?.classList.toggle('on', full);
+  if ($('opAmtDue')) $('opAmtDue').textContent = '₱' + fmt(full ? openPlayFee : openPlayFee / 2);
+}
+
+function closeOpModal() {
+  $('opModal').classList.remove('active');
+}
+
+async function submitOpenPlay() {
+  const nameEl = $('opFullName');
+  const name = (nameEl?.value || '').trim();
+  if (!name) {
+    if (nameEl) nameEl.style.borderColor = 'var(--red)';
+    toast('Please enter your full name.', 'err');
+    nameEl?.focus();
+    return;
+  }
+  const amt = _opSignupData.fullPay ? openPlayFee : openPlayFee / 2;
+  const payType = _opSignupData.fullPay ? '100%' : '50%';
+  const btn = $('opSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    await DB.addOpenPlayRegistration({
+      fullName: name,
+      courtId: _opSignupData.courtId,
+      courtName: _opSignupData.courtName,
+      date: _opSignupData.date,
+      hour: _opSignupData.hour,
+      timeLabel: `${fmtT(_opSignupData.hour)} – ${fmtT(_opSignupData.hour + 1)}`,
+      paymentType: payType,
+      amount: amt,
+    });
+    $('opModalBody').innerHTML = `
+      <div style="text-align:center;padding:28px 0">
+        <div style="font-size:3rem;margin-bottom:12px">🏓</div>
+        <div style="font-size:1.2rem;font-weight:700;margin-bottom:8px">You're in!</div>
+        <div style="color:var(--muted);font-size:.88rem;line-height:1.65">
+          Thanks, <strong>${name}</strong>!<br/>
+          Please pay <strong>₱${fmt(amt)}</strong> via GCash<br/>at the front desk.
+        </div>
+      </div>`;
+    $('opModalFt').innerHTML = `<button class="btn btn-g" style="width:100%;justify-content:center" onclick="closeOpModal()">Done ✓</button>`;
+  } catch(err) {
+    toast('Failed to register. Please try again.', 'err');
+    if (btn) { btn.disabled = false; btn.textContent = '🏓 Join Open Play'; }
+  }
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-config.js"></script>
