@@ -278,6 +278,14 @@ window.DB = {
     if (error) { console.error('addOpenPlayRegistration:', error); throw error; }
   },
 
+  async getOpenPlayCountForDate(date) {
+    const { count, error } = await _sb.from('open_play_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('date', date);
+    if (error) { console.error('getOpenPlayCountForDate:', error); return 0; }
+    return count || 0;
+  },
+
   async deleteOpenPlayRegistration(id) {
     const { error } = await _sb.from('open_play_registrations').delete().eq('id', id);
     if (error) console.error('deleteOpenPlayRegistration:', error);

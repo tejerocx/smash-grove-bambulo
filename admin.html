@@ -869,11 +869,20 @@ tr:hover td { background: var(--bg2); }
           <div id="opDateList"><p style="color:var(--muted);font-style:italic">No specific dates added.</p></div>
         </div>
 
-        <!-- Fee per player -->
+        <!-- Fee + Max Players -->
         <div style="margin-bottom:18px;padding-top:16px;border-top:1px solid var(--border)">
-          <label class="fl" style="margin-bottom:6px">Fee per Player (₱)</label>
-          <input type="number" class="fi" id="opFee" min="0" step="0.5" placeholder="100" style="max-width:180px"/>
-          <div style="font-size:.76rem;color:var(--muted);margin-top:4px">Customers can pay 50% or 100% of this amount when signing up.</div>
+          <div class="frow" style="margin-bottom:0">
+            <div>
+              <label class="fl" style="margin-bottom:6px">Fee per Player (₱)</label>
+              <input type="number" class="fi" id="opFee" min="0" step="0.5" placeholder="100"/>
+              <div style="font-size:.76rem;color:var(--muted);margin-top:4px">Customers pay 50% or 100% of this.</div>
+            </div>
+            <div>
+              <label class="fl" style="margin-bottom:6px">Max Players per Day</label>
+              <input type="number" class="fi" id="opMaxPlayers" min="1" step="1" placeholder="40"/>
+              <div style="font-size:.76rem;color:var(--muted);margin-top:4px">Sign-ups blocked when limit is reached.</div>
+            </div>
+          </div>
         </div>
 
         <button class="btn btn-p" onclick="saveOpenPlay()">💾 Save Open Play Schedule</button>
@@ -2750,13 +2759,14 @@ function opRenderDateList() {
 async function renderBlocked(){
   // Load open play settings
   const settings = await DB.getSettings();
-  const cfg = settings.open_play_config ? JSON.parse(settings.open_play_config) : { enabled: true, start: 17, end: 24, days: [1,2,3,4,5,6], fee: 100 };
+  const cfg = settings.open_play_config ? JSON.parse(settings.open_play_config) : { enabled: true, start: 17, end: 24, days: [1,2,3,4,5,6], fee: 100, maxPlayers: 40 };
 
   opPopulateTimePickers();
   $('opEnabled').checked = cfg.enabled !== false;
   $('opStart').value = cfg.start ?? 17;
   $('opEnd').value   = cfg.end   ?? 24;
-  $('opFee').value   = cfg.fee  ?? 100;
+  $('opFee').value        = cfg.fee        ?? 100;
+  $('opMaxPlayers').value = cfg.maxPlayers ?? 40;
 
   // Set day checkboxes
   document.querySelectorAll('#opDays input[type=checkbox]').forEach(cb => {
@@ -2781,12 +2791,13 @@ async function saveOpenPlay() {
   const start   = parseInt($('opStart').value);
   const end     = parseInt($('opEnd').value);
   const days    = [...document.querySelectorAll('#opDays input:checked')].map(cb => Number(cb.value));
-  const fee     = parseFloat($('opFee').value) || 100;
+  const fee        = parseFloat($('opFee').value) || 100;
+  const maxPlayers = parseInt($('opMaxPlayers').value) || 40;
 
   if (enabled && end <= start) { toast('End time must be after start time.', 'err'); return; }
   if (enabled && days.length === 0 && _opDates.length === 0) { toast('Select at least one active day or add a specific date.', 'err'); return; }
 
-  await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days, specificDates: _opDates, fee }));
+  await DB.saveSetting('open_play_config', JSON.stringify({ enabled, start, end, days, specificDates: _opDates, fee, maxPlayers }));
   toast('Open Play schedule saved!');
 }
 
@@ -2832,7 +2843,7 @@ async function renderOpRegistrations() {
         </tbody>
       </table>
     </div>
-    <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">${regs.length} registration${regs.length !== 1 ? 's' : ''} · Total collected: <strong style="color:var(--text)">${fmt(regs.reduce((s, r) => s + Number(r.amount), 0))}</strong></div>`;
+    <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">${regs.length} / ${$('opMaxPlayers')?.value || '?'} players · Total collected: <strong style="color:var(--text)">${fmt(regs.reduce((s, r) => s + Number(r.amount), 0))}</strong></div>`;
 }
 
 async function deleteOpReg(id) {
