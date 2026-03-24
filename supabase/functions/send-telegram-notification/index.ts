@@ -3,7 +3,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Payload = {
+type BookingPayload = {
+  type?: "booking";
   bookingRef: string;
   fullName: string;
   contactNumber: string;
@@ -17,6 +18,18 @@ type Payload = {
   paymentMethod: string;
   gcashRef?: string | null;
 };
+
+type OpenPlayPayload = {
+  type: "open_play";
+  fullName: string;
+  courtName: string;
+  date: string;
+  timeLabel: string;
+  paymentType: string;
+  amount: number;
+};
+
+type Payload = BookingPayload | OpenPlayPayload;
 
 function fmtDate(d: string): string {
   const dt = new Date(d + "T00:00:00");
@@ -32,7 +45,7 @@ function fmtPHP(n: number): string {
   return "₱" + Number(n).toLocaleString("en-PH", { minimumFractionDigits: 2 });
 }
 
-function buildMessage(p: Payload): string {
+function buildBookingMessage(p: BookingPayload): string {
   const method =
     p.paymentMethod === "gcash"
       ? "GCash"
@@ -60,7 +73,24 @@ function buildMessage(p: Payload): string {
     `\n` +
     `📋 Ref: <code>${p.bookingRef}</code>\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `👆 Open admin panel to verify & confirm.`
+    `👆 <a href="https://smashgrove.com/admin.html">Open admin panel to verify &amp; confirm.</a>`
+  );
+}
+
+function buildOpenPlayMessage(p: OpenPlayPayload): string {
+  return (
+    `🏓 <b>OPEN PLAY SIGN-UP!</b>\n` +
+    `━━━━━━━━━━━━━━━━━━\n` +
+    `👤 <b>${p.fullName}</b>\n` +
+    `\n` +
+    `🏟️ <b>${p.courtName}</b>\n` +
+    `📅 ${fmtDate(p.date)}\n` +
+    `⏰ ${p.timeLabel}\n` +
+    `\n` +
+    `💳 <b>GCash</b>\n` +
+    `⚡ DP: <b>${p.paymentType}</b> — ${fmtPHP(p.amount)}\n` +
+    `━━━━━━━━━━━━━━━━━━\n` +
+    `👆 <a href="https://smashgrove.com/admin.html">View Open Play registrations.</a>`
   );
 }
 
@@ -79,18 +109,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Support multiple chat IDs (comma-separated)
     const chatIds = chatIdRaw.split(",").map((id) => id.trim()).filter(Boolean);
-
     const body = (await req.json()) as Payload;
-    if (!body.bookingRef || !body.fullName) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    const message = buildMessage(body);
+    let message: string;
+
+    if (body.type === "open_play") {
+      if (!body.fullName) {
+        return new Response(JSON.stringify({ error: "Missing required fields" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      message = buildOpenPlayMessage(body);
+    } else {
+      const b = body as BookingPayload;
+      if (!b.bookingRef || !b.fullName) {
+        return new Response(JSON.stringify({ error: "Missing required fields" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      message = buildBookingMessage(b);
+    }
 
     // Send to all chat IDs in parallel
     const results = await Promise.allSettled(
@@ -121,7 +162,6 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // Return 200 so booking flow is not disrupted even if Telegram fails
     return new Response(JSON.stringify({ ok: false, error: msg }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
