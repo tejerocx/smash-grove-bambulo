@@ -2813,8 +2813,9 @@ async function openPlaySignup(courtId, date, h, courtName) {
 
   const spotsLeft = openPlayMaxPlayers - count;
   $('opModalBody').innerHTML = `
-    <div style="background:rgba(244,168,37,.08);border:1px solid rgba(244,168,37,.25);border-radius:8px;padding:8px 12px;font-size:.8rem;color:#f4a825;margin-bottom:16px;text-align:center;font-weight:600">
-      🏓 ${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} remaining out of ${openPlayMaxPlayers}
+    <div style="background:rgba(244,168,37,.08);border:1px solid rgba(244,168,37,.3);border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:center">
+      <div style="font-size:2rem;font-weight:800;color:#f4a825;line-height:1">${spotsLeft}<span style="font-size:1rem;color:var(--muted);font-weight:600"> / ${openPlayMaxPlayers}</span></div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Spots Remaining</div>
     </div>
     <div style="margin-bottom:18px">
       <label class="fl">Full Name *</label>
