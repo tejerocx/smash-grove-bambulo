@@ -2892,7 +2892,9 @@ async function submitOpenPlay() {
       </div>`;
     $('opModalFt').innerHTML = `<button class="btn btn-g" style="width:100%;justify-content:center" onclick="closeOpModal()">Done ✓</button>`;
   } catch(err) {
-    toast('Failed to register. Please try again.', 'err');
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error('submitOpenPlay error:', err);
+    toast('Error: ' + msg, 'err');
     if (btn) { btn.disabled = false; btn.textContent = '🏓 Join Open Play'; }
   }
 }
