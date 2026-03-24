@@ -1114,6 +1114,41 @@ body.light #splashScreen { background: var(--bg); }
 </div>
 
 <!-- NAVBAR -->
+<!-- GRAND OPENING SPLASH -->
+<div id="grandSplash" style="display:none;position:fixed;inset:0;z-index:999;background:#060e06;align-items:center;justify-content:center;padding:24px;flex-direction:column;text-align:center;overflow:hidden;">
+  <!-- Glow layers -->
+  <div style="position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,200,83,.18) 0%,transparent 70%);pointer-events:none;animation:gsGlow 3s ease-in-out infinite alternate"></div>
+  <div style="position:absolute;bottom:-180px;left:50%;transform:translateX(-50%);width:500px;height:400px;border-radius:50%;background:radial-gradient(ellipse,rgba(74,154,74,.1) 0%,transparent 70%);pointer-events:none"></div>
+  <!-- Content -->
+  <div style="position:relative;z-index:2;max-width:480px;animation:gsIn .8s cubic-bezier(.34,1.4,.64,1) both">
+    <div style="font-size:3.2rem;margin-bottom:4px;animation:gsBounce 1s .6s ease-in-out infinite alternate">🏓</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(1rem,3.5vw,1.2rem);letter-spacing:6px;color:var(--green);margin-bottom:8px;opacity:.85">MARCH 29 · 2026</div>
+    <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,9vw,5rem);line-height:.95;letter-spacing:2px;margin-bottom:16px">
+      GRAND<br/><span style="color:var(--green);text-shadow:0 0 40px rgba(0,200,83,.5)">OPENING</span>
+    </h1>
+    <p style="color:#b0c4b0;font-size:clamp(.9rem,2.5vw,1.05rem);line-height:1.7;margin-bottom:28px">
+      Welcome to <strong style="color:#e6edf3">Smash Grove Bambulo Pickleyard</strong>!<br/>
+      We're officially open — come smash, rally, and play.
+    </p>
+    <div style="background:rgba(244,168,37,.1);border:1.5px solid rgba(244,168,37,.4);border-radius:14px;padding:16px 20px;margin-bottom:28px;animation:gsPulse 2s 1s ease-in-out infinite">
+      <div style="font-size:1.5rem;margin-bottom:4px">🏓</div>
+      <div style="font-weight:800;font-size:1.05rem;color:#f4a825;letter-spacing:.5px">OPEN PLAY IS LIVE TODAY!</div>
+      <div style="font-size:.83rem;color:#c8a850;margin-top:4px">Walk in & sign up — limited slots available</div>
+    </div>
+    <button onclick="closeGrandSplash()" style="background:linear-gradient(135deg,#00c853,#007a33);color:#fff;border:none;border-radius:10px;padding:14px 36px;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 6px 24px rgba(0,200,83,.35);transition:transform .2s,box-shadow .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      Let's Play! &nbsp;<span id="gsCountdown" style="opacity:.7;font-weight:400;font-size:.85rem"></span>
+    </button>
+  </div>
+</div>
+<style>
+@keyframes gsIn { from { opacity:0; transform:translateY(32px) scale(.95); } to { opacity:1; transform:none; } }
+@keyframes gsGlow { from { opacity:.6; } to { opacity:1; } }
+@keyframes gsBounce { from { transform:translateY(0); } to { transform:translateY(-8px); } }
+@keyframes gsPulse { 0%,100% { box-shadow:0 0 0 0 rgba(244,168,37,.15); } 50% { box-shadow:0 0 0 8px rgba(244,168,37,.0); } }
+@keyframes gsFadeOut { to { opacity:0; transform:scale(.96); } }
+#grandSplash.closing { animation:gsFadeOut .45s ease forwards; }
+</style>
+
 <nav class="nav">
   <div class="logo">
     <img class="logo-img" src="f6b5eb3c-a6b6-49ce-981e-d9b127b67ba3.jpg" alt="Smash Grove Logo" />
@@ -2777,9 +2812,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('bDate').min = todayStr();
   $('invModal').addEventListener('click', e => { if (e.target === $('invModal')) closeModal(); });
   $('opModal').addEventListener('click', e => { if (e.target === $('opModal')) closeOpModal(); });
+  initGrandSplash();
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeBookModal(); closeOpModal(); } });
   initScrollReveal();
 });
+
+/* =============================================
+   GRAND OPENING SPLASH
+   ============================================= */
+function initGrandSplash() {
+  const today = todayStr(); // 'YYYY-MM-DD'
+  if (today !== '2026-03-29') return;
+  if (sessionStorage.getItem('gs_seen')) return;
+  const el = $('grandSplash');
+  el.style.display = 'flex';
+  let secs = 6;
+  const cd = $('gsCountdown');
+  if (cd) cd.textContent = `(${secs})`;
+  const timer = setInterval(() => {
+    secs--;
+    if (cd) cd.textContent = `(${secs})`;
+    if (secs <= 0) { clearInterval(timer); closeGrandSplash(); }
+  }, 1000);
+  el._timer = timer;
+}
+
+function closeGrandSplash() {
+  const el = $('grandSplash');
+  if (!el || el.style.display === 'none') return;
+  clearInterval(el._timer);
+  sessionStorage.setItem('gs_seen', '1');
+  el.classList.add('closing');
+  setTimeout(() => { el.style.display = 'none'; el.classList.remove('closing'); }, 450);
+}
 
 /* =============================================
    OPEN PLAY SIGN-UP
