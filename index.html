@@ -785,10 +785,12 @@ footer { background:var(--card); border-top:1px solid var(--border); padding:40p
 .slot.now  { border-color: #4fc3f7; background: rgba(79,195,247,.07); }
 .slot.now .slot-time { color: #4fc3f7; }
 .slot.now .slot-tag { background: rgba(79,195,247,.18); color: #4fc3f7; }
-.slot.open-play { background: rgba(255,255,255,.02); border-color: var(--border); cursor: not-allowed; opacity:.55; }
-.slot.open-play .slot-time { color: var(--muted); }
+.slot.open-play { background: rgba(244,168,37,.04); border-color: rgba(244,168,37,.25); cursor: pointer; opacity:1; }
+.slot.open-play:hover { border-color:#f4a825; background:rgba(244,168,37,.10); transform:translateY(-2px); box-shadow:0 4px 12px rgba(244,168,37,.15); }
+.slot.open-play .slot-time { color: var(--text); }
 .slot.open-play .slot-end  { color: var(--muted); opacity:.7; }
 .slot.open-play .slot-tag.op-tag { background: none; color: #f4a825; font-size:.62rem; font-weight:700; letter-spacing:.3px; }
+.slot.open-play .op-tap { display:block; font-size:.58rem; color:rgba(244,168,37,.7); margin-top:3px; font-weight:600; letter-spacing:.2px; }
 .slot.maintenance {
   background: rgba(255,255,255,.02); border-color: var(--border); cursor: not-allowed; opacity:.55;
 }
@@ -2038,7 +2040,7 @@ async function onCardDate(courtId, date) {
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
     if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
-    if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${courtId}','${date}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
+    if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${courtId}','${date}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play<div style="font-size:.5rem;color:rgba(244,168,37,.75);font-weight:600;letter-spacing:.2px;margin-top:2px">Tap to register</div></div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
 }
@@ -2101,7 +2103,7 @@ async function renderCourts() {
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
           if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
-          if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${c.id}','${today}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play</div></div>`;
+          if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${c.id}','${today}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play<div style="font-size:.5rem;color:rgba(244,168,37,.75);font-weight:600;letter-spacing:.2px;margin-top:2px">Tap to register</div></div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
 
@@ -2267,7 +2269,7 @@ async function renderSlots() {
     else if (isNow)        { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
     else if (isBooked)     { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
     else if (isMaint)      { cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">🔧 Maintenance</span>`; }
-    else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">🏓 Open Play</span>`; }
+    else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">🏓 Open Play<span class="op-tap">Tap to register</span></span>`; }
     else                   { cls += ' free'; }
 
     slotHtml += `
