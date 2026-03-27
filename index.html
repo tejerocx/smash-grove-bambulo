@@ -2955,6 +2955,20 @@ async function submitOpenPlay() {
   const btn = $('opSubmitBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
   try {
+    // Re-check capacity at submit time to prevent race conditions
+    const currentCount = await DB.getOpenPlayCountForDate(_opSignupData.date);
+    if (currentCount >= openPlayMaxPlayers) {
+      $('opModalBody').innerHTML = `
+        <div style="text-align:center;padding:28px 0">
+          <div style="font-size:3rem;margin-bottom:12px">😔</div>
+          <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px">Session Just Filled Up</div>
+          <div style="color:var(--muted);font-size:.88rem;line-height:1.65">
+            Sorry, the last spot was just taken.<br/>Walk-ins may still be accommodated at the venue.
+          </div>
+        </div>`;
+      $('opModalFt').innerHTML = `<button class="btn btn-g" style="width:100%;justify-content:center" onclick="closeOpModal()">Got it</button>`;
+      return;
+    }
     const timeLabel = `${fmtT(_opSignupData.hour)} – ${fmtT(_opSignupData.hour + 1)}`;
     await DB.addOpenPlayRegistration({
       fullName: name,
