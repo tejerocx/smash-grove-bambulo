@@ -1844,7 +1844,9 @@ function _nbIsOpenPlayHour(dateStr, h) {
 
 function _nbIsMaintenanceHour(dateStr, h) {
   if (!_nbMaintenanceCfg || !_nbMaintenanceCfg.enabled) return false;
-  if (h < _nbMaintenanceCfg.start || h >= _nbMaintenanceCfg.end) return false;
+  const _ms = Number(_nbMaintenanceCfg.start), _me = Number(_nbMaintenanceCfg.end);
+  const inRange = _ms < _me ? (h >= _ms && h < _me) : (h >= _ms || h < _me);
+  if (!inRange) return false;
   const mode = _nbMaintenanceCfg.mode || 'specific';
   if (mode === 'specific') return (_nbMaintenanceCfg.dates || []).includes(dateStr);
   if (mode === 'monthly') return new Date(dateStr + 'T00:00:00').getDate() === (_nbMaintenanceCfg.recurring?.day ?? -1);
@@ -3028,7 +3030,7 @@ async function saveMaintenance() {
   const end = parseInt($('mtEnd').value);
   const mode = $('mtMode').value;
 
-  if (end <= start) { toast('End time must be after start time.', 'err'); return; }
+  if (end === start) { toast('Start and end time cannot be the same.', 'err'); return; }
 
   let recurring = null;
   if (mode === 'monthly') {

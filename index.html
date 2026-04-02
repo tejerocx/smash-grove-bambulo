@@ -1616,7 +1616,8 @@ function isMaintenanceHour(date, h) {
   if (!maintenanceConfig || !maintenanceConfig.enabled) return false;
   const start = Number(maintenanceConfig.start);
   const end = Number(maintenanceConfig.end);
-  if (h < start || h >= end) return false;
+  const inRange = start < end ? (h >= start && h < end) : (h >= start || h < end);
+  if (!inRange) return false;
   const mode = maintenanceConfig.mode || 'specific';
   if (mode === 'specific') return (maintenanceConfig.dates || []).includes(date);
   if (mode === 'monthly') return new Date(date + 'T00:00:00').getDate() === (maintenanceConfig.recurring?.day ?? -1);
