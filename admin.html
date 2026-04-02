@@ -605,6 +605,41 @@ tr:hover td { background: var(--bg2); }
         <div class="sc"><div class="sc-lbl">Most Booked</div><div class="sc-val" style="font-size:1rem;margin-top:4px" id="dMost">—</div><div class="sc-ic">🏆</div></div>
       </div>
 
+      <!-- MAINTENANCE FEE SUMMARY -->
+      <div class="panel" id="maintFeePanel" style="margin-bottom:16px;border:1.5px solid rgba(244,168,37,.35);background:rgba(244,168,37,.04)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+          <h4 style="margin:0;color:#f4a825">🛠️ Developer Maintenance Fee</h4>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:.78rem;color:var(--text3)">Month:</label>
+            <input type="month" id="maintMonth" style="font-size:.82rem;padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--input);color:var(--text);cursor:pointer" onchange="renderMaintFee()"/>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px">
+          <div style="background:var(--input);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="mfBookings">0</div>
+            <div style="font-size:.72rem;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">Bookings</div>
+          </div>
+          <div style="background:var(--input);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="mfHours">0</div>
+            <div style="font-size:.72rem;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">Total Hours</div>
+          </div>
+          <div style="background:var(--input);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:.72rem;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px">Rate</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text)">₱5.00 / hr</div>
+          </div>
+          <div style="background:rgba(244,168,37,.12);border:1.5px solid rgba(244,168,37,.4);border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:1.6rem;font-weight:800;color:#f4a825" id="mfFee">₱0.00</div>
+            <div style="font-size:.72rem;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px">Fee to Collect</div>
+          </div>
+        </div>
+        <div style="background:var(--input);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:.82rem;color:var(--text2);line-height:1.7" id="mfBreakdown">
+          —
+        </div>
+        <div style="margin-top:10px;font-size:.75rem;color:var(--text3);text-align:center">
+          Only counts <strong>confirmed</strong> and <strong>completed</strong> bookings · Cancelled bookings are excluded
+        </div>
+      </div>
+
       <div class="rev-grid">
         <div class="panel">
           <h4>Monthly Bookings</h4>
@@ -1325,6 +1360,13 @@ async function goto(s){
    DASHBOARD
    ============================================== */
 async function renderDash(){
+  // Set maintenance fee month picker to current month and render
+  const _now = new Date();
+  const _curMonth = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
+  const _mEl = $('maintMonth');
+  if (_mEl && !_mEl.value) _mEl.value = _curMonth;
+  renderMaintFee();
+
   const bks=await DB.getBookings();
   const today=new Date().toISOString().split('T')[0];
   const active=bks.filter(b=>b.status!=='cancelled');
@@ -1349,6 +1391,65 @@ async function renderDash(){
   // ── Charts ──
   renderDashCharts(active);
 }
+
+// ── MAINTENANCE FEE ─────────────────────────────────────────
+const MAINT_RATE = 5; // ₱5.00 per hour booked
+
+async function renderMaintFee() {
+  const monthInput = $('maintMonth');
+  const selectedMonth = monthInput?.value; // e.g. "2026-04"
+  if (!selectedMonth) return;
+
+  const bks = await DB.getBookings();
+  // Only count confirmed + completed bookings in the selected month
+  const filtered = bks.filter(b =>
+    b.date?.startsWith(selectedMonth) &&
+    (b.status === 'confirmed' || b.status === 'completed')
+  );
+
+  const totalBookings = filtered.length;
+  const totalHours = filtered.reduce((s, b) => s + (parseInt(b.duration) || 0), 0);
+  const totalFee = totalHours * MAINT_RATE;
+
+  $('mfBookings').textContent = totalBookings;
+  $('mfHours').textContent = totalHours;
+  $('mfFee').textContent = fmt(totalFee);
+
+  // Breakdown by court
+  const byCourtMap = {};
+  filtered.forEach(b => {
+    const cn = b.courtName || 'Unknown';
+    if (!byCourtMap[cn]) byCourtMap[cn] = { bookings: 0, hours: 0 };
+    byCourtMap[cn].bookings++;
+    byCourtMap[cn].hours += parseInt(b.duration) || 0;
+  });
+
+  const [yr, mo] = selectedMonth.split('-');
+  const monthLabel = new Date(yr, parseInt(mo) - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  if (totalBookings === 0) {
+    $('mfBreakdown').innerHTML = `<span style="color:var(--text3)">No confirmed/completed bookings found for ${monthLabel}.</span>`;
+    return;
+  }
+
+  const rows = Object.entries(byCourtMap)
+    .sort((a, b) => b[1].hours - a[1].hours)
+    .map(([court, d]) =>
+      `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)">
+        <span>🏟️ ${court}</span>
+        <span>${d.bookings} booking${d.bookings !== 1 ? 's' : ''} · <strong>${d.hours} hr${d.hours !== 1 ? 's' : ''}</strong> · <span style="color:#f4a825">₱${fmt(d.hours * MAINT_RATE)}</span></span>
+      </div>`
+    ).join('');
+
+  $('mfBreakdown').innerHTML = `
+    <div style="font-weight:700;margin-bottom:8px;color:var(--text)">📊 Breakdown for ${monthLabel}</div>
+    ${rows}
+    <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;font-weight:700;font-size:.9rem">
+      <span>Total</span>
+      <span>${totalHours} hrs × ₱${MAINT_RATE}.00 = <span style="color:#f4a825;font-size:1rem">₱${fmt(totalFee)}</span></span>
+    </div>`;
+}
+// ─────────────────────────────────────────────────────────────
 
 let _chartBookings = null, _chartRevenue = null;
 function renderDashCharts(bookings) {
