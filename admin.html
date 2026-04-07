@@ -1570,6 +1570,7 @@ async function renderBookings(){
       <td data-label="Actions"><div style="display:flex;gap:5px;flex-wrap:wrap">
         ${b.gcashRef && b.status==='pending' && (b.paymentMethod==='gcash'||b.paymentMethod==='gotyme')?`<button class="btn btn-sm" style="background:rgba(200,160,96,.15);color:var(--yellow);border:1px solid rgba(200,160,96,.35);font-weight:700" onclick="openVerifyModal('${b.ref}')">🔍 Verify</button>`:''}
         ${b.status!=='cancelled'?`<button class="btn btn-sm" style="background:rgba(74,154,220,.12);color:#5a9ad4;border:1px solid rgba(74,154,220,.3)" onclick="openRescheduleModal('${b.ref}')">📅 Reschedule</button>`:''}
+        ${b.status==='confirmed' && b.email?`<button class="btn btn-sm" style="background:rgba(74,154,74,.12);color:#4a9a4a;border:1px solid rgba(74,154,74,.3)" onclick="resendConfirmationEmail('${b.ref}')">📧 Resend Email</button>`:''}
         <select class="fi" style="padding:4px 7px;font-size:.76rem;width:auto" onchange="updateStatus('${b.ref}',this.value)">
           <option value="pending" ${b.status==='pending'?'selected':''}>Pending</option>
           <option value="confirmed" ${b.status==='confirmed'?'selected':''}>Confirmed</option>
@@ -1756,6 +1757,30 @@ async function verifyAndConfirm() {
     }).catch(() => {});
   } catch(e) {
     toast('Failed to confirm booking.', 'err');
+  }
+}
+
+async function resendConfirmationEmail(ref) {
+  const bk = await DB.getBookingByRef(ref);
+  if (!bk?.email) { toast('No email address on file for this booking.', 'err'); return; }
+  toast('📧 Sending email…', 'inf');
+  try {
+    const r = await fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
+        courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
+        endTime: bk.endTime, duration: bk.duration, total: bk.total,
+        downpayment: bk.downpayment || Math.round(bk.total * 0.5),
+        contactNumber: bk.contactNumber,
+      }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (j?.ok) toast(`📧 Confirmation email resent to ${bk.email}!`);
+    else toast(`Failed to resend email: ${j?.error || 'unknown error'}`, 'err');
+  } catch(e) {
+    toast(`Failed to resend email: ${e.message}`, 'err');
   }
 }
 
