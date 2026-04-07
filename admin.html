@@ -1689,7 +1689,7 @@ async function updateStatus(ref, status) {
       if (!bk?.email) return;
       fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({
           bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
           courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
@@ -1741,7 +1741,7 @@ async function verifyAndConfirm() {
       if (!bk?.email) return;
       fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({
           bookingRef: bk.ref, email: bk.email, fullName: bk.fullName,
           courtName: bk.courtName, date: bk.date, startTime: bk.startTime,
@@ -2113,7 +2113,7 @@ async function saveNewBooking() {
     if (status === 'confirmed' && email) {
       fetch(`${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/send-confirmation-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
         body: JSON.stringify({
           bookingRef: booking.ref, email: booking.email, fullName: booking.fullName,
           courtName: booking.courtName, date: booking.date, startTime: booking.startTime,
