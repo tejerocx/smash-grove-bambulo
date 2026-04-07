@@ -69,7 +69,9 @@ function buildBookingMessage(p: BookingPayload): string {
     `\n` +
     `💳 <b>${method}</b>${refLine}\n` +
     `💰 Total: ${fmtPHP(p.total)}\n` +
-    `⚡ Downpayment: <b>${fmtPHP(p.downpayment)}</b>\n` +
+    (p.downpayment >= p.total
+      ? `✅ Full Payment: <b>${fmtPHP(p.downpayment)}</b>\n`
+      : `⚡ Downpayment: <b>${fmtPHP(p.downpayment)}</b>\n`) +
     `\n` +
     `📋 Ref: <code>${p.bookingRef}</code>\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
