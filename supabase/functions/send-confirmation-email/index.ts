@@ -56,7 +56,7 @@ function buildHtml(p: Payload): string {
         <p style="margin:0 0 20px;font-size:1rem;color:#1a2e1a;">Hi <strong>${p.fullName}</strong>,</p>
         <p style="margin:0 0 24px;font-size:.95rem;color:#4a5a4a;line-height:1.6;">
           Great news! Your pickleball court booking has been <strong style="color:#2d7a2d;">confirmed</strong>.
-          Your downpayment has been received and your slot is locked in. See you on the court!
+          ${p.downpayment >= p.total ? 'Your full payment has been received and your slot is locked in.' : 'Your downpayment has been received and your slot is locked in.'} See you on the court!
         </p>
 
         <!-- Booking Details Card -->
@@ -96,7 +96,7 @@ function buildHtml(p: Payload): string {
                 <div style="font-size:1.05rem;font-weight:800;color:#1a2e1a;">${fmtPHP(p.total)}</div>
               </td>
               <td width="50%" style="vertical-align:top;">
-                <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:#6a8a6a;margin-bottom:3px;">Downpayment Paid</div>
+                <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:#6a8a6a;margin-bottom:3px;">${p.downpayment >= p.total ? 'Full Payment' : 'Downpayment Paid'}</div>
                 <div style="font-size:1.05rem;font-weight:800;color:#2d7a2d;">✓ ${fmtPHP(p.downpayment)}</div>
               </td>
             </tr></table>
@@ -110,7 +110,7 @@ function buildHtml(p: Payload): string {
               <strong>📋 Reminders:</strong><br/>
               • Please arrive <strong>10 minutes early</strong> to warm up.<br/>
               • Bring your booking reference: <strong>${p.bookingRef}</strong><br/>
-              • Remaining balance of <strong>${fmtPHP(p.total - p.downpayment)}</strong> is due on the day of play.
+              ${p.downpayment >= p.total ? '• No remaining balance — you\'re all paid up! ✅' : `• Remaining balance of <strong>${fmtPHP(p.total - p.downpayment)}</strong> is due on the day of play.`}
             </div>
           </td></tr>
         </table>
