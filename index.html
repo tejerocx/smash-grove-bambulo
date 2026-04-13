@@ -438,6 +438,10 @@ select.fi option { background:var(--card); }
 /* 3-column payment options */
 .pay-opts-3 { grid-template-columns:1fr 1fr 1fr; }
 @media(max-width:540px){ .pay-opts-3 { grid-template-columns:1fr; } }
+/* 4-column payment options */
+.pay-opts-4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+@media(max-width:640px){ .pay-opts-4 { grid-template-columns:1fr 1fr; } }
+@media(max-width:320px){ .pay-opts-4 { grid-template-columns:1fr; } }
 .divider { height:1px; background:var(--border); margin:24px 0; }
 
 /* HOW IT WORKS */
@@ -1281,7 +1285,7 @@ body.light #splashScreen { background: var(--bg); }
           <!-- Payment Method -->
           <div class="fg">
             <label class="fl">Downpayment Method</label>
-            <div class="pay-opts pay-opts-3">
+            <div class="pay-opts pay-opts-4">
               <div class="pay-opt" id="payOptGcash" data-m="gcash" onclick="pickPay('gcash')">
                 <div class="pay-ic">📲</div>
                 <div class="pay-lb">GCash</div>
@@ -1290,6 +1294,11 @@ body.light #splashScreen { background: var(--bg); }
               <div class="pay-opt" id="payOptGotyme" data-m="gotyme" onclick="pickPay('gotyme')">
                 <div class="pay-ic">🏦</div>
                 <div class="pay-lb">GoTyme</div>
+                <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
+              </div>
+              <div class="pay-opt" id="payOptPnb" data-m="pnb" onclick="pickPay('pnb')">
+                <div class="pay-ic">🏛️</div>
+                <div class="pay-lb">PNB</div>
                 <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Scan QR · enter ref #</div>
               </div>
               <div class="pay-opt" id="payOptCash" data-m="cash" onclick="pickPay('cash')">
@@ -1398,6 +1407,52 @@ body.light #splashScreen { background: var(--bg); }
             <div class="gc-note">After paying, scroll down and enter your GoTyme reference number below.</div>
           </div>
 
+          <!-- PNB section -->
+          <div class="gcash" id="pnbBox">
+            <div class="gc-header">
+              <span class="gc-header-icon">🏛️</span>
+              <span class="gc-header-lbl">PNB Payment</span>
+            </div>
+            <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:8px">How much do you want to pay?</div>
+            <div class="pay-amount-toggle">
+              <div class="pat-btn on" id="pnPat50" onclick="setPayAmount('half')">
+                <div class="pat-icon">⚡</div>
+                <div>50% Downpayment</div>
+                <div class="pat-amt" id="pnPat50Amt"></div>
+              </div>
+              <div class="pat-btn" id="pnPat100" onclick="setPayAmount('full')">
+                <div class="pat-icon">✅</div>
+                <div>Full Payment</div>
+                <div class="pat-amt" id="pnPat100Amt"></div>
+              </div>
+            </div>
+            <div class="gc-amount-card">
+              <div class="gc-amount-lbl">You will send</div>
+              <div class="gc-amount-val" id="pnDownAmt">—</div>
+            </div>
+            <div class="gc-send-card">
+              <div class="gc-send-lbl">Send to</div>
+              <div class="gc-name" id="pnMerchantName" style="font-size:1rem;font-weight:700;color:var(--text);margin:4px 0 0">Smash Grove Bambulo Pickleyard</div>
+            </div>
+            <div class="gc-or"><span>scan QR code to pay</span></div>
+            <div class="qr-steps">
+              <span class="qr-step">1️⃣ Open PNB Mobile</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="qr-step">2️⃣ Scan QR</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="qr-step">3️⃣ Enter amount &amp; Pay</span>
+            </div>
+            <div class="qr-scan-wrap">
+              <img id="pnbQrImg" class="qr-img" alt="PNB QR Code" style="display:none" />
+              <div id="pnbQrPlaceholder" style="width:230px;height:230px;margin:12px auto;border-radius:14px;background:var(--input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+                <span style="font-size:2rem">🏛️</span>
+                <span style="font-size:.78rem;color:var(--muted)">QR not uploaded yet</span>
+              </div>
+              <div class="qr-scan-hint">📸 Aim your phone camera at the QR code to pay</div>
+            </div>
+            <div class="gc-note">After paying, scroll down and enter your PNB reference number below.</div>
+          </div>
+
           <!-- GCash / GoTyme Reference Number -->
           <div id="gcashRefWrap" style="display:none;margin-top:2px;">
             <div style="background:rgba(74,154,74,.07);border:1.5px solid rgba(74,154,74,.3);border-radius:var(--r);padding:14px 16px;">
@@ -1414,7 +1469,7 @@ body.light #splashScreen { background: var(--bg); }
                 <button type="button" class="gc-copy-btn" onclick="pasteRef()" style="background:var(--input);color:var(--text);border:1px solid var(--border);flex-shrink:0;">📋 Paste</button>
               </div>
               <div style="font-size:.7rem;color:var(--muted);margin-top:7px;line-height:1.6">
-                Open your GCash/GoTyme receipt and copy the reference number here. The owner will verify this before confirming your slot.
+                Open your GCash/GoTyme/PNB receipt and copy the reference number here. The owner will verify this before confirming your slot.
               </div>
             </div>
           </div>
@@ -1433,7 +1488,7 @@ body.light #splashScreen { background: var(--bg); }
             <div class="pr down-row"><span id="pDownLabel">⚡ 50% Downpayment Required</span><span id="pDown">₱0.00</span></div>
           </div>
           <div class="down-note" id="downNote" style="margin-top:10px">
-            ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.
+            ⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme/PNB or pay cash at the front desk.
           </div>
         </div>
 
@@ -1604,7 +1659,7 @@ let gcashSettings = {
   merchantName: 'Smash Grove Bambulo Pickleyard',
   checkoutVisited: false,
 };
-let paymentMethods = { cash: true, gcash: true, gotyme: true };
+let paymentMethods = { cash: true, gcash: true, gotyme: true, pnb: true };
 let paymentWatch = { ref: null, timer: null, tries: 0 };
 
 /* =============================================
@@ -1706,10 +1761,12 @@ function applyPaymentSettings(settings) {
   paymentMethods.cash = settings.payment_method_cash !== '0';
   paymentMethods.gcash = settings.payment_method_gcash !== '0';
   paymentMethods.gotyme = settings.payment_method_gotyme !== '0';
+  paymentMethods.pnb = settings.payment_method_pnb !== '0';
 
   if ($('gcMerchantNumber')) $('gcMerchantNumber').textContent = gcashSettings.merchantNumber;
   if ($('gcMerchantName')) $('gcMerchantName').textContent = gcashSettings.merchantName;
   if ($('gtMerchantName')) $('gtMerchantName').textContent = settings.gotyme_merchant_name || 'Smash Grove Bambulo Pickleyard';
+  if ($('pnMerchantName')) $('pnMerchantName').textContent = settings.pnb_merchant_name || 'Smash Grove Bambulo Pickleyard';
 
   // Load QR images from DB — show img and hide placeholder only when image exists
   if (settings.gcash_qr_image) {
@@ -1724,6 +1781,12 @@ function applyPaymentSettings(settings) {
     const ph = $('gotymeQrPlaceholder');
     if (ph) ph.style.display = 'none';
   }
+  if (settings.pnb_qr_image) {
+    const img = $('pnbQrImg');
+    if (img) { img.src = settings.pnb_qr_image; img.style.display = ''; }
+    const ph = $('pnbQrPlaceholder');
+    if (ph) ph.style.display = 'none';
+  }
 
   applyPaymentMethodVisibility();
 }
@@ -1732,8 +1795,9 @@ function applyPaymentMethodVisibility() {
   if ($('payOptCash')) $('payOptCash').style.display = paymentMethods.cash ? '' : 'none';
   if ($('payOptGcash')) $('payOptGcash').style.display = paymentMethods.gcash ? '' : 'none';
   if ($('payOptGotyme')) $('payOptGotyme').style.display = paymentMethods.gotyme ? '' : 'none';
+  if ($('payOptPnb')) $('payOptPnb').style.display = paymentMethods.pnb ? '' : 'none';
 
-  const hasAny = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme;
+  const hasAny = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme || paymentMethods.pnb;
   if ($('payMethodsHint')) {
     $('payMethodsHint').style.display = hasAny ? 'none' : '';
     $('payMethodsHint').textContent = hasAny ? '' : 'No payment method is currently available. Please contact admin.';
@@ -1745,6 +1809,7 @@ function applyPaymentMethodVisibility() {
     document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('on'));
     $('gcashBox').classList.remove('show');
     $('gotymeBox').classList.remove('show');
+    $('pnbBox').classList.remove('show');
     const refWrap = $('gcashRefWrap');
     if (refWrap) refWrap.style.display = 'none';
     $('cashNote').style.display = 'none';
@@ -2390,16 +2455,19 @@ function updatePrice() {
   if ($('gcPat100Amt')) $('gcPat100Amt').textContent = fmt(total);
   if ($('gtPat50Amt'))  $('gtPat50Amt').textContent  = fmt(half);
   if ($('gtPat100Amt')) $('gtPat100Amt').textContent = fmt(total);
+  if ($('pnPat50Amt'))  $('pnPat50Amt').textContent  = fmt(half);
+  if ($('pnPat100Amt')) $('pnPat100Amt').textContent = fmt(total);
 
   // Update payment amount display in QR boxes
   if ($('gcDownAmt'))   $('gcDownAmt').textContent   = fmt(payAmt);
   if ($('gtDownAmt'))   $('gtDownAmt').textContent   = fmt(payAmt);
+  if ($('pnDownAmt'))   $('pnDownAmt').textContent   = fmt(payAmt);
 
   // Update price breakdown label and down note
   if ($('pDownLabel')) $('pDownLabel').textContent = payFull ? '✅ Full Payment' : '⚡ 50% Downpayment Required';
   if ($('downNote')) $('downNote').innerHTML = payFull
     ? '✅ You selected <strong>full payment</strong>. No balance due on arrival.'
-    : '⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme or pay cash at the front desk.';
+    : '⚠️ A <strong>50% downpayment</strong> is required to confirm your booking. Send via GCash/GoTyme/PNB or pay cash at the front desk.';
 }
 
 /* =============================================
@@ -2416,16 +2484,17 @@ function pickPay(m) {
 
   // Reset payment amount toggle to 50% when switching payment methods
   payFull = false;
-  ['gcPat50','gtPat50'].forEach(id => $(id)?.classList.add('on'));
-  ['gcPat100','gtPat100'].forEach(id => $(id)?.classList.remove('on'));
+  ['gcPat50','gtPat50','pnPat50'].forEach(id => $(id)?.classList.add('on'));
+  ['gcPat100','gtPat100','pnPat100'].forEach(id => $(id)?.classList.remove('on'));
 
   $('gcashBox').classList.toggle('show',  m === 'gcash');
   $('gotymeBox').classList.toggle('show', m === 'gotyme');
+  $('pnbBox').classList.toggle('show',    m === 'pnb');
   const refWrap = $('gcashRefWrap');
-  if (refWrap) refWrap.style.display = (m === 'gcash' || m === 'gotyme') ? '' : 'none';
-  $('cashNote').style.display     = m === 'cash' ? '' : 'none';
-  if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '— GCash' : m === 'gotyme' ? '— GoTyme' : '';
-  if (m === 'gcash' || m === 'gotyme') $('bGcashRef')?.setAttribute('required','');
+  if (refWrap) refWrap.style.display = (m === 'gcash' || m === 'gotyme' || m === 'pnb') ? '' : 'none';
+  $('cashNote').style.display = m === 'cash' ? '' : 'none';
+  if ($('refMethodLabel')) $('refMethodLabel').textContent = m === 'gcash' ? '— GCash' : m === 'gotyme' ? '— GoTyme' : m === 'pnb' ? '— PNB' : '';
+  if (m === 'gcash' || m === 'gotyme' || m === 'pnb') $('bGcashRef')?.setAttribute('required','');
   else $('bGcashRef')?.removeAttribute('required');
 }
 
@@ -2463,7 +2532,7 @@ function updateRefCount() {
 
 function setPayAmount(mode) {
   payFull = (mode === 'full');
-  ['gc','gt'].forEach(p => {
+  ['gc','gt','pn'].forEach(p => {
     const btn50  = $(p + 'Pat50');
     const btn100 = $(p + 'Pat100');
     if (btn50)  btn50.classList.toggle('on', !payFull);
@@ -2494,7 +2563,7 @@ async function submitBooking(e) {
   }
   const payMethod = $('bPay').value;
   const gcashRef  = $('bGcashRef')?.value?.trim() || '';
-  const hasPaymentMethod = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme;
+  const hasPaymentMethod = paymentMethods.cash || paymentMethods.gcash || paymentMethods.gotyme || paymentMethods.pnb;
   const gcashNeedsCheckout = false; // Manual QR flow: customer pays via QR and enters ref number
   const checks = [
     [!court, 'Please select a court.'],
@@ -2509,7 +2578,7 @@ async function submitBooking(e) {
     [!hasPaymentMethod, 'No payment method is enabled right now. Please contact admin.'],
     [!payMethod, 'Please select a payment method.'],
     [!!payMethod && !paymentMethods[payMethod], 'Selected payment method is no longer available.'],
-    [(payMethod === 'gcash' || payMethod === 'gotyme') && !gcashRef, 'Please enter your GCash/GoTyme reference number after paying.'],
+    [(payMethod === 'gcash' || payMethod === 'gotyme' || payMethod === 'pnb') && !gcashRef, 'Please enter your GCash/GoTyme/PNB reference number after paying.'],
   ];
   for (const [fail, msg] of checks) {
     if (fail) {

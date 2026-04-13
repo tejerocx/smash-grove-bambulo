@@ -971,6 +971,9 @@ tr:hover td { background: var(--bg2); }
             <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
               <input type="checkbox" id="payMethodGotymeOn" /> GoTyme
             </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+              <input type="checkbox" id="payMethodPnbOn" /> PNB
+            </label>
           </div>
         </div>
 
@@ -1019,6 +1022,28 @@ tr:hover td { background: var(--bg2); }
               <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)'">
                 📷 Upload GoTyme QR image
                 <input type="file" accept="image/*" id="gotymeQrFile" style="display:none" onchange="handleQrUpload('gotyme',event)"/>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- PNB Section -->
+        <div style="margin-top:12px;padding:14px;background:var(--input);border-radius:10px;border:1px solid var(--border);">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#4a90d9;margin-bottom:10px;">🏛️ PNB</div>
+          <div class="fg" style="margin-bottom:10px">
+            <label class="fl">Account Name</label>
+            <input type="text" class="fi" id="pnbNameInput" placeholder="e.g. Smash Grove Bambulo" />
+          </div>
+          <div class="fg" style="margin:0">
+            <label class="fl">PNB QR Code Image</label>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div id="pnbQrPreviewWrap" style="display:none">
+                <img id="pnbQrPreview" src="" alt="PNB QR" style="width:110px;height:110px;object-fit:contain;border-radius:8px;border:1px solid var(--border);background:#fff;padding:4px;"/>
+                <button type="button" onclick="removeQr('pnb')" style="display:block;margin-top:6px;font-size:.7rem;color:#e53935;background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600;">✕ Remove QR</button>
+              </div>
+              <label style="flex:1;min-width:160px;display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--card);border:1.5px dashed var(--border);border-radius:8px;cursor:pointer;font-size:.84rem;color:var(--muted);" onmouseover="this.style.borderColor='#4a90d9'" onmouseout="this.style.borderColor='var(--border)'">
+                📷 Upload PNB QR image
+                <input type="file" accept="image/*" id="pnbQrFile" style="display:none" onchange="handleQrUpload('pnb',event)"/>
               </label>
             </div>
           </div>
@@ -2694,14 +2719,17 @@ async function renderPaymentSettings() {
   const cashOn = settings.payment_method_cash !== '0';
   const gcashOn = settings.payment_method_gcash !== '0';
   const gotymeOn = settings.payment_method_gotyme !== '0';
+  const pnbOn = settings.payment_method_pnb !== '0';
 
   $('payMethodCashOn').checked = cashOn;
   $('payMethodGcashOn').checked = gcashOn;
   $('payMethodGotymeOn').checked = gotymeOn;
+  $('payMethodPnbOn').checked = pnbOn;
 
   if ($('gcashNumInput')) $('gcashNumInput').value = settings.gcash_merchant_number || '';
   if ($('gcashNameInput')) $('gcashNameInput').value = settings.gcash_merchant_name || '';
   if ($('gotymeNameInput')) $('gotymeNameInput').value = settings.gotyme_merchant_name || '';
+  if ($('pnbNameInput')) $('pnbNameInput').value = settings.pnb_merchant_name || '';
 
   const gcashQr = settings.gcash_qr_image || '';
   if (gcashQr && $('gcashQrPreview')) {
@@ -2713,16 +2741,21 @@ async function renderPaymentSettings() {
     $('gotymeQrPreview').src = gotymeQr;
     $('gotymeQrPreviewWrap').style.display = '';
   }
+  const pnbQr = settings.pnb_qr_image || '';
+  if (pnbQr && $('pnbQrPreview')) {
+    $('pnbQrPreview').src = pnbQr;
+    $('pnbQrPreviewWrap').style.display = '';
+  }
 
-  const summaryParts = [`Methods: ${(cashOn?'Cash ':'')}${(gcashOn?'GCash ':'')}${(gotymeOn?'GoTyme':'')}`.trim() || 'none'];
+  const summaryParts = [`Methods: ${(cashOn?'Cash ':'')}${(gcashOn?'GCash ':'')}${(gotymeOn?'GoTyme ':'')}${(pnbOn?'PNB':'')}`.trim() || 'none'];
   $('paySettingsSummary').textContent = summaryParts.join(' • ');
 }
 
 async function removeQr(type) {
-  const key = type === 'gcash' ? 'gcash_qr_image' : 'gotyme_qr_image';
-  const previewId = type === 'gcash' ? 'gcashQrPreview' : 'gotymeQrPreview';
-  const wrapId = type === 'gcash' ? 'gcashQrPreviewWrap' : 'gotymeQrPreviewWrap';
-  const fileId = type === 'gcash' ? 'gcashQrFile' : 'gotymeQrFile';
+  const key = type === 'gcash' ? 'gcash_qr_image' : type === 'gotyme' ? 'gotyme_qr_image' : 'pnb_qr_image';
+  const previewId = type === 'gcash' ? 'gcashQrPreview' : type === 'gotyme' ? 'gotymeQrPreview' : 'pnbQrPreview';
+  const wrapId = type === 'gcash' ? 'gcashQrPreviewWrap' : type === 'gotyme' ? 'gotymeQrPreviewWrap' : 'pnbQrPreviewWrap';
+  const fileId = type === 'gcash' ? 'gcashQrFile' : type === 'gotyme' ? 'gotymeQrFile' : 'pnbQrFile';
   try {
     await DB.saveSetting(key, '');
     $(previewId).src = '';
@@ -2743,9 +2776,12 @@ function handleQrUpload(type, e) {
     if (type === 'gcash') {
       $('gcashQrPreview').src = data;
       $('gcashQrPreviewWrap').style.display = '';
-    } else {
+    } else if (type === 'gotyme') {
       $('gotymeQrPreview').src = data;
       $('gotymeQrPreviewWrap').style.display = '';
+    } else {
+      $('pnbQrPreview').src = data;
+      $('pnbQrPreviewWrap').style.display = '';
     }
   };
   reader.readAsDataURL(file);
@@ -2755,8 +2791,9 @@ async function savePaymentSettings() {
   const cashOn = $('payMethodCashOn').checked;
   const gcashOn = $('payMethodGcashOn').checked;
   const gotymeOn = $('payMethodGotymeOn').checked;
+  const pnbOn = $('payMethodPnbOn').checked;
 
-  if (!cashOn && !gcashOn && !gotymeOn) {
+  if (!cashOn && !gcashOn && !gotymeOn && !pnbOn) {
     toast('Enable at least one payment method.', 'err');
     return;
   }
@@ -2765,19 +2802,24 @@ async function savePaymentSettings() {
     await DB.saveSetting('payment_method_cash', cashOn ? '1' : '0');
     await DB.saveSetting('payment_method_gcash', gcashOn ? '1' : '0');
     await DB.saveSetting('payment_method_gotyme', gotymeOn ? '1' : '0');
+    await DB.saveSetting('payment_method_pnb', pnbOn ? '1' : '0');
 
     const gcashNum = $('gcashNumInput')?.value.trim() || '';
     const gcashName = $('gcashNameInput')?.value.trim() || '';
     const gotymeName = $('gotymeNameInput')?.value.trim() || '';
+    const pnbName = $('pnbNameInput')?.value.trim() || '';
     if (gcashNum) await DB.saveSetting('gcash_merchant_number', gcashNum);
     if (gcashName) await DB.saveSetting('gcash_merchant_name', gcashName);
     if (gotymeName) await DB.saveSetting('gotyme_merchant_name', gotymeName);
+    if (pnbName) await DB.saveSetting('pnb_merchant_name', pnbName);
 
     // Save QR images (base64 data URLs) — save empty string if removed
     const gcashQrSrc = $('gcashQrPreview')?.src || '';
     const gotymeQrSrc = $('gotymeQrPreview')?.src || '';
+    const pnbQrSrc = $('pnbQrPreview')?.src || '';
     if (gcashQrSrc.startsWith('data:')) await DB.saveSetting('gcash_qr_image', gcashQrSrc);
     if (gotymeQrSrc.startsWith('data:')) await DB.saveSetting('gotyme_qr_image', gotymeQrSrc);
+    if (pnbQrSrc.startsWith('data:')) await DB.saveSetting('pnb_qr_image', pnbQrSrc);
 
     await renderPaymentSettings();
     toast('✅ Payment settings saved!');
