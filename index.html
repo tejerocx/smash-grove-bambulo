@@ -1677,6 +1677,13 @@ const nowHour = () => new Date().getHours();
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const isToday = d => d === todayStr();
 const dayOfWeek = d => new Date(`${d}T00:00:00`).getDay();
+function maskName(fullName) {
+  if (!fullName) return '🔒 Booked';
+  const parts = fullName.trim().split(/\s+/);
+  const mask = w => w.length <= 2 ? w : w.slice(0, 2) + '*'.repeat(w.length - 2);
+  if (parts.length === 1) return mask(parts[0]);
+  return mask(parts[0]) + ' ' + mask(parts[parts.length - 1]);
+}
 
 function isOpenPlayHour(date, h) {
   if (!openPlayConfig || !openPlayConfig.enabled) return false;
@@ -2106,7 +2113,7 @@ async function onCardDate(courtId, date) {
   const slotNameMap = {};
   bookings.filter(b => b.courtId === courtId && b.date === date && b.status !== 'cancelled')
           .forEach(b => b.slots.forEach(h => {
-            slotNameMap[h] = (b.fullName || 'Booked').split(' ')[0];
+            slotNameMap[h] = b.fullName || '';
           }));
   const bookedHrs = new Set(Object.keys(slotNameMap).map(Number));
 
@@ -2126,7 +2133,7 @@ async function onCardDate(courtId, date) {
     const isMaint_ = isMaintenanceHour(date, h);
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
-    if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
+    if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">${maskName(slotNameMap[h])}</div></div>`;
     if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
     if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${courtId}','${date}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play<div style="font-size:.5rem;color:rgba(244,168,37,.75);font-weight:600;letter-spacing:.2px;margin-top:2px">Tap to register</div></div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
@@ -2159,7 +2166,7 @@ async function renderCourts() {
     const slotNameMap = {};
     bookings.filter(b => b.courtId === c.id && b.date === today && b.status !== 'cancelled')
             .forEach(b => b.slots.forEach(h => {
-              slotNameMap[h] = (b.fullName || 'Booked').split(' ')[0];
+              slotNameMap[h] = b.fullName || '';
             }));
     const bookedHours = new Set(Object.keys(slotNameMap).map(Number));
 
@@ -2189,7 +2196,7 @@ async function renderCourts() {
           const isMaint_ = isMaintenanceHour(today, h);
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
-          if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">🔒 Booked</div></div>`;
+          if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">${maskName(slotNameMap[h])}</div></div>`;
           if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
           if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${c.id}','${today}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play<div style="font-size:.5rem;color:rgba(244,168,37,.75);font-weight:600;letter-spacing:.2px;margin-top:2px">Tap to register</div></div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
