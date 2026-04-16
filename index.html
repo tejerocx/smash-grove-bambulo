@@ -1708,20 +1708,27 @@ function isOpenPlayHour(date, h) {
   return start < end ? (h >= start && h < end) : (h >= start || h < end);
 }
 
-function isMaintenanceHour(date, h, courtId = null) {
-  if (!maintenanceConfig || !maintenanceConfig.enabled) return false;
-  // If specific courts are targeted, skip courts not in the list
-  const courtIds = maintenanceConfig.courtIds || [];
+function _checkMaintenanceRule(rule, date, h, courtId) {
+  if (!rule || !rule.enabled) return false;
+  const courtIds = rule.courtIds || [];
   if (courtId && courtIds.length > 0 && !courtIds.includes(String(courtId))) return false;
-  const start = Number(maintenanceConfig.start);
-  const end = Number(maintenanceConfig.end);
+  const start = Number(rule.start), end = Number(rule.end);
   const inRange = start < end ? (h >= start && h < end) : (h >= start || h < end);
   if (!inRange) return false;
-  const mode = maintenanceConfig.mode || 'specific';
-  if (mode === 'specific') return (maintenanceConfig.dates || []).includes(date);
-  if (mode === 'monthly') return new Date(date + 'T00:00:00').getDate() === (maintenanceConfig.recurring?.day ?? -1);
-  if (mode === 'weekly') return (maintenanceConfig.recurring?.days || []).includes(dayOfWeek(date));
+  const mode = rule.mode || 'specific';
+  if (mode === 'specific') return (rule.dates || []).includes(date);
+  if (mode === 'monthly') return new Date(date + 'T00:00:00').getDate() === (rule.recurring?.day ?? -1);
+  if (mode === 'weekly') return (rule.recurring?.days || []).includes(dayOfWeek(date));
   return false;
+}
+function isMaintenanceHour(date, h, courtId = null) {
+  if (!maintenanceConfig) return false;
+  // New multi-rule format
+  if (Array.isArray(maintenanceConfig.rules)) {
+    return maintenanceConfig.rules.some(r => _checkMaintenanceRule(r, date, h, courtId));
+  }
+  // Legacy single-rule format
+  return _checkMaintenanceRule(maintenanceConfig, date, h, courtId);
 }
 
 function toast(msg, type='ok') {

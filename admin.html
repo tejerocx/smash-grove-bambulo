@@ -1059,77 +1059,14 @@ tr:hover td { background: var(--bg2); }
     <!-- MAINTENANCE -->
     <div id="sec-maintenance" class="adm-sec">
       <div class="toolbar"><h2>🔧 MAINTENANCE</h2></div>
-      <div class="panel" style="max-width:580px;margin-bottom:20px">
-        <h4>🔧 Maintenance Schedule</h4>
-        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 18px">Block time slots for scheduled maintenance. Customers cannot book during these hours.</p>
-
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-          <label class="sw"><input type="checkbox" id="mtEnabled"><span class="sw-tr"></span></label>
-          <div>
-            <div style="font-weight:700;font-size:.9rem">Enable Maintenance Period</div>
-            <div style="font-size:.76rem;color:var(--muted)">When off, maintenance blocking is inactive.</div>
-          </div>
+      <div class="panel" style="max-width:600px;margin-bottom:20px">
+        <h4>🔧 Maintenance Rules</h4>
+        <p style="color:var(--muted);font-size:.84rem;margin:8px 0 18px">Each rule has its own time window, court selection, and date list — so you can block different hours on different dates independently.</p>
+        <div id="mtRulesList"></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px">
+          <button class="btn btn-g btn-sm" onclick="mtAddRule()">+ Add Rule</button>
+          <button class="btn btn-p" onclick="saveMaintenance()">💾 Save All Rules</button>
         </div>
-
-        <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-          <label class="fl" style="margin-bottom:10px">Apply To</label>
-          <div id="mtCourtList" style="display:flex;gap:10px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;color:var(--muted);font-style:italic">Loading courts…</label>
-          </div>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Select which court(s) this maintenance applies to. Leave all unchecked to apply to all courts.</div>
-        </div>
-
-        <div class="frow" style="margin-bottom:16px">
-          <div>
-            <label class="fl">Start Time</label>
-            <select class="fi" id="mtStart"></select>
-          </div>
-          <div>
-            <label class="fl">End Time</label>
-            <select class="fi" id="mtEnd"></select>
-          </div>
-        </div>
-
-        <div style="margin-bottom:16px">
-          <label class="fl" style="margin-bottom:10px">Schedule Type</label>
-          <select class="fi" id="mtMode" onchange="mtModeChanged()">
-            <option value="specific">Specific Dates</option>
-            <option value="monthly">Monthly (same day each month)</option>
-            <option value="weekly">Weekly (rest of year)</option>
-          </select>
-        </div>
-
-        <div id="mtSpecificWrap" style="margin-bottom:16px">
-          <label class="fl" style="margin-bottom:10px">Maintenance Dates</label>
-          <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-end">
-            <div style="flex:1">
-              <input type="date" class="fi" id="mtNewDate"/>
-            </div>
-            <button class="btn btn-p btn-sm" onclick="mtAddDate()">+ Add Date</button>
-          </div>
-          <div id="mtDateList"><p style="color:var(--muted);font-style:italic">No dates added.</p></div>
-        </div>
-
-        <div id="mtMonthlyWrap" style="margin-bottom:16px;display:none">
-          <label class="fl" style="margin-bottom:10px">Day of Month</label>
-          <select class="fi" id="mtMonthDay"></select>
-          <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Maintenance will apply on this day every month.</div>
-        </div>
-
-        <div id="mtWeeklyWrap" style="margin-bottom:16px;display:none">
-          <label class="fl" style="margin-bottom:10px">Active Days (rest of year)</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap" id="mtDays">
-            <label class="op-day"><input type="checkbox" value="0"> Sun</label>
-            <label class="op-day"><input type="checkbox" value="1"> Mon</label>
-            <label class="op-day"><input type="checkbox" value="2"> Tue</label>
-            <label class="op-day"><input type="checkbox" value="3"> Wed</label>
-            <label class="op-day"><input type="checkbox" value="4"> Thu</label>
-            <label class="op-day"><input type="checkbox" value="5"> Fri</label>
-            <label class="op-day"><input type="checkbox" value="6"> Sat</label>
-          </div>
-        </div>
-
-        <button class="btn btn-p" onclick="saveMaintenance()">💾 Save Maintenance Schedule</button>
       </div>
     </div>
 
@@ -1901,18 +1838,25 @@ function _nbIsOpenPlayHour(dateStr, h) {
   return h >= _nbOpenPlayCfg.start && h < _nbOpenPlayCfg.end;
 }
 
-function _nbIsMaintenanceHour(dateStr, h, courtId = null) {
-  if (!_nbMaintenanceCfg || !_nbMaintenanceCfg.enabled) return false;
-  const courtIds = _nbMaintenanceCfg.courtIds || [];
+function _nbCheckRule(rule, dateStr, h, courtId) {
+  if (!rule || !rule.enabled) return false;
+  const courtIds = rule.courtIds || [];
   if (courtId && courtIds.length > 0 && !courtIds.includes(String(courtId))) return false;
-  const _ms = Number(_nbMaintenanceCfg.start), _me = Number(_nbMaintenanceCfg.end);
-  const inRange = _ms < _me ? (h >= _ms && h < _me) : (h >= _ms || h < _me);
+  const ms = Number(rule.start), me = Number(rule.end);
+  const inRange = ms < me ? (h >= ms && h < me) : (h >= ms || h < me);
   if (!inRange) return false;
-  const mode = _nbMaintenanceCfg.mode || 'specific';
-  if (mode === 'specific') return (_nbMaintenanceCfg.dates || []).includes(dateStr);
-  if (mode === 'monthly') return new Date(dateStr + 'T00:00:00').getDate() === (_nbMaintenanceCfg.recurring?.day ?? -1);
-  if (mode === 'weekly') return (_nbMaintenanceCfg.recurring?.days || []).includes(new Date(dateStr + 'T00:00:00').getDay());
+  const mode = rule.mode || 'specific';
+  if (mode === 'specific') return (rule.dates || []).includes(dateStr);
+  if (mode === 'monthly') return new Date(dateStr + 'T00:00:00').getDate() === (rule.recurring?.day ?? -1);
+  if (mode === 'weekly') return (rule.recurring?.days || []).includes(new Date(dateStr + 'T00:00:00').getDay());
   return false;
+}
+function _nbIsMaintenanceHour(dateStr, h, courtId = null) {
+  if (!_nbMaintenanceCfg) return false;
+  if (Array.isArray(_nbMaintenanceCfg.rules)) {
+    return _nbMaintenanceCfg.rules.some(r => _nbCheckRule(r, dateStr, h, courtId));
+  }
+  return _nbCheckRule(_nbMaintenanceCfg, dateStr, h, courtId);
 }
 
 function _nbGetRateForHour(court, h) {
@@ -3034,110 +2978,178 @@ async function deleteOpReg(id) {
 }
 
 /* ==============================================
-   MAINTENANCE SCHEDULE
+   MAINTENANCE SCHEDULE (multi-rule)
    ============================================== */
-let _mtDates = [];
+let _mtRules = [];
+let _mtCourts = [];
+const MT_LABELS = ['12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM','6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM','12:00 AM (midnight)'];
+
+function mtTimeOpts(sel, isEnd) {
+  const max = isEnd ? 24 : 23;
+  return Array.from({length: max + 1}, (_, h) =>
+    `<option value="${h}"${h === sel ? ' selected' : ''}>${MT_LABELS[h]}</option>`
+  ).join('');
+}
+
+function mtGenId() {
+  return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+}
 
 async function renderMaintenance() {
   const [settings, courts] = await Promise.all([DB.getSettings(), DB.getCourts()]);
-  const mtCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : { enabled: false, start: 6, end: 12, mode: 'specific', dates: [], recurring: null, courtIds: [] };
-  mtPopulateTimePickers();
-  $('mtEnabled').checked = mtCfg.enabled === true;
-  $('mtStart').value = mtCfg.start ?? 6;
-  $('mtEnd').value = mtCfg.end ?? 12;
-  $('mtMode').value = mtCfg.mode || 'specific';
-  mtModeChanged();
-  _mtDates = mtCfg.dates || [];
-  mtRenderDateList();
-  const mdSel = $('mtMonthDay');
-  mdSel.innerHTML = '';
-  for (let d = 1; d <= 31; d++) mdSel.innerHTML += `<option value="${d}"${d === (mtCfg.recurring?.day ?? 1) ? ' selected' : ''}>${d}</option>`;
-  document.querySelectorAll('#mtDays input[type=checkbox]').forEach(cb => {
-    cb.checked = (mtCfg.recurring?.days || []).includes(Number(cb.value));
-  });
-  // Render court checkboxes
-  const savedCourtIds = (mtCfg.courtIds || []).map(String);
-  const courtList = $('mtCourtList');
-  if (courtList) {
-    courtList.innerHTML = courts.length === 0
-      ? '<span style="font-size:.84rem;color:var(--muted);font-style:italic">No courts found.</span>'
-      : courts.map(c => `
-        <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
-          <input type="checkbox" class="mt-court-cb" value="${c.id}" ${savedCourtIds.includes(String(c.id)) ? 'checked' : ''} />
-          ${c.name}
-        </label>`).join('');
+  _mtCourts = courts;
+  const raw = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : null;
+
+  if (raw && Array.isArray(raw.rules)) {
+    _mtRules = raw.rules;
+  } else if (raw && (raw.mode || raw.dates)) {
+    // Migrate old single-rule format into the new array format
+    _mtRules = [{ id: mtGenId(), enabled: raw.enabled ?? false, start: raw.start ?? 5, end: raw.end ?? 9, mode: raw.mode || 'specific', dates: raw.dates || [], recurring: raw.recurring || null, courtIds: raw.courtIds || [] }];
+  } else {
+    _mtRules = [];
   }
+  mtRenderRules();
 }
 
-function mtPopulateTimePickers() {
-  const labels = ['12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM','6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
-    '12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM','12:00 AM (midnight)'];
-  [$('mtStart'), $('mtEnd')].forEach((sel, si) => {
-    sel.innerHTML = '';
-    const max = si === 0 ? 23 : 24;
-    for (let h = 0; h <= max; h++) {
-      const opt = document.createElement('option');
-      opt.value = h;
-      opt.textContent = labels[h];
-      sel.appendChild(opt);
+function mtRenderRules() {
+  const list = $('mtRulesList');
+  if (!list) return;
+  if (_mtRules.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-style:italic;font-size:.84rem;margin:0 0 14px">No rules yet. Click "+ Add Rule" to create one.</p>';
+    return;
+  }
+  list.innerHTML = _mtRules.map((rule, i) => mtRuleHtml(rule, i + 1)).join('');
+}
+
+function mtRuleHtml(rule, n) {
+  const id = rule.id;
+  const savedIds = (rule.courtIds || []).map(String);
+  const courtCbs = _mtCourts.length === 0
+    ? '<span style="font-size:.82rem;color:var(--muted)">No courts found.</span>'
+    : _mtCourts.map(c => `<label style="display:flex;align-items:center;gap:6px;font-size:.84rem;cursor:pointer"><input type="checkbox" class="mt-cc-${id}" value="${c.id}"${savedIds.includes(String(c.id)) ? ' checked' : ''}> ${c.name}</label>`).join('');
+
+  const dateListHtml = (rule.dates || []).length === 0
+    ? '<p style="color:var(--muted);font-style:italic;font-size:.82rem;margin:4px 0">No dates added.</p>'
+    : rule.dates.map(d => `<div class="blk-item"><span>🔧 ${fmtD(d)}</span><button class="btn btn-d btn-sm" onclick="mtRemoveDateFromRule('${id}','${d}')">Remove</button></div>`).join('');
+
+  const monthOpts = Array.from({length: 31}, (_, i) => `<option value="${i+1}"${(rule.recurring?.day ?? 1) === i+1 ? ' selected' : ''}>${i+1}</option>`).join('');
+  const weekDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const weekCbs = weekDays.map((d, i) => `<label class="op-day"><input type="checkbox" value="${i}"${(rule.recurring?.days || []).includes(i) ? ' checked' : ''}> ${d}</label>`).join('');
+
+  return `<div style="border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;background:var(--card)">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <label class="sw"><input type="checkbox" id="mtEn_${id}"${rule.enabled ? ' checked' : ''}><span class="sw-tr"></span></label>
+    <div style="flex:1;font-weight:700;font-size:.92rem">Rule ${n}</div>
+    <button class="btn btn-d btn-sm" onclick="mtDeleteRule('${id}')">🗑️ Delete</button>
+  </div>
+  <div style="margin-bottom:14px">
+    <label class="fl" style="margin-bottom:8px">Apply To</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">${courtCbs}</div>
+    <div style="font-size:.7rem;color:var(--muted);margin-top:6px">Leave all unchecked = applies to all courts.</div>
+  </div>
+  <div class="frow" style="margin-bottom:14px">
+    <div><label class="fl">Start Time</label><select class="fi" id="mtS_${id}">${mtTimeOpts(rule.start ?? 5, false)}</select></div>
+    <div><label class="fl">End Time</label><select class="fi" id="mtE_${id}">${mtTimeOpts(rule.end ?? 9, true)}</select></div>
+  </div>
+  <div style="margin-bottom:14px">
+    <label class="fl" style="margin-bottom:8px">Schedule Type</label>
+    <select class="fi" id="mtMode_${id}" onchange="mtRuleModeChanged('${id}')">
+      <option value="specific"${rule.mode === 'specific' ? ' selected' : ''}>Specific Dates</option>
+      <option value="monthly"${rule.mode === 'monthly' ? ' selected' : ''}>Monthly (same day each month)</option>
+      <option value="weekly"${rule.mode === 'weekly' ? ' selected' : ''}>Weekly (rest of year)</option>
+    </select>
+  </div>
+  <div id="mtSpec_${id}"${rule.mode !== 'specific' ? ' style="display:none"' : ''}>
+    <label class="fl" style="margin-bottom:8px">Maintenance Dates</label>
+    <div style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-end">
+      <div style="flex:1"><input type="date" class="fi" id="mtNewDate_${id}"/></div>
+      <button class="btn btn-p btn-sm" onclick="mtAddDateToRule('${id}')">+ Add Date</button>
+    </div>
+    <div id="mtDateList_${id}">${dateListHtml}</div>
+  </div>
+  <div id="mtMonthly_${id}"${rule.mode !== 'monthly' ? ' style="display:none"' : ''}>
+    <label class="fl" style="margin-bottom:8px">Day of Month</label>
+    <select class="fi" id="mtMonthDay_${id}">${monthOpts}</select>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Applies on this day every month.</div>
+  </div>
+  <div id="mtWeekly_${id}"${rule.mode !== 'weekly' ? ' style="display:none"' : ''}>
+    <label class="fl" style="margin-bottom:8px">Active Days</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="mtDays_${id}">${weekCbs}</div>
+  </div>
+</div>`;
+}
+
+function mtRuleModeChanged(id) {
+  const mode = $(`mtMode_${id}`)?.value;
+  if (!mode) return;
+  $(`mtSpec_${id}`).style.display    = mode === 'specific' ? '' : 'none';
+  $(`mtMonthly_${id}`).style.display = mode === 'monthly'  ? '' : 'none';
+  $(`mtWeekly_${id}`).style.display  = mode === 'weekly'   ? '' : 'none';
+}
+
+function mtCollectFromDom() {
+  _mtRules = _mtRules.map(rule => {
+    const id = rule.id;
+    const enEl = $(`mtEn_${id}`), sEl = $(`mtS_${id}`), eEl = $(`mtE_${id}`), mEl = $(`mtMode_${id}`);
+    if (!enEl) return rule;
+    const mode = mEl ? mEl.value : rule.mode;
+    let recurring = rule.recurring;
+    if (mode === 'monthly') {
+      const mdEl = $(`mtMonthDay_${id}`);
+      recurring = { type: 'monthly', day: mdEl ? parseInt(mdEl.value) : 1 };
+    } else if (mode === 'weekly') {
+      const days = [...document.querySelectorAll(`#mtDays_${id} input:checked`)].map(cb => Number(cb.value));
+      recurring = { type: 'weekly', days };
+    } else {
+      recurring = null;
     }
+    const courtIds = [...document.querySelectorAll(`.mt-cc-${id}:checked`)].map(cb => cb.value);
+    return { ...rule, enabled: enEl.checked, start: sEl ? parseInt(sEl.value) : rule.start, end: eEl ? parseInt(eEl.value) : rule.end, mode, recurring, courtIds };
   });
 }
 
-function mtModeChanged() {
-  const mode = $('mtMode').value;
-  $('mtSpecificWrap').style.display = mode === 'specific' ? '' : 'none';
-  $('mtMonthlyWrap').style.display = mode === 'monthly' ? '' : 'none';
-  $('mtWeeklyWrap').style.display = mode === 'weekly' ? '' : 'none';
+function mtAddRule() {
+  mtCollectFromDom();
+  _mtRules.push({ id: mtGenId(), enabled: true, start: 5, end: 9, mode: 'specific', dates: [], recurring: null, courtIds: [] });
+  mtRenderRules();
 }
 
-function mtAddDate() {
-  const v = $('mtNewDate').value;
+function mtDeleteRule(id) {
+  mtCollectFromDom();
+  _mtRules = _mtRules.filter(r => r.id !== id);
+  mtRenderRules();
+}
+
+function mtAddDateToRule(id) {
+  const input = $(`mtNewDate_${id}`);
+  const v = input?.value;
   if (!v) { toast('Pick a date.', 'err'); return; }
-  if (_mtDates.includes(v)) { toast('Already added.', 'inf'); return; }
-  _mtDates.push(v);
-  _mtDates.sort();
-  mtRenderDateList();
-  $('mtNewDate').value = '';
+  mtCollectFromDom();
+  const rule = _mtRules.find(r => r.id === id);
+  if (!rule) return;
+  if (rule.dates.includes(v)) { toast('Already added.', 'inf'); return; }
+  rule.dates.push(v);
+  rule.dates.sort();
+  mtRenderRules();
 }
 
-function mtRemoveDate(d) {
-  _mtDates = _mtDates.filter(x => x !== d);
-  mtRenderDateList();
-}
-
-function mtRenderDateList() {
-  $('mtDateList').innerHTML = _mtDates.length === 0
-    ? '<p style="color:var(--muted);font-style:italic">No dates added.</p>'
-    : _mtDates.map(d =>
-        `<div class="blk-item"><span>🔧 ${fmtD(d)}</span><button class="btn btn-d btn-sm" onclick="mtRemoveDate('${d}')">Remove</button></div>`
-      ).join('');
+function mtRemoveDateFromRule(id, d) {
+  mtCollectFromDom();
+  const rule = _mtRules.find(r => r.id === id);
+  if (rule) rule.dates = rule.dates.filter(x => x !== d);
+  mtRenderRules();
 }
 
 async function saveMaintenance() {
-  const enabled = $('mtEnabled').checked;
-  const start = parseInt($('mtStart').value);
-  const end = parseInt($('mtEnd').value);
-  const mode = $('mtMode').value;
-
-  if (end === start) { toast('Start and end time cannot be the same.', 'err'); return; }
-
-  let recurring = null;
-  if (mode === 'monthly') {
-    recurring = { type: 'monthly', day: parseInt($('mtMonthDay').value) };
-  } else if (mode === 'weekly') {
-    const days = [...document.querySelectorAll('#mtDays input:checked')].map(cb => Number(cb.value));
-    if (days.length === 0 && enabled) { toast('Select at least one day.', 'err'); return; }
-    recurring = { type: 'weekly', days };
-  } else {
-    if (_mtDates.length === 0 && enabled) { toast('Add at least one maintenance date.', 'err'); return; }
+  mtCollectFromDom();
+  for (const rule of _mtRules) {
+    if (!rule.enabled) continue;
+    if (rule.start === rule.end) { toast(`Rule ${_mtRules.indexOf(rule) + 1}: Start and end time cannot be the same.`, 'err'); return; }
+    if (rule.mode === 'specific' && rule.dates.length === 0) { toast(`Rule ${_mtRules.indexOf(rule) + 1}: Add at least one date.`, 'err'); return; }
+    if (rule.mode === 'weekly' && (rule.recurring?.days || []).length === 0) { toast(`Rule ${_mtRules.indexOf(rule) + 1}: Select at least one day.`, 'err'); return; }
   }
-
-  const courtIds = [...document.querySelectorAll('.mt-court-cb:checked')].map(cb => cb.value);
-  await DB.saveSetting('maintenance_config', JSON.stringify({
-    enabled, start, end, mode, dates: _mtDates, recurring, courtIds
-  }));
-  toast('Maintenance schedule saved!');
+  await DB.saveSetting('maintenance_config', JSON.stringify({ rules: _mtRules }));
+  toast('✅ Maintenance rules saved!');
 }
 
 async function addBlocked(){
