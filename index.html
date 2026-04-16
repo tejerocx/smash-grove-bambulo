@@ -1696,8 +1696,11 @@ function isOpenPlayHour(date, h) {
   return start < end ? (h >= start && h < end) : (h >= start || h < end);
 }
 
-function isMaintenanceHour(date, h) {
+function isMaintenanceHour(date, h, courtId = null) {
   if (!maintenanceConfig || !maintenanceConfig.enabled) return false;
+  // If specific courts are targeted, skip courts not in the list
+  const courtIds = maintenanceConfig.courtIds || [];
+  if (courtId && courtIds.length > 0 && !courtIds.includes(String(courtId))) return false;
   const start = Number(maintenanceConfig.start);
   const end = Number(maintenanceConfig.end);
   const inRange = start < end ? (h >= start && h < end) : (h >= start || h < end);
@@ -1906,7 +1909,7 @@ async function toggleCardSlot(courtId, date, h) {
     openPlaySignup(courtId, date, h, court ? court.name : '');
     return;
   }
-  if (isMaintenanceHour(date, h)) {
+  if (isMaintenanceHour(date, h, courtId)) {
     toast('This slot is under maintenance.', 'inf');
     return;
   }
@@ -1967,7 +1970,7 @@ async function proceedToBook(courtId) {
   if (!cardSel.courtId || cardSel.slots.length === 0) {
     toast('Please select at least one time slot.', 'inf'); return;
   }
-  if (cardSel.slots.some(h => isOpenPlayHour(cardSel.date, h) || isMaintenanceHour(cardSel.date, h))) {
+  if (cardSel.slots.some(h => isOpenPlayHour(cardSel.date, h) || isMaintenanceHour(cardSel.date, h, cardSel.courtId))) {
     toast('Some selected slots are unavailable. Please choose another time.', 'err');
     if (cardSel.date) await onCardDate(courtId, cardSel.date);
     return;
@@ -2130,7 +2133,7 @@ async function onCardDate(courtId, date) {
     const isPast_   = isToday_ && h <= curHour;
     const isBooked_ = bookedHrs.has(h);
     const isOpenPlay_ = isOpenPlayHour(date, h);
-    const isMaint_ = isMaintenanceHour(date, h);
+    const isMaint_ = isMaintenanceHour(date, h, courtId);
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">${maskName(slotNameMap[h])}</div></div>`;
@@ -2170,7 +2173,7 @@ async function renderCourts() {
             }));
     const bookedHours = new Set(Object.keys(slotNameMap).map(Number));
 
-    const availToday = blk ? 0 : allSlots.filter(h => h > curHour && !bookedHours.has(h) && !isOpenPlayHour(today, h) && !isMaintenanceHour(today, h)).length;
+    const availToday = blk ? 0 : allSlots.filter(h => h > curHour && !bookedHours.has(h) && !isOpenPlayHour(today, h) && !isMaintenanceHour(today, h, c.id)).length;
     const availBadgeCls = blk ? 'mnt' : availToday > 0 ? 'av' : 'full';
     const availBadgeTxt = blk ? '🔧 Maintenance' : availToday > 0 ? `⚡ ${availToday} available` : '⛔ Fully booked';
 
@@ -2193,7 +2196,7 @@ async function renderCourts() {
           const isPast_   = h <= curHour;
           const isBooked_ = bookedHours.has(h);
           const isOpenPlay_ = isOpenPlayHour(today, h);
-          const isMaint_ = isMaintenanceHour(today, h);
+          const isMaint_ = isMaintenanceHour(today, h, c.id);
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">${maskName(slotNameMap[h])}</div></div>`;
@@ -2335,7 +2338,7 @@ async function renderSlots() {
   selSlots = selSlots.filter(h => {
     const isPast = todayFlag && h < curHour;
     const isNow = todayFlag && h === curHour;
-    return !booked.has(h) && !isPast && !isNow && !isOpenPlayHour(date, h) && !isMaintenanceHour(date, h);
+    return !booked.has(h) && !isPast && !isNow && !isOpenPlayHour(date, h) && !isMaintenanceHour(date, h, court?.id);
   });
 
   let availCount = 0;
@@ -2349,7 +2352,7 @@ async function renderSlots() {
     const isBooked    = booked.has(h);
     const isSel       = selSlots.includes(h);
     const isOpenPlay  = isOpenPlayHour(date, h);
-    const isMaint     = isMaintenanceHour(date, h);
+    const isMaint     = isMaintenanceHour(date, h, court?.id);
     const isUnavail   = isPast || isBooked || isOpenPlay || isMaint;
 
     if (!isUnavail && !isNow) availCount++;
@@ -2407,7 +2410,7 @@ function toggleSlot(h) {
     openPlaySignup(court ? court.id : '', date, h, court ? court.name : '');
     return;
   }
-  if (isMaintenanceHour(date, h)) {
+  if (isMaintenanceHour(date, h, court?.id)) {
     toast('This slot is under maintenance.', 'inf'); return;
   }
 

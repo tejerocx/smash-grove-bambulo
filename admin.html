@@ -1071,6 +1071,14 @@ tr:hover td { background: var(--bg2); }
           </div>
         </div>
 
+        <div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+          <label class="fl" style="margin-bottom:10px">Apply To</label>
+          <div id="mtCourtList" style="display:flex;gap:10px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;color:var(--muted);font-style:italic">Loading courts…</label>
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:8px">Select which court(s) this maintenance applies to. Leave all unchecked to apply to all courts.</div>
+        </div>
+
         <div class="frow" style="margin-bottom:16px">
           <div>
             <label class="fl">Start Time</label>
@@ -1893,8 +1901,10 @@ function _nbIsOpenPlayHour(dateStr, h) {
   return h >= _nbOpenPlayCfg.start && h < _nbOpenPlayCfg.end;
 }
 
-function _nbIsMaintenanceHour(dateStr, h) {
+function _nbIsMaintenanceHour(dateStr, h, courtId = null) {
   if (!_nbMaintenanceCfg || !_nbMaintenanceCfg.enabled) return false;
+  const courtIds = _nbMaintenanceCfg.courtIds || [];
+  if (courtId && courtIds.length > 0 && !courtIds.includes(String(courtId))) return false;
   const _ms = Number(_nbMaintenanceCfg.start), _me = Number(_nbMaintenanceCfg.end);
   const inRange = _ms < _me ? (h >= _ms && h < _me) : (h >= _ms || h < _me);
   if (!inRange) return false;
@@ -3029,8 +3039,8 @@ async function deleteOpReg(id) {
 let _mtDates = [];
 
 async function renderMaintenance() {
-  const settings = await DB.getSettings();
-  const mtCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : { enabled: false, start: 6, end: 12, mode: 'specific', dates: [], recurring: null };
+  const [settings, courts] = await Promise.all([DB.getSettings(), DB.getCourts()]);
+  const mtCfg = settings.maintenance_config ? JSON.parse(settings.maintenance_config) : { enabled: false, start: 6, end: 12, mode: 'specific', dates: [], recurring: null, courtIds: [] };
   mtPopulateTimePickers();
   $('mtEnabled').checked = mtCfg.enabled === true;
   $('mtStart').value = mtCfg.start ?? 6;
@@ -3045,6 +3055,18 @@ async function renderMaintenance() {
   document.querySelectorAll('#mtDays input[type=checkbox]').forEach(cb => {
     cb.checked = (mtCfg.recurring?.days || []).includes(Number(cb.value));
   });
+  // Render court checkboxes
+  const savedCourtIds = (mtCfg.courtIds || []).map(String);
+  const courtList = $('mtCourtList');
+  if (courtList) {
+    courtList.innerHTML = courts.length === 0
+      ? '<span style="font-size:.84rem;color:var(--muted);font-style:italic">No courts found.</span>'
+      : courts.map(c => `
+        <label style="display:flex;align-items:center;gap:7px;font-size:.84rem;cursor:pointer">
+          <input type="checkbox" class="mt-court-cb" value="${c.id}" ${savedCourtIds.includes(String(c.id)) ? 'checked' : ''} />
+          ${c.name}
+        </label>`).join('');
+  }
 }
 
 function mtPopulateTimePickers() {
@@ -3111,8 +3133,9 @@ async function saveMaintenance() {
     if (_mtDates.length === 0 && enabled) { toast('Add at least one maintenance date.', 'err'); return; }
   }
 
+  const courtIds = [...document.querySelectorAll('.mt-court-cb:checked')].map(cb => cb.value);
   await DB.saveSetting('maintenance_config', JSON.stringify({
-    enabled, start, end, mode, dates: _mtDates, recurring
+    enabled, start, end, mode, dates: _mtDates, recurring, courtIds
   }));
   toast('Maintenance schedule saved!');
 }
