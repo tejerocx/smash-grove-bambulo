@@ -1644,6 +1644,18 @@ let openPlayConfig = null; // { enabled, start, end, days[], fee, maxPlayers }
 let openPlayFee = 100; // default ₱100, overridden by settings
 let openPlayMaxPlayers = 40; // default 40, overridden by settings
 let maintenanceConfig = null; // { enabled, start, end, mode, dates[], recurring }
+
+// Hardcoded court repair notices — update courtName/from/to as needed
+const COURT_REPAIRS = [
+  { courtName: 'Court 1', from: '2026-04-27', to: '2026-04-29', reason: 'Scheduled repair & maintenance' }
+];
+function getCourtRepair(courtName, date) {
+  if (!courtName || !date) return null;
+  return COURT_REPAIRS.find(r =>
+    r.courtName.toLowerCase() === courtName.toLowerCase() &&
+    date >= r.from && date <= r.to
+  ) || null;
+}
 let cachedBookedSlots = new Set(); // cached after renderSlots() — avoids re-fetching on every click
 let payFull = false; // false = 50% downpayment, true = 100% full payment
 let cardSel   = { courtId: null, date: null, slots: [], rate: 0 };
@@ -2044,12 +2056,15 @@ async function renderWizCourts() {
     const rateStr = mn !== mx ? `₱${mn}–₱${mx}/hr` : `₱${c.rate}/hr`;
     const isBlk = !!c.blocked;
     const isSel = court && court.id === c.id;
+    const hasRepair = COURT_REPAIRS.some(r => r.courtName.toLowerCase() === c.name.toLowerCase() && todayStr() <= r.to);
+    const repairNotice = hasRepair ? `<div style="font-size:.68rem;color:#ff9800;font-weight:700;margin-top:3px">⚠️ Closed Apr 27–29 for repairs</div>` : '';
     return `<div class="wiz-court-card${isBlk ? ' blk' : isSel ? ' sel' : ''}"
       ${isBlk ? '' : `onclick="wizPickCourt('${c.id}', this)"`}>
       <div class="wiz-court-icon">🏟️</div>
       <div style="flex:1;min-width:0">
         <div class="wiz-court-name">${c.name}</div>
         <div class="wiz-court-meta">${rateStr}${c.desc ? ' · ' + c.desc : ''}</div>
+        ${repairNotice}
       </div>
       <div class="wiz-court-badge ${isBlk ? 'mnt' : 'av'}">${isBlk ? 'Maintenance' : 'Available'}</div>
     </div>`;
@@ -2323,6 +2338,22 @@ async function renderSlots() {
 
   m.style.display = 'none';
 
+  // Check hardcoded repair notice for this court + date
+  const _repair = getCourtRepair(court?.name, date);
+  if (_repair) {
+    g.innerHTML = `
+      <div style="background:rgba(255,152,0,.08);border:1.5px solid rgba(255,152,0,.5);border-radius:12px;padding:20px 18px;text-align:center;margin:4px 0">
+        <div style="font-size:1.8rem;margin-bottom:8px">🚧</div>
+        <div style="font-weight:800;font-size:.95rem;color:#ff9800;margin-bottom:6px">${court.name} — Temporarily Closed</div>
+        <div style="font-size:.84rem;color:var(--text);margin-bottom:10px">${_repair.reason}</div>
+        <div style="font-size:.78rem;color:var(--muted)">
+          Closed from <strong style="color:#ff9800">April 27</strong> to <strong style="color:#ff9800">April 29, 2026</strong>.<br/>
+          Please choose a different date or select another court.
+        </div>
+      </div>`;
+    return;
+  }
+
   // Always fetch fresh settings so Open Play config is current
   await loadOperatingHours();
   // Re-apply this court's rate schedule after loadOperatingHours resets pricingTiers
@@ -2589,6 +2620,7 @@ async function submitBooking(e) {
     [!payMethod, 'Please select a payment method.'],
     [!!payMethod && !paymentMethods[payMethod], 'Selected payment method is no longer available.'],
     [(payMethod === 'gcash' || payMethod === 'gotyme' || payMethod === 'pnb') && !gcashRef, 'Please enter your GCash/GoTyme/PNB reference number after paying.'],
+    [!!getCourtRepair(court?.name, $('bDate').value), `${court?.name} is closed for repairs on this date (Apr 27–29). Please choose a different date or another court.`],
   ];
   for (const [fail, msg] of checks) {
     if (fail) {
