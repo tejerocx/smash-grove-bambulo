@@ -1969,7 +1969,7 @@ function nbToggleSlot(h) {
   if (isToday && h < curHour) { toast('This time has passed.', 'err'); return; }
   if (isToday && h === curHour) { toast('This hour is in progress.', 'inf'); return; }
   if (_nbIsOpenPlayHour(date, h)) { toast('Reserved for Open Play.', 'inf'); return; }
-  if (_nbIsMaintenanceHour(date, h)) { toast('Reserved for maintenance.', 'inf'); return; }
+  if (_nbIsMaintenanceHour(date, h, court.id)) { toast('Reserved for maintenance.', 'inf'); return; }
 
   const i = _nbSelSlots.indexOf(h);
   if (i === -1) {
