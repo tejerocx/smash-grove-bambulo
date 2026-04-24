@@ -1898,7 +1898,7 @@ async function nbRenderSlots() {
 
   // Remove stale selections
   _nbSelSlots = _nbSelSlots.filter(h =>
-    !_nbBookedSlots.has(h) && !(isToday && h <= curHour) && !_nbIsOpenPlayHour(date, h) && !_nbIsMaintenanceHour(date, h)
+    !_nbBookedSlots.has(h) && !(isToday && h <= curHour) && !_nbIsOpenPlayHour(date, h) && !_nbIsMaintenanceHour(date, h, court.id)
   );
 
   let availCount = 0;
@@ -1912,7 +1912,7 @@ async function nbRenderSlots() {
     const isBooked = _nbBookedSlots.has(h);
     const isSel = _nbSelSlots.includes(h);
     const isOP = _nbIsOpenPlayHour(date, h);
-    const isMT = _nbIsMaintenanceHour(date, h);
+    const isMT = _nbIsMaintenanceHour(date, h, court.id);
     const isUnavail = isPast || isBooked || isOP || isMT || isNow;
 
     if (!isUnavail) availCount++;
