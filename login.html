@@ -116,7 +116,8 @@ async function doLogin(e) {
   const remember = document.getElementById('rememberMe').checked;
   const r = await Auth.login(u, p, remember);
   if (r.ok) {
-    window.location.href = 'admin.html';
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = params.get('next') || 'admin.html';
   } else {
     document.getElementById('errBox').classList.add('show');
     btn.disabled = false;

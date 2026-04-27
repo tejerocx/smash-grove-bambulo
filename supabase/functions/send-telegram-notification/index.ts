@@ -75,7 +75,8 @@ function buildBookingMessage(p: BookingPayload): string {
     `\n` +
     `📋 Ref: <code>${p.bookingRef}</code>\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `👆 <a href="https://smashgrove.com/admin.html">Open admin panel to verify &amp; confirm.</a>`
+    `👆 <a href="https://smashgrove.com/admin.html">Open admin panel to verify &amp; confirm.</a>\n` +
+    `<i>💡 Tip: Long-press the link → "Open in Browser" if it keeps redirecting.</i>`
   );
 }
 
