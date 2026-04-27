@@ -3199,7 +3199,12 @@ function logout(){ Auth.logout(); }
 document.addEventListener('DOMContentLoaded', async ()=>{
   // Verify real Supabase Auth session — not just sessionStorage
   const { data: authData } = await _supabase.auth.getUser();
-  if (!authData.user) { window.location.href = 'login.html?next=admin.html'; return; }
+  if (!authData.user) {
+    localStorage.removeItem('pb_session');
+    sessionStorage.removeItem('pb_session');
+    window.location.href = 'login.html?next=admin.html';
+    return;
+  }
 
   // If sessionStorage was cleared (tab restore, refresh, etc.) rebuild it from auth
   if (!Auth.getSession()) {

@@ -125,9 +125,11 @@ async function doLogin(e) {
   }
 }
 
-// Redirect if already logged in
+// Redirect if already logged in (skip if we were sent here from admin — avoids redirect loop)
 document.addEventListener('DOMContentLoaded', () => {
-  if (Auth.getSession()) window.location.href = 'admin.html';
+  const params = new URLSearchParams(window.location.search);
+  const comingFromAdmin = !!params.get('next');
+  if (!comingFromAdmin && Auth.getSession()) window.location.href = 'admin.html';
   // Check if redirected here from a password reset email
   const hash = window.location.hash;
   if (hash.includes('type=recovery')) {
