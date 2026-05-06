@@ -1120,6 +1120,34 @@ body.light #splashScreen { background: var(--bg); }
 </div>
 
 <!-- NAVBAR -->
+<!-- OPEN PLAY MAY 9 ANNOUNCEMENT -->
+<div id="opAnnounceSplash" style="display:none;position:fixed;inset:0;z-index:999;background:#0a0d14;align-items:center;justify-content:center;padding:24px;flex-direction:column;text-align:center;overflow:hidden;">
+  <div style="position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;background:radial-gradient(ellipse,rgba(244,168,37,.15) 0%,transparent 70%);pointer-events:none;animation:gsGlow 3s ease-in-out infinite alternate"></div>
+  <div style="position:absolute;bottom:-180px;left:50%;transform:translateX(-50%);width:500px;height:400px;border-radius:50%;background:radial-gradient(ellipse,rgba(74,154,74,.1) 0%,transparent 70%);pointer-events:none"></div>
+  <div style="position:relative;z-index:2;max-width:500px;animation:gsIn .8s cubic-bezier(.34,1.4,.64,1) both">
+    <div style="font-size:3rem;margin-bottom:6px;animation:gsBounce 1s .6s ease-in-out infinite alternate">🏓</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(1rem,4vw,1.3rem);letter-spacing:6px;color:#f4a825;margin-bottom:8px;opacity:.9">SUNDAY · MAY 9 · 2026</div>
+    <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,11vw,6rem);line-height:.92;letter-spacing:2px;margin-bottom:6px">
+      OPEN<br/><span style="color:#f4a825;text-shadow:0 0 40px rgba(244,168,37,.6)">PLAY</span><br/>IS ON!
+    </h1>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(1.4rem,5vw,2.2rem);color:#4a9a4a;letter-spacing:3px;margin-bottom:20px">5:00 PM — 12:00 MN</div>
+    <p style="color:#b0bec8;font-size:clamp(.9rem,2.6vw,1.05rem);line-height:1.75;margin-bottom:24px">
+      Drop in, rally up, and meet new players! 🎾<br/>
+      <strong style="color:#e6edf3">No reservation needed</strong> — just show up,<br/>
+      sign up at the counter, and get on the court.<br/>
+      <span style="color:#f4a825;font-weight:700">Limited slots available!</span>
+    </p>
+    <div style="background:rgba(74,154,74,.1);border:1.5px solid rgba(74,154,74,.35);border-radius:14px;padding:14px 20px;margin-bottom:24px;animation:gsPulse 2s 1s ease-in-out infinite">
+      <div style="font-size:1.2rem;margin-bottom:4px">📍</div>
+      <div style="font-weight:800;font-size:.95rem;color:#4a9a4a;letter-spacing:.5px">SMASH GROVE · BAMBULO PICKLEYARD</div>
+      <div style="font-size:.82rem;color:#7a9a8a;margin-top:3px">Tap below to register your slot now</div>
+    </div>
+    <button onclick="closeOpAnnounceSplash()" style="background:linear-gradient(135deg,#f4a825,#c87a00);color:#000;border:none;border-radius:10px;padding:14px 36px;font-family:'Outfit',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 6px 28px rgba(244,168,37,.4);transition:transform .2s,box-shadow .2s;letter-spacing:.3px" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      I'M IN — Register Now 🏓 &nbsp;<span id="opAnnounceCountdown" style="opacity:.6;font-weight:400;font-size:.85rem"></span>
+    </button>
+  </div>
+</div>
+
 <!-- EASTER SUNDAY SPLASH -->
 <div id="easterSplash" style="display:none;position:fixed;inset:0;z-index:999;background:#0d1a0d;align-items:center;justify-content:center;padding:24px;flex-direction:column;text-align:center;overflow:hidden;">
   <div style="position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(ellipse,rgba(74,154,74,.2) 0%,transparent 70%);pointer-events:none;animation:gsGlow 3s ease-in-out infinite alternate"></div>
@@ -1174,7 +1202,7 @@ body.light #splashScreen { background: var(--bg); }
 @keyframes gsBounce { from { transform:translateY(0); } to { transform:translateY(-8px); } }
 @keyframes gsPulse { 0%,100% { box-shadow:0 0 0 0 rgba(244,168,37,.15); } 50% { box-shadow:0 0 0 8px rgba(244,168,37,.0); } }
 @keyframes gsFadeOut { to { opacity:0; transform:scale(.96); } }
-#grandSplash.closing, #easterSplash.closing { animation:gsFadeOut .45s ease forwards; }
+#grandSplash.closing, #easterSplash.closing, #opAnnounceSplash.closing { animation:gsFadeOut .45s ease forwards; }
 </style>
 
 <nav class="nav">
@@ -2955,11 +2983,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('bDate').min = todayStr();
   $('invModal').addEventListener('click', e => { if (e.target === $('invModal')) closeModal(); });
   $('opModal').addEventListener('click', e => { if (e.target === $('opModal')) closeOpModal(); });
+  initOpAnnounceSplash();
   initEasterSplash();
   initGrandSplash();
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeBookModal(); closeOpModal(); } });
   initScrollReveal();
 });
+
+/* =============================================
+   OPEN PLAY MAY 9 ANNOUNCEMENT
+   ============================================= */
+function initOpAnnounceSplash() {
+  const now = new Date();
+  const start  = new Date('2026-05-07T00:00:00+08:00');
+  const cutoff = new Date('2026-05-09T23:59:59+08:00');
+  if (now < start || now > cutoff) return;
+  const el = $('opAnnounceSplash');
+  el.style.display = 'flex';
+  let secs = 8;
+  const cd = $('opAnnounceCountdown');
+  if (cd) cd.textContent = `(${secs})`;
+  const timer = setInterval(() => {
+    secs--;
+    if (cd) cd.textContent = `(${secs})`;
+    if (secs <= 0) { clearInterval(timer); closeOpAnnounceSplash(); }
+  }, 1000);
+  el._timer = timer;
+}
+
+function closeOpAnnounceSplash() {
+  const el = $('opAnnounceSplash');
+  if (!el || el.style.display === 'none') return;
+  clearInterval(el._timer);
+  el.classList.add('closing');
+  setTimeout(() => { el.style.display = 'none'; el.classList.remove('closing'); }, 450);
+}
 
 /* =============================================
    EASTER SUNDAY SPLASH
