@@ -1751,12 +1751,28 @@ function _checkMaintenanceRule(rule, date, h, courtId) {
 }
 function isMaintenanceHour(date, h, courtId = null) {
   if (!maintenanceConfig) return false;
-  // New multi-rule format
   if (Array.isArray(maintenanceConfig.rules)) {
     return maintenanceConfig.rules.some(r => _checkMaintenanceRule(r, date, h, courtId));
   }
-  // Legacy single-rule format
   return _checkMaintenanceRule(maintenanceConfig, date, h, courtId);
+}
+function getMaintenanceRule(date, h, courtId = null) {
+  if (!maintenanceConfig) return null;
+  if (Array.isArray(maintenanceConfig.rules)) {
+    return maintenanceConfig.rules.find(r => _checkMaintenanceRule(r, date, h, courtId)) || null;
+  }
+  return _checkMaintenanceRule(maintenanceConfig, date, h, courtId) ? maintenanceConfig : null;
+}
+const _mtLabels = {
+  maintenance: { icon: '🔧', text: 'Maintenance' },
+  reserved:    { icon: '🔒', text: 'Reserved' },
+  blocked:     { icon: '⛔', text: 'Blocked' },
+  private:     { icon: '👥', text: 'Private Event' },
+  group:       { icon: '🏓', text: 'Group Session' },
+};
+function getMaintenanceLabel(date, h, courtId = null) {
+  const rule = getMaintenanceRule(date, h, courtId);
+  return _mtLabels[rule?.label] || _mtLabels.maintenance;
 }
 
 function toast(msg, type='ok') {
@@ -1957,7 +1973,8 @@ async function toggleCardSlot(courtId, date, h) {
     return;
   }
   if (isMaintenanceHour(date, h, courtId)) {
-    toast('This slot is under maintenance.', 'inf');
+    const _ml = getMaintenanceLabel(date, h, courtId);
+    toast(`This slot is ${_ml.text.toLowerCase()}.`, 'inf');
     return;
   }
   // Reset if switching court or date
@@ -2187,7 +2204,7 @@ async function onCardDate(courtId, date) {
     const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
     if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
     if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">${maskName(slotNameMap[h])}</div></div>`;
-    if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
+    if (isMaint_)  { const _ml=getMaintenanceLabel(date,h,courtId); return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">${_ml.icon} ${_ml.text}</div></div>`; }
     if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${courtId}','${date}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play<div style="font-size:.5rem;color:rgba(244,168,37,.75);font-weight:600;letter-spacing:.2px;margin-top:2px">Tap to register</div></div></div>`;
     return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${courtId}','${date}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${getRateForHourFromTiers(h, cTiers, c.rate)}</div></div>`;
   }).join('');
@@ -2250,7 +2267,7 @@ async function renderCourts() {
           const timeRange = `${fmtT(h)} – ${fmtT(h+1)}`;
           if (isPast_)   return `<div class="cc-slot-btn past-slot"><div class="csl-time">${timeRange}</div><div class="csl-tag">Done</div></div>`;
           if (isBooked_) return `<div class="cc-slot-btn taken"><div class="csl-time">${timeRange}</div><div class="csl-name">${maskName(slotNameMap[h])}</div></div>`;
-          if (isMaint_)  return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">🔧 Maintenance</div></div>`;
+          if (isMaint_)  { const _ml=getMaintenanceLabel(today,h,c.id); return `<div class="cc-slot-btn maintenance"><div class="csl-time">${timeRange}</div><div class="csl-tag">${_ml.icon} ${_ml.text}</div></div>`; }
           if (isOpenPlay_) return `<div class="cc-slot-btn open-play" onclick="event.stopPropagation(); openPlaySignup('${c.id}','${today}',${h},'${(c.name||'').replace(/'/g,"\\'")}')" title="Tap to join Open Play"><div class="csl-time">${timeRange}</div><div class="csl-tag">🏓 Open Play<div style="font-size:.5rem;color:rgba(244,168,37,.75);font-weight:600;letter-spacing:.2px;margin-top:2px">Tap to register</div></div></div>`;
           return `<div class="cc-slot-btn" data-h="${h}" onclick="event.stopPropagation(); toggleCardSlot('${c.id}','${today}',${h})"><div class="csl-time">${timeRange}</div><div class="csl-price">₱${_cRate(h)}</div></div>`;
         }).join('');
@@ -2432,7 +2449,7 @@ async function renderSlots() {
     else if (isPast)       { cls += ' past'; tag = `<span class="slot-tag past-tag">DONE</span>`; }
     else if (isNow)        { cls += ' now';  tag = `<span class="slot-tag">NOW</span>`; }
     else if (isBooked)     { cls += ' booked'; tag = `<span class="slot-tag booked-tag">TAKEN</span>`; }
-    else if (isMaint)      { cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">🔧 Maintenance</span>`; }
+    else if (isMaint)      { const _ml=getMaintenanceLabel(date,h,court?.id); cls += ' maintenance'; tag = `<span class="slot-tag mt-tag">${_ml.icon} ${_ml.text}</span>`; }
     else if (isOpenPlay)   { cls += ' open-play'; tag = `<span class="slot-tag op-tag">🏓 Open Play<span class="op-tap">Tap to register</span></span>`; }
     else                   { cls += ' free'; }
 
@@ -2477,7 +2494,8 @@ function toggleSlot(h) {
     return;
   }
   if (isMaintenanceHour(date, h, court?.id)) {
-    toast('This slot is under maintenance.', 'inf'); return;
+    const _ml = getMaintenanceLabel(date, h, court?.id);
+    toast(`This slot is ${_ml.text.toLowerCase()}.`, 'inf'); return;
   }
 
   const i = selSlots.indexOf(h);

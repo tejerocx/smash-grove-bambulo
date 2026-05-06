@@ -1969,7 +1969,11 @@ function nbToggleSlot(h) {
   if (isToday && h < curHour) { toast('This time has passed.', 'err'); return; }
   if (isToday && h === curHour) { toast('This hour is in progress.', 'inf'); return; }
   if (_nbIsOpenPlayHour(date, h)) { toast('Reserved for Open Play.', 'inf'); return; }
-  if (_nbIsMaintenanceHour(date, h, court.id)) { toast('Reserved for maintenance.', 'inf'); return; }
+  if (_nbIsMaintenanceHour(date, h, court.id)) {
+    const rule = (() => { if (!_nbMaintenanceCfg) return null; if (Array.isArray(_nbMaintenanceCfg.rules)) return _nbMaintenanceCfg.rules.find(r => _nbCheckRule(r, date, h, court.id)) || null; return _nbCheckRule(_nbMaintenanceCfg, date, h, court.id) ? _nbMaintenanceCfg : null; })();
+    const lbl = {maintenance:'Maintenance',reserved:'Reserved',blocked:'Blocked',private:'Private Event',group:'Group Session'}[rule?.label] || 'Maintenance';
+    toast(`This slot is ${lbl.toLowerCase()}.`, 'inf'); return;
+  }
 
   const i = _nbSelSlots.indexOf(h);
   if (i === -1) {
@@ -3047,6 +3051,16 @@ function mtRuleHtml(rule, n) {
     <div style="display:flex;gap:10px;flex-wrap:wrap">${courtCbs}</div>
     <div style="font-size:.7rem;color:var(--muted);margin-top:6px">Leave all unchecked = applies to all courts.</div>
   </div>
+  <div style="margin-bottom:14px">
+    <label class="fl" style="margin-bottom:8px">Block Type</label>
+    <select class="fi" id="mtLabel_${id}">
+      <option value="maintenance"${(rule.label||'maintenance')==='maintenance'?' selected':''}>🔧 Maintenance</option>
+      <option value="reserved"${rule.label==='reserved'?' selected':''}>🔒 Reserved</option>
+      <option value="blocked"${rule.label==='blocked'?' selected':''}>⛔ Blocked</option>
+      <option value="private"${rule.label==='private'?' selected':''}>👥 Private Event</option>
+      <option value="group"${rule.label==='group'?' selected':''}>🏓 Group Session</option>
+    </select>
+  </div>
   <div class="frow" style="margin-bottom:14px">
     <div><label class="fl">Start Time</label><select class="fi" id="mtS_${id}">${mtTimeOpts(rule.start ?? 5, false)}</select></div>
     <div><label class="fl">End Time</label><select class="fi" id="mtE_${id}">${mtTimeOpts(rule.end ?? 9, true)}</select></div>
@@ -3104,7 +3118,9 @@ function mtCollectFromDom() {
       recurring = null;
     }
     const courtIds = [...document.querySelectorAll(`.mt-cc-${id}:checked`)].map(cb => cb.value);
-    return { ...rule, enabled: enEl.checked, start: sEl ? parseInt(sEl.value) : rule.start, end: eEl ? parseInt(eEl.value) : rule.end, mode, recurring, courtIds };
+    const labelEl = $(`mtLabel_${id}`);
+    const label = labelEl ? labelEl.value : (rule.label || 'maintenance');
+    return { ...rule, enabled: enEl.checked, start: sEl ? parseInt(sEl.value) : rule.start, end: eEl ? parseInt(eEl.value) : rule.end, mode, recurring, courtIds, label };
   });
 }
 
