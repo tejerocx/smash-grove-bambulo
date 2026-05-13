@@ -1516,8 +1516,44 @@ async function renderBookings(){
   if(q) bks=bks.filter(b=>b.ref.toLowerCase().includes(q)||b.fullName.toLowerCase().includes(q)||b.email.toLowerCase().includes(q)||b.courtName.toLowerCase().includes(q));
   if(fd) bks=bks.filter(b=>b.date===fd);
   if(fs) bks=bks.filter(b=>b.status===fs);
-  $('bookBody').innerHTML=bks.length===0?'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">No bookings found.</td></tr>':
-    bks.map(b=>`<tr>
+
+  // Inject maintenance/block rows when a date filter is active
+  let mtRowsHtml = '';
+  if (fd && !q) {
+    if (!_nbMaintenanceCfg) {
+      const s = await DB.getSettings();
+      try { _nbMaintenanceCfg = s.maintenance_config ? JSON.parse(s.maintenance_config) : null; } catch(e) {}
+    }
+    const rules = _nbMaintenanceCfg ? (Array.isArray(_nbMaintenanceCfg.rules) ? _nbMaintenanceCfg.rules : [_nbMaintenanceCfg]) : [];
+    const allCourts = await DB.getCourts();
+    const dt = new Date(fd + 'T00:00:00'), dow = dt.getDay(), dom = dt.getDate();
+    const mtLabelMap = {maintenance:'🔧 Maintenance',reserved:'🔒 Reserved',blocked:'⛔ Blocked',private:'👥 Private Event',group:'🏓 Group Session'};
+    const fmtHr = h => { const h12 = h % 12 || 12; return `${h12}:00 ${h < 12 ? 'AM' : 'PM'}`; };
+    const matched = rules.filter(r => {
+      if (!r || !r.enabled) return false;
+      const mode = r.mode || 'specific';
+      if (mode === 'specific') return (r.dates || []).includes(fd);
+      if (mode === 'monthly') return dom === (r.recurring?.day ?? -1);
+      if (mode === 'weekly') return (r.recurring?.days || []).includes(dow);
+      return false;
+    }).sort((a,b) => Number(a.start) - Number(b.start));
+    mtRowsHtml = matched.map(rule => {
+      const courtIds = rule.courtIds || [];
+      const courtNames = courtIds.length === 0 ? 'All Courts' : allCourts.filter(c => courtIds.includes(String(c.id))).map(c => c.name).join(', ');
+      const lbl = mtLabelMap[rule.label || 'maintenance'] || '🔧 Maintenance';
+      const timeRange = `${fmtHr(Number(rule.start))}–${fmtHr(Number(rule.end))}`;
+      const modeTag = rule.mode === 'weekly' ? 'Weekly recurring' : rule.mode === 'monthly' ? 'Monthly recurring' : 'One-time block';
+      return `<tr style="background:rgba(244,168,37,.07);border-left:3px solid #f4a825;outline:1px solid rgba(244,168,37,.15);">
+        <td data-label="Ref"><code style="color:#f4a825;font-size:.75rem;font-weight:800">BLOCK</code></td>
+        <td data-label="Type"><div style="font-weight:700;color:#f4a825;font-size:.88rem">${lbl}</div><div style="font-size:.73rem;color:var(--muted)">${modeTag}</div></td>
+        <td data-label="Court" style="font-size:.88rem">${courtNames}</td>
+        <td data-label="Schedule">${fmtD(fd)}<div style="font-size:.75rem;color:#f4a825;font-weight:700">${timeRange}</div></td>
+        <td colspan="6" style="color:var(--muted);font-size:.78rem;font-style:italic">Not bookable — admin block</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const bkRowsHtml = bks.map(b=>`<tr>
       <td data-label="Ref"><code style="color:var(--green);font-size:.76rem">${b.ref}</code></td>
       <td data-label="Customer"><div style="font-weight:600">${b.fullName}</div><div style="font-size:.75rem;color:var(--text)">${b.email}</div></td>
       <td data-label="Court">${b.courtName}</td>
@@ -1551,6 +1587,8 @@ async function renderBookings(){
         ${isDev?`<button class="btn btn-d btn-sm" onclick="delBooking('${b.ref}')">🗑️</button>`:''}
       </div></td>
     </tr>`).join('');
+  const noResults = !mtRowsHtml && !bkRowsHtml ? '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:28px">No bookings found.</td></tr>' : '';
+  $('bookBody').innerHTML = mtRowsHtml + bkRowsHtml + noResults;
 }
 
 function clearFilters(){
