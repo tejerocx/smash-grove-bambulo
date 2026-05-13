@@ -1579,8 +1579,33 @@ function calNav(dir){
   renderCalendar();
 }
 
+const _calMtLabels = {maintenance:'🔧 Maintenance',reserved:'🔒 Reserved',blocked:'⛔ Blocked',private:'👥 Private Event',group:'🏓 Group Session'};
+
+function _calGetMtRulesForDate(ds) {
+  const cfg = _nbMaintenanceCfg;
+  if (!cfg) return [];
+  const rules = Array.isArray(cfg.rules) ? cfg.rules : [cfg];
+  const dow = new Date(ds + 'T00:00:00').getDay();
+  const dom = new Date(ds + 'T00:00:00').getDate();
+  return rules.filter(r => {
+    if (!r || !r.enabled) return false;
+    const mode = r.mode || 'specific';
+    if (mode === 'specific') return (r.dates || []).includes(ds);
+    if (mode === 'monthly') return dom === (r.recurring?.day ?? -1);
+    if (mode === 'weekly') return (r.recurring?.days || []).includes(dow);
+    return false;
+  });
+}
+
 async function renderCalendar(){
   const bks = await DB.getBookings();
+
+  // Ensure maintenance config is loaded
+  if (!_nbMaintenanceCfg) {
+    const s = await DB.getSettings();
+    try { _nbMaintenanceCfg = s.maintenance_config ? JSON.parse(s.maintenance_config) : null; } catch(e) {}
+  }
+
   const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   $('calTitle').textContent=`${MONTHS[calMonth]} ${calYear}`;
 
@@ -1615,9 +1640,20 @@ async function renderCalendar(){
       .filter(s=>bk[s])
       .flatMap(s=>Array(Math.min(bk[s],4)).fill(`<div class="cal-dot ${s}"></div>`))
       .join('');
+
+    // Maintenance/block rules for this day
+    const mtRules = _calGetMtRulesForDate(ds);
+    const uniqueLabels = [...new Set(mtRules.map(r => r.label || 'maintenance'))];
+    const mtHtml = uniqueLabels.map(lbl => {
+      const fmtT = h => { if(h===0||h===24) return '12 MN'; const ap=h<12?'AM':'PM'; const hh=h%12||12; return `${hh}${ap}`; };
+      const times = mtRules.filter(r=>(r.label||'maintenance')===lbl).map(r=>`${fmtT(r.start)}–${fmtT(r.end)}`).join(', ');
+      return `<div style="font-size:.6rem;font-weight:700;color:#f4a825;margin-top:2px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_calMtLabels[lbl]||'🔧'} <span style="opacity:.75">${times}</span></div>`;
+    }).join('');
+
     html+=`<div class="cal-cell${isToday?' cal-today':''}" onclick="calDayClick('${ds}')">
       <div class="cal-dn">${d}</div>
       ${total?`<div class="cal-dots">${dots}</div><div class="cal-count">${total} bkg${total!==1?'s':''}</div>`:''}
+      ${mtHtml}
     </div>`;
   }
 
